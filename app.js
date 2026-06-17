@@ -671,8 +671,55 @@ class TiltedSurfaceRadiation {
 const LOAD_TIMEOUT_MS = { geocode:8000, localTMY:45000, remoteTMY:90000 };
 const GEOCODE_CACHE = new Map();
 const TMY_CACHE     = new Map();
+const NETWORK_CACHE_PREFIX = "pvtCalcNetworkCache.v1";
+const NETWORK_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const NETWORK_CACHE_LIMITS = { geocode:30, tmy:6 };
 
 function makeLocCacheKey(lat, lon){ return `${lat.toFixed(4)},${lon.toFixed(4)}`; }
+
+function getStoredNetworkCache(scope, key){
+  try {
+    const storageKey = `${NETWORK_CACHE_PREFIX}.${scope}.${key}`;
+    const cached = JSON.parse(localStorage.getItem(storageKey) || "null");
+    if (!cached || typeof cached !== "object" || !("data" in cached)) return null;
+    if (!Number.isFinite(cached.ts) || Date.now() - cached.ts > NETWORK_CACHE_TTL_MS){
+      localStorage.removeItem(storageKey);
+      return null;
+    }
+    return cached.data;
+  } catch(_e){
+    return null;
+  }
+}
+
+function pruneStoredNetworkCache(scope, maxEntries){
+  try {
+    const prefix = `${NETWORK_CACHE_PREFIX}.${scope}.`;
+    const entries = [];
+    for (let i = 0; i < localStorage.length; i++){
+      const key = localStorage.key(i);
+      if (!key || !key.startsWith(prefix)) continue;
+      let ts = 0;
+      try { ts = JSON.parse(localStorage.getItem(key) || "{}").ts || 0; } catch(_e){}
+      entries.push({ key, ts });
+    }
+    entries.sort((a, b) => b.ts - a.ts);
+    entries.slice(maxEntries).forEach(entry => localStorage.removeItem(entry.key));
+  } catch(_e){}
+}
+
+function setStoredNetworkCache(scope, key, data){
+  const maxEntries = NETWORK_CACHE_LIMITS[scope] || 10;
+  const storageKey = `${NETWORK_CACHE_PREFIX}.${scope}.${key}`;
+  const payload = JSON.stringify({ ts:Date.now(), data });
+  try {
+    localStorage.setItem(storageKey, payload);
+    pruneStoredNetworkCache(scope, maxEntries);
+  } catch(_e){
+    pruneStoredNetworkCache(scope, Math.max(1, maxEntries - 1));
+    try { localStorage.setItem(storageKey, payload); } catch(_ignored){}
+  }
+}
 
 async function fetchWithTimeout(url, options={}, timeoutMs=10000){
   const controller = new AbortController();
@@ -690,6 +737,11 @@ async function geocodeAddress(address){
   if (!q) throw new Error("Please input an address.");
   const qKey = q.toLowerCase();
   if (GEOCODE_CACHE.has(qKey)) return GEOCODE_CACHE.get(qKey);
+  const stored = getStoredNetworkCache("geocode", qKey);
+  if (stored){
+    GEOCODE_CACHE.set(qKey, stored);
+    return stored;
+  }
   const url = "https://nominatim.openstreetmap.org/search?format=json&limit=1&addressdetails=1&q=" + encodeURIComponent(q);
   const resp = await fetchWithTimeout(url, { headers:{"Accept":"application/json"} }, LOAD_TIMEOUT_MS.geocode);
   if (!resp.ok) throw new Error("Geocoding failed: " + resp.status);
@@ -698,6 +750,7 @@ async function geocodeAddress(address){
   const countryCode = (arr[0].address?.country_code || "").toLowerCase();
   const loc = { lat:parseFloat(arr[0].lat), lon:parseFloat(arr[0].lon), name:arr[0].display_name || q, countryCode };
   GEOCODE_CACHE.set(qKey, loc);
+  setStoredNetworkCache("geocode", qKey, loc);
   return loc;
 }
 
@@ -813,6 +866,12 @@ function setTmyLoadStatus(msg){
 async function fetchTMY(lat, lon){
   const cacheKey = makeLocCacheKey(lat, lon);
   if (TMY_CACHE.has(cacheKey)) return TMY_CACHE.get(cacheKey);
+  const stored = getStoredNetworkCache("tmy", cacheKey);
+  if (stored){
+    TMY_CACHE.set(cacheKey, stored);
+    setTmyLoadStatus("Using cached TMY weather for this location...");
+    return stored;
+  }
 
   const query = `?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`;
 
@@ -835,6 +894,7 @@ async function fetchTMY(lat, lon){
         const data = await resp.json();
         console.log("TMY served by:", endpoint.url);
         TMY_CACHE.set(cacheKey, data);
+        setStoredNetworkCache("tmy", cacheKey, data);
         return data;
       } catch(e){
         const message = e?.name === "AbortError"
@@ -850,6 +910,11 @@ async function fetchTMY(lat, lon){
     }
   }
   throw new Error("TMY fetch failed. The hosted weather API may still be waking up, or PVGIS may be temporarily unavailable. Try again in about a minute. Details: " + endpointErrors.join("; "));
+}
+
+function warmHostedTMYService(){
+  const healthUrl = REMOTE_TMY_ENDPOINT.replace(/\/tmy$/, "/health");
+  fetchWithTimeout(healthUrl, { headers:{"Accept":"application/json"} }, 8000).catch(() => {});
 }
 
 // ================================================================
@@ -3301,6 +3366,8 @@ function openClimateCharts(ev){
 function closeMainsChart(){
   const modal = document.getElementById("mainsChartModal");
   modal.style.display = "none"; modal.setAttribute("aria-hidden","true");
+  closeHowItWorksStep();
+  document.querySelectorAll("rect[data-step]").forEach(r => r.classList.remove("active"));
 }
 
 function openProcessDiagram(ev){
@@ -3512,6 +3579,17 @@ function updateCERZoneDisplay(lat, lon, countryCode){
   el.innerHTML = `<div style="font-size:11px;font-weight:600;color:#444;margin-bottom:5px;">CER Climate Zone <span style="font-weight:400;">(${method})</span></div><div style="display:flex;flex-direction:column;gap:4px;">${items}</div>`;
 }
 
+function showLocationMap(lat, lon){
+  const mapDiv = document.getElementById("locationMap");
+  if (!mapDiv) return;
+  const bbox = `${(lon-0.05).toFixed(6)},${(lat-0.05).toFixed(6)},${(lon+0.05).toFixed(6)},${(lat+0.05).toFixed(6)}`;
+  mapDiv.innerHTML = `<iframe
+    src="https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat.toFixed(6)},${lon.toFixed(6)}"
+    width="100%" height="220" style="border:0;display:block;" loading="lazy"
+    title="Location map" referrerpolicy="no-referrer"></iframe>`;
+  mapDiv.style.display = "block";
+}
+
 function setLocationConfirm(loc, tzInfo, tzPending){
   const tzDisplay = tzPending
     ? "loading..."
@@ -3534,6 +3612,7 @@ async function loadTMYByAddress(){
   CURRENT_MET = null; CURRENT_MAINS = null; CURRENT_TZ = null;
   updateMainsDisplay();
   setLocationConfirm(loc, null, true);
+  showLocationMap(loc.lat, loc.lon);
 
   const raw = await fetchTMY(loc.lat, loc.lon);
   if (requestSeq !== LOAD_REQUEST_SEQ) return;
@@ -3714,19 +3793,220 @@ function syncIndustrySelectionUI(industryKey, resetThroughput=false){
 //  A clickable overview of the data flow: where the weather comes
 //  from, and how the supply side and demand side meet in the middle.
 // ================================================================
+const HOW_IT_WORKS_DETAIL = {
+  address: {
+    title: "1. Your address",
+    body: "You type any Australian street address, suburb, or postcode into the calculator. This locates the site so the correct solar resource and climate zone are fetched automatically.",
+    inputs: ["Street address, suburb, or postcode"],
+    outputs: ["Address string passed to the geocoding service"]
+  },
+  geocoding: {
+    title: "2. Geocoding",
+    body: "The address text is sent to OpenStreetMap's free Nominatim API, which converts it to a latitude/longitude coordinate pair. No manual coordinate entry is needed. The resolved location is confirmed on screen before the weather data is fetched.",
+    inputs: ["Address text string"],
+    outputs: ["Latitude (°)", "Longitude (°)"],
+    buildMiniSvg: () => buildMiniSvg_geocoding()
+  },
+  weather: {
+    title: "3. Weather download",
+    body: "Coordinates are passed to the PVGIS API — first via a local FastAPI server, then via the hosted Render fallback if the local server is not running. PVGIS returns a Typical Meteorological Year (TMY) assembled from multi-year satellite observations. The first hosted request may take ~1 minute while the server cold-starts.",
+    inputs: ["Latitude", "Longitude"],
+    outputs: ["8,760 hourly rows: GHI (W/m²), DHI (W/m²), Ta (°C), wind (m/s)"],
+    buildMiniSvg: () => buildMiniSvg_weather()
+  },
+  records: {
+    title: "8,760 hourly weather records",
+    body: "Every hour of a typical year carries four measured values from the TMY dataset. All downstream steps — solar geometry, panel output, and energy matching — run independently once for each of these 8,760 hours.",
+    inputs: ["PVGIS TMY dataset for the site location"],
+    outputs: ["Global horizontal irradiance GHI (W/m²)", "Diffuse irradiance DHI (W/m²)", "Ambient air temperature Ta (°C)", "Wind speed u (m/s)"]
+  },
+  "solar-geo": {
+    title: "4a. Solar geometry & irradiance",
+    body: "For each hour the sun's altitude and azimuth are calculated from site latitude and time of year. The collector's tilt and surface azimuth are used with a transposition model to convert horizontal irradiance into irradiance on the tilted panel surface (GTI), accounting for direct beam, sky diffuse, and ground-reflected components.",
+    inputs: ["Hour of year", "Site latitude/longitude", "Collector tilt angle (°)", "Surface azimuth angle (°)", "Ground albedo (0–1)"],
+    outputs: ["GTI — irradiance on tilted panel surface (W/m²)"],
+    buildMiniSvg: () => buildMiniSvg_solarGeo()
+  },
+  "mains-temp": {
+    title: "4b. Mains water temperature",
+    body: "The BC-Aus model predicts hourly cold mains water temperature using the NREL Burch–Christensen sinusoidal method, refitted to AS/NZS 4234 Australian climate zones. Temperature varies by month and location rather than being fixed, giving a realistic heat demand baseline.",
+    inputs: ["Site climate zone (1–5)", "Month of year", "BC-Aus zone constants"],
+    outputs: ["Hourly mains water temperature Tmains (°C)"]
+  },
+  "pvt-model": {
+    title: "5a. PVT panel model",
+    body: "Two thermal models are available. Model A uses a simple linear efficiency equation based on inlet temperature. Model B implements the full ISO 9806 Eq.12, iterating Newton's method to converge on the mean fluid temperature across the collector. Both compute hourly electrical and thermal energy from the same PVT panel.",
+    inputs: ["GTI (W/m²)", "Inlet temperature Tin (°C)", "Ambient temperature Ta (°C)", "Wind speed (m/s)", "Model coefficients"],
+    outputs: ["Hourly electrical energy kWh_el", "Hourly thermal yield kWh_th"],
+    buildMiniSvg: () => buildMiniSvg_pvtModel()
+  },
+  "load-profiles": {
+    title: "5b. Industry load profiles",
+    body: "Hourly heat and electricity demand schedules are generated for the selected industry — dairy, brewery, hotel, or aquatic centre. Each profile reflects realistic operating hours, seasonal demand patterns, and process temperatures calibrated to Australian commercial conditions.",
+    inputs: ["Industry type", "Collector area m² (scales demand totals)", "Mains water temperature (from BC-Aus model)"],
+    outputs: ["Hourly heat demand Q_demand (kWh)", "Hourly electricity demand E_demand (kWh)"]
+  },
+  matching: {
+    title: "6. Hour-by-hour energy matching",
+    body: "Each of the 8,760 hours is balanced independently. PVT thermal output covers heat demand first — any shortfall is met by the gas boiler. PV electricity covers electrical demand first — any surplus is exported to the grid. Hourly matching captures the real mismatch between solar availability and demand rather than masking it with annual averages.",
+    inputs: ["Hourly PVT thermal output (kWh)", "Hourly PV electrical output (kWh)", "Hourly heat demand (kWh)", "Hourly electricity demand (kWh)"],
+    outputs: ["Solar heat used on-site (kWh/yr)", "Gas boiler top-up (kWh/yr)", "PV self-consumed (kWh/yr)", "Grid export / import (kWh/yr)"],
+    buildMiniSvg: () => buildMiniSvg_matching()
+  },
+  results: {
+    title: "7. Results",
+    body: "Annual totals are summed across all 8,760 hours and converted to economics using the tariff and gas price inputs. Payback and NPV use the Capital Recovery Factor over the system lifetime. Thermal savings assume 100% utilisation of PVT heat output — see footnotes.",
+    inputs: ["Annual energy flows (kWh)", "Electricity tariff (¢/kWh)", "Gas price ($/GJ)", "System cost, lifetime, discount rate"],
+    outputs: ["Annual PV + thermal yield (kWh)", "Bill savings ($/yr)", "Simple payback (years)", "NPV ($)", "CO₂-e avoided (t/yr)"]
+  }
+};
+
+function buildFlowSvg(W, H, drawFn){
+  const parts = [];
+  const box = (x, y, w, h, lines, fill="#f4f9ff", stroke="#7da7cf", textColor="#16202b") => {
+    parts.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="8" fill="${fill}" stroke="${stroke}" stroke-width="1.2"/>`);
+    const lineH = 15;
+    const startY = y + h/2 - ((lines.length-1)*lineH)/2 + 4.5;
+    lines.forEach((t, i) => {
+      const weight = i === 0 ? "600" : "400";
+      const size = i === 0 ? 12 : 11;
+      parts.push(`<text x="${x+w/2}" y="${startY+i*lineH}" text-anchor="middle" font-size="${size}" font-weight="${weight}" fill="${textColor}">${t}</text>`);
+    });
+  };
+  const arrow = (x1, y1, x2, y2) => {
+    parts.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#5a6e80" stroke-width="1.3" marker-end="url(#mArrow)"/>`);
+  };
+  const lbl = (x, y, text, color="#1565c0") => {
+    parts.push(`<text x="${x}" y="${y}" text-anchor="middle" font-size="10.5" font-weight="600" fill="${color}">${text}</text>`);
+  };
+  drawFn(box, arrow, lbl);
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;display:block;margin:12px auto 0;" xmlns="http://www.w3.org/2000/svg">
+    <defs><marker id="mArrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#5a6e80"/></marker></defs>
+    ${parts.join("")}
+  </svg>`;
+}
+
+function buildMiniSvg_geocoding(){
+  return buildFlowSvg(360, 182, (box, arrow) => {
+    box(40, 10, 280, 38, ["Your address text"]);
+    arrow(180, 48, 180, 66);
+    box(40, 68, 280, 44, ["Nominatim API", "(OpenStreetMap geocoding service)"]);
+    arrow(180, 112, 180, 130);
+    box(40, 132, 280, 40, ["Latitude + Longitude"], "#eef6ff", "#7da7cf");
+  });
+}
+
+function buildMiniSvg_weather(){
+  return buildFlowSvg(400, 248, (box, arrow) => {
+    box(50, 10, 300, 38, ["Latitude + Longitude"], "#eef6ff", "#7da7cf");
+    arrow(200, 48, 200, 66);
+    box(50, 68, 300, 50, ["PVGIS API request", "local FastAPI server → hosted Render fallback"]);
+    arrow(200, 118, 200, 136);
+    box(50, 138, 300, 40, ["Satellite observation database"]);
+    arrow(200, 178, 200, 196);
+    box(50, 198, 300, 40, ["8,760 TMY hourly rows"], "#eef6ff", "#7da7cf");
+  });
+}
+
+function buildMiniSvg_solarGeo(){
+  return buildFlowSvg(400, 308, (box, arrow) => {
+    box(50, 10, 300, 38, ["Hour of year + site latitude"]);
+    arrow(200, 48, 200, 66);
+    box(50, 68, 300, 38, ["Sun altitude + azimuth"]);
+    arrow(200, 106, 200, 124);
+    box(50, 126, 300, 38, ["Collector tilt · azimuth · ground albedo"]);
+    arrow(200, 164, 200, 182);
+    box(50, 184, 300, 46, ["Transposition model", "direct + sky diffuse + ground-reflected"]);
+    arrow(200, 230, 200, 250);
+    box(50, 252, 300, 40, ["GTI on tilted panel surface (W/m²)"], "#eef6ff", "#7da7cf");
+  });
+}
+
+function buildMiniSvg_pvtModel(){
+  return buildFlowSvg(520, 306, (box, arrow, lbl) => {
+    box(110, 10, 300, 38, ["GTI · Tin · Ta · wind · coefficients"]);
+    arrow(260, 48, 260, 76);
+    box(160, 78, 200, 36, ["Select thermal model"], "#fffbe6", "#d9c25c");
+    arrow(160, 96, 100, 136);
+    arrow(360, 96, 420, 136);
+    lbl(100, 128, "Model A");
+    lbl(420, 128, "Model B");
+    box(18, 138, 164, 62, ["Simple linear η_th", "uses inlet temp Tin", "directly"], "#f4f9ff", "#7da7cf");
+    box(338, 138, 164, 62, ["ISO 9806 Eq.12", "Newton iteration", "→ mean temp Tm"], "#f4f9ff", "#7da7cf");
+    arrow(100, 200, 185, 246);
+    arrow(420, 200, 335, 246);
+    box(120, 248, 280, 46, ["kWh electricity + kWh heat per hour"], "#eef6ff", "#7da7cf");
+  });
+}
+
+function buildMiniSvg_matching(){
+  return buildFlowSvg(520, 252, (box, arrow) => {
+    box(20, 10, 216, 40, ["Thermal output this hour (kWh)"], "#f4f9ff", "#7da7cf");
+    box(284, 10, 216, 40, ["PV electricity this hour (kWh)"], "#f4f9ff", "#7da7cf");
+    arrow(128, 50, 128, 86);
+    arrow(392, 50, 392, 86);
+    box(20, 88, 216, 52, ["Covers heat demand?", "shortfall → gas boiler tops up"], "#f2fbf6", "#8fc9a6");
+    box(284, 88, 216, 52, ["Covers elec demand?", "surplus → exported to grid"], "#f2fbf6", "#8fc9a6");
+    arrow(128, 140, 205, 192);
+    arrow(392, 140, 315, 192);
+    box(160, 194, 200, 46, ["Annual totals", "→ savings · CO₂-e avoided"], "#fffbe6", "#d9c25c");
+  });
+}
+
+function openHowItWorksStep(stepId){
+  const step = HOW_IT_WORKS_DETAIL[stepId];
+  if (!step) return;
+  document.getElementById("howItWorksStepTitle").textContent = step.title;
+
+  const ioCol = (heading, items, color) => !items?.length ? "" : `
+    <div style="flex:1;min-width:170px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:${color};margin-bottom:6px;">${heading}</div>
+      <ul style="margin:0;padding:0 0 0 16px;font-size:12px;line-height:1.75;color:#2c3a4a;">${items.map(i=>`<li>${i}</li>`).join("")}</ul>
+    </div>`;
+
+  const ioBlock = (step.inputs?.length || step.outputs?.length) ? `
+    <div style="display:flex;gap:20px;flex-wrap:wrap;background:#f8fafc;border:1px solid #d6e4ef;border-radius:8px;padding:12px 16px;margin:12px 0 14px;">
+      ${ioCol("Key inputs", step.inputs, "#1565c0")}
+      ${ioCol("Key outputs", step.outputs, "#1d8a5f")}
+    </div>` : "";
+
+  const miniSvgBlock = step.buildMiniSvg ? `
+    <div style="background:#f4f8fb;border:1px solid #d0dce8;border-radius:8px;padding:14px 12px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#5a7080;margin-bottom:4px;">Process flow</div>
+      ${step.buildMiniSvg()}
+    </div>` : "";
+
+  document.getElementById("howItWorksStepBody").innerHTML = `
+    <p style="font-size:13px;line-height:1.65;color:#1a2a38;margin:0 0 4px;">${step.body}</p>
+    ${ioBlock}${miniSvgBlock}`;
+
+  const modal = document.getElementById("howItWorksStepModal");
+  modal.style.display = "flex";
+  modal.setAttribute("aria-hidden","false");
+}
+
+function closeHowItWorksStep(){
+  const modal = document.getElementById("howItWorksStepModal");
+  if (!modal) return;
+  modal.style.display = "none";
+  modal.setAttribute("aria-hidden","true");
+  const b = document.getElementById("howItWorksStepBody");
+  if (b) b.innerHTML = "";
+}
+
 function buildHowItWorksSvg(){
   const W = 860, H = 820;
   const parts = [];
 
-  // Small helpers: a rounded box with centred multi-line text, and an arrow.
-  const box = (x, y, w, h, lines, fill, stroke, textColor="#16202b", titleLine=0) => {
-    parts.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10" fill="${fill}" stroke="${stroke}" stroke-width="1.4"/>`);
+  const box = (x, y, w, h, lines, fill, stroke, textColor="#16202b", titleLine=0, stepId="") => {
+    const stepAttr = stepId ? ` data-step="${stepId}"` : "";
+    parts.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10" fill="${fill}" stroke="${stroke}" stroke-width="1.4"${stepAttr}/>`);
     const lineH = 16;
     const startY = y + h/2 - ((lines.length-1)*lineH)/2 + 5;
     lines.forEach((t, i) => {
       const weight = i === titleLine ? "700" : "400";
       const size = i === titleLine ? 13 : 11.5;
-      parts.push(`<text x="${x+w/2}" y="${startY + i*lineH}" text-anchor="middle" font-size="${size}" font-weight="${weight}" fill="${textColor}">${t}</text>`);
+      parts.push(`<text x="${x+w/2}" y="${startY + i*lineH}" text-anchor="middle" font-size="${size}" font-weight="${weight}" fill="${textColor}" style="pointer-events:none">${t}</text>`);
     });
   };
   const arrow = (x1, y1, x2, y2, label="") => {
@@ -3735,41 +4015,42 @@ function buildHowItWorksSvg(){
   };
 
   // Top: shared data pipeline
-  box(290, 14, 280, 44, ["1. Your address", "typed into the calculator"], "#fdfdfd", "#9fb4c6");
+  box(290, 14, 280, 44, ["1. Your address", "typed into the calculator"], "#fdfdfd", "#9fb4c6", "#16202b", 0, "address");
   arrow(430, 58, 430, 86);
-  box(290, 88, 280, 44, ["2. Geocoding", "OpenStreetMap → latitude / longitude"], "#fdfdfd", "#9fb4c6");
+  box(290, 88, 280, 44, ["2. Geocoding", "OpenStreetMap → latitude / longitude"], "#fdfdfd", "#9fb4c6", "#16202b", 0, "geocoding");
   arrow(430, 132, 430, 160);
-  box(250, 162, 360, 56, ["3. Weather download", "TMY API (local or hosted) pulls a typical", "year from the PVGIS satellite database"], "#fdfdfd", "#9fb4c6");
+  box(250, 162, 360, 56, ["3. Weather download", "TMY API (local or hosted) pulls a typical", "year from the PVGIS satellite database"], "#fdfdfd", "#9fb4c6", "#16202b", 0, "weather");
   arrow(430, 218, 430, 248);
-  box(250, 250, 360, 48, ["8,760 hourly weather records", "sunshine · air temperature · wind"], "#eef6ff", "#7da7cf");
+  box(250, 250, 360, 48, ["8,760 hourly weather records", "sunshine · air temperature · wind"], "#eef6ff", "#7da7cf", "#16202b", 0, "records");
 
-  // Split — long clean diagonals, no inline text (headings below make it clear)
+  // Split — long clean diagonals
   arrow(340, 298, 190, 382);
   arrow(520, 298, 670, 382);
 
-  // Column headings — clear gap below arrow tips
+  // Column headings
   parts.push(`<text x="190" y="408" text-anchor="middle" font-size="12" font-weight="700" fill="#1565c0" letter-spacing="1">SOLAR SUPPLY</text>`);
   parts.push(`<text x="670" y="408" text-anchor="middle" font-size="12" font-weight="700" fill="#1d8a5f" letter-spacing="1">SITE DEMAND</text>`);
 
   // Left column: SUPPLY
-  box(40, 422, 300, 66, ["4a. Solar geometry", "tilt, azimuth and albedo turn sun position", "into irradiance on the collector"], "#f4f9ff", "#7da7cf");
+  box(40, 422, 300, 66, ["4a. Solar geometry", "tilt, azimuth and albedo turn sun position", "into irradiance on the collector"], "#f4f9ff", "#7da7cf", "#16202b", 0, "solar-geo");
   arrow(190, 488, 190, 520);
-  box(40, 522, 300, 66, ["5a. PVT panel model", "PV efficiency → electricity (kWh)", "thermal model → useful heat (kWh)"], "#f4f9ff", "#7da7cf");
+  box(40, 522, 300, 66, ["5a. PVT panel model", "PV efficiency → electricity (kWh)", "thermal model → useful heat (kWh)"], "#f4f9ff", "#7da7cf", "#16202b", 0, "pvt-model");
 
   // Right column: DEMAND
-  box(520, 422, 300, 66, ["4b. Mains water temperature", "BC-Aus model (NREL method refitted to", "AS/NZS 4234 Australian climate zones)"], "#f2fbf6", "#8fc9a6");
+  box(520, 422, 300, 66, ["4b. Mains water temperature", "BC-Aus model (NREL method refitted to", "AS/NZS 4234 Australian climate zones)"], "#f2fbf6", "#8fc9a6", "#16202b", 0, "mains-temp");
   arrow(670, 488, 670, 520);
-  box(520, 522, 300, 66, ["5b. Industry load profiles", "dairy / brewery / hotel / aquatic schedules", "→ hourly heat + electricity demand"], "#f2fbf6", "#8fc9a6");
+  box(520, 522, 300, 66, ["5b. Industry load profiles", "dairy / brewery / hotel / aquatic schedules", "→ hourly heat + electricity demand"], "#f2fbf6", "#8fc9a6", "#16202b", 0, "load-profiles");
 
   // Converge
   arrow(190, 588, 348, 642);
   arrow(670, 588, 512, 642);
-  box(290, 644, 280, 60, ["6. Hour-by-hour matching", "every hour: solar covers demand first;", "boiler + grid cover the rest; spare PV exports"], "#fffbe6", "#d9c25c");
+  box(290, 644, 280, 60, ["6. Hour-by-hour matching", "every hour: solar covers demand first;", "boiler + grid cover the rest; spare PV exports"], "#fffbe6", "#d9c25c", "#16202b", 0, "matching");
   arrow(430, 704, 430, 734);
-  box(250, 736, 360, 68, ["7. Results", "annual energy, bill savings, payback,", "solar fractions and CO₂-e avoided"], "#0f4f34", "#0c3f2a", "#ffffff");
+  box(250, 736, 360, 68, ["7. Results", "annual energy, bill savings, payback,", "solar fractions and CO₂-e avoided"], "#0f4f34", "#0c3f2a", "#ffffff", 0, "results");
 
   return `<svg class="chart-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
       <defs><marker id="flowArrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" fill="#5a6e80"/></marker></defs>
+      <style>rect[data-step]{cursor:pointer;transition:opacity 0.15s,stroke-width 0.15s;}rect[data-step]:hover{opacity:0.82;}rect[data-step].active{stroke-width:2.6px;}</style>
       ${parts.join("")}
     </svg>`;
 }
@@ -3777,7 +4058,18 @@ function buildHowItWorksSvg(){
 function openHowItWorks(ev){
   if (ev) ev.preventDefault();
   document.getElementById("mainsChartTitle").textContent = "How the PVT Calculator works";
-  document.getElementById("mainsChartBody").innerHTML = buildHowItWorksSvg();
+  const body = document.getElementById("mainsChartBody");
+  body.innerHTML = buildHowItWorksSvg() +
+    `<p style="text-align:center;font-size:11.5px;color:#6a7e8e;margin:10px 0 0;">Click any box to explore that step in detail</p>`;
+
+  body.querySelectorAll("rect[data-step]").forEach(rect => {
+    rect.addEventListener("click", () => {
+      body.querySelectorAll("rect[data-step]").forEach(r => r.classList.remove("active"));
+      rect.classList.add("active");
+      openHowItWorksStep(rect.dataset.step);
+    });
+  });
+
   const modal = document.getElementById("mainsChartModal");
   modal.style.display = "flex";
   modal.setAttribute("aria-hidden","false");
@@ -3877,6 +4169,13 @@ const DEFAULT_MODEL_COEFFS = {
   isoEta0: "0.762", isoA1: "3.93", isoA2: "0.0095", isoA3: "0",
   isoA4: "0", isoA6: "0", isoA8: "0", isoTout0: "40", isoIterMax: "5"
 };
+const DEFAULT_SITE_SETTINGS = {
+  tiltAngle: "30",
+  azimuthAngle: "180",
+  albedo: "0.2",
+  flowRate: "0.02",
+  etaPv: "0.20"
+};
 function resetCoeffs(ids){
   ids.forEach(id => {
     const el = document.getElementById(id);
@@ -3888,6 +4187,15 @@ function resetCoeffs(ids){
 }
 function resetModelACoeffs(){ resetCoeffs(["pvtA0","pvtA1","pvtA2"]); }
 function resetModelBCoeffs(){ resetCoeffs(["isoEta0","isoA1","isoA2","isoA3","isoA4","isoA6","isoA8","isoTout0","isoIterMax"]); }
+function resetSiteDefaults(){
+  Object.entries(DEFAULT_SITE_SETTINGS).forEach(([id, value]) => {
+    const el = document.getElementById(id);
+    if (el){
+      el.value = value;
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  });
+}
 
 // ================================================================
 //  MAIN CALCULATION
@@ -3937,7 +4245,7 @@ async function calcAnnualPVT(){
     if (needed.some(v => !isFiniteNumber(v))){ setOutput("Please fill in all inputs with valid numbers.", true); return; }
     if (A <= 0){ setOutput("Collector / PV area must be greater than 0 m\u00b2.", true); return; }
     if (tiltAngle < 0 || tiltAngle > 90){ setOutput("Tilt angle must be between 0\u00b0 (horizontal) and 90\u00b0 (vertical).", true); return; }
-    if (azimuthAngle < -180 || azimuthAngle > 180){ setOutput("Surface azimuth must be between \u2212180\u00b0 and 180\u00b0 (0\u00b0 = facing the equator).", true); return; }
+    if (azimuthAngle < -180 || azimuthAngle > 180){ setOutput("Surface azimuth must be between \u2212180\u00b0 and 180\u00b0 (0\u00b0 = south-facing, 180\u00b0 = north-facing). For Australia, use 180\u00b0.", true); return; }
     if (albedo < 0 || albedo > 1){ setOutput("Ground albedo must be between 0 and 1 (typical grass/roof \u2248 0.2).", true); return; }
     if (!(flowRate > 0)){ setOutput("Flow rate must be greater than 0 L/s/m\u00b2 \u2014 a PVT collector needs coolant flow to capture heat (typical \u2248 0.02).", true); return; }
     if (etaPv < 0 || etaPv > 1){ setOutput("PV efficiency must be between 0 and 1.", true); return; }
@@ -4087,22 +4395,22 @@ async function calcAnnualPVT(){
         <div class="annual-summary-item">
           <span>PV electricity</span>
           <strong>${fmtE(E_pv_kWh,1,'kWh')}</strong>
-          <small>Annual electrical generation at nominal STC efficiency (no cell-temperature derating, inverter, or soiling losses).</small>
+          <small>Annual electrical yield</small>
         </div>
         <div class="annual-summary-item">
           <span>PVT thermal</span>
           <strong>${fmtE(E_th_kWh,1,'kWh')}</strong>
-          <small>Annual thermal output from the selected model.</small>
+          <small>Annual thermal yield</small>
         </div>
         <div class="annual-summary-item">
           <span>Total output</span>
           <strong>${fmtE(totalEnergy,1,'kWh')}</strong>
-          <small>PV electricity plus useful thermal energy.</small>
+          <small>Electrical + thermal combined</small>
         </div>
         <div class="annual-summary-item annual-finance ${netAnnualBenefit>=0?'':'negative'}">
           <span>PVT supply value</span>
           <strong>${fmtC(netAnnualBenefit)} /yr</strong>
-          <small>Supply potential (PV + displaced heat) after OPEX, valued at 100% utilisation — an upper bound, not matched to demand. See the industry section for demand-matched savings.</small>
+          <small>Upper-bound annual value (100% utilisation)</small>
         </div>
       </div>
       <div class="annual-actions">
@@ -4895,8 +5203,16 @@ restoreInputsFromStorage();
 onTestingModeChange();
 document.querySelectorAll('input[name="thermalModel"]').forEach(radio => {
   radio.addEventListener('change', function(){
-    document.getElementById('modelAParams').style.display = this.value === 'A' ? 'block' : 'none';
-    document.getElementById('modelBParams').style.display = this.value === 'B' ? 'block' : 'none';
+    const isA = this.value === 'A';
+    const outgoing = document.getElementById(isA ? 'modelBParams' : 'modelAParams');
+    const incoming = document.getElementById(isA ? 'modelAParams' : 'modelBParams');
+    const wasOpen = outgoing.querySelector('.formula-details')?.open;
+    outgoing.style.display = 'none';
+    incoming.style.display = 'block';
+    if (wasOpen) {
+      const incomingDetails = incoming.querySelector('.formula-details');
+      if (incomingDetails) incomingDetails.open = true;
+    }
   });
 });
 
@@ -4907,6 +5223,7 @@ document.querySelectorAll('input[name="thermalModel"]').forEach(radio => {
   el.addEventListener("change", syncInstalledCostInputs);
 });
 syncInstalledCostInputs();
+warmHostedTMYService();
 
 document.getElementById("btnLoadTMY").addEventListener("click", async () => {
   const btn = document.getElementById("btnLoadTMY");
@@ -4942,6 +5259,8 @@ document.getElementById("showOutletTemperature").addEventListener("change", upda
 document.getElementById("mainsChartModal").addEventListener("click", ev => { if (ev.target === ev.currentTarget) closeMainsChart(); });
 document.getElementById("processDiagramModal").addEventListener("click", ev => { if (ev.target === ev.currentTarget) closeProcessDiagram(); });
 document.getElementById("processUsageModal").addEventListener("click", ev => { if (ev.target === ev.currentTarget) closeProcessUsage(); });
-document.addEventListener("keydown", ev => { if (ev.key === "Escape"){ closeMainsChart(); closeProcessDiagram(); closeProcessUsage(); } });
+document.getElementById("howItWorksStepModal").addEventListener("click", ev => { if (ev.target === ev.currentTarget) closeHowItWorksStep(); });
+document.getElementById("btnCloseHowItWorksStep").addEventListener("click", closeHowItWorksStep);
+document.addEventListener("keydown", ev => { if (ev.key === "Escape"){ closeHowItWorksStep(); closeMainsChart(); closeProcessDiagram(); closeProcessUsage(); } });
 updateSupplySectionVisibility();
 syncIndustrySelectionUI(document.getElementById("industrySelect").value, false);
