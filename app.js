@@ -3743,30 +3743,30 @@ function buildHowItWorksSvg(){
   arrow(430, 218, 430, 248);
   box(250, 250, 360, 48, ["8,760 hourly weather records", "sunshine · air temperature · wind"], "#eef6ff", "#7da7cf");
 
-  // Split into the two sides — longer diagonals give clear breathing room before the columns
-  arrow(340, 298, 190, 368, "supply side");
-  arrow(520, 298, 670, 368, "demand side");
+  // Split — long clean diagonals, no inline text (headings below make it clear)
+  arrow(340, 298, 190, 382);
+  arrow(520, 298, 670, 382);
 
-  // Column headings sit below the arrow endpoints with a small gap
-  parts.push(`<text x="190" y="376" text-anchor="middle" font-size="12" font-weight="700" fill="#1565c0" letter-spacing="1">SOLAR SUPPLY</text>`);
-  parts.push(`<text x="670" y="376" text-anchor="middle" font-size="12" font-weight="700" fill="#1d8a5f" letter-spacing="1">SITE DEMAND</text>`);
+  // Column headings — clear gap below arrow tips
+  parts.push(`<text x="190" y="408" text-anchor="middle" font-size="12" font-weight="700" fill="#1565c0" letter-spacing="1">SOLAR SUPPLY</text>`);
+  parts.push(`<text x="670" y="408" text-anchor="middle" font-size="12" font-weight="700" fill="#1d8a5f" letter-spacing="1">SITE DEMAND</text>`);
 
   // Left column: SUPPLY
-  box(40, 390, 300, 64, ["4a. Solar geometry", "tilt, azimuth and albedo turn sun position", "into irradiance on the collector"], "#f4f9ff", "#7da7cf");
-  arrow(190, 454, 190, 484);
-  box(40, 486, 300, 64, ["5a. PVT panel model", "PV efficiency → electricity (kWh)", "thermal model → useful heat (kWh)"], "#f4f9ff", "#7da7cf");
+  box(40, 422, 300, 66, ["4a. Solar geometry", "tilt, azimuth and albedo turn sun position", "into irradiance on the collector"], "#f4f9ff", "#7da7cf");
+  arrow(190, 488, 190, 520);
+  box(40, 522, 300, 66, ["5a. PVT panel model", "PV efficiency → electricity (kWh)", "thermal model → useful heat (kWh)"], "#f4f9ff", "#7da7cf");
 
   // Right column: DEMAND
-  box(520, 390, 300, 64, ["4b. Mains water temperature", "BC-Aus model (NREL method refitted to", "AS/NZS 4234 Australian climate zones)"], "#f2fbf6", "#8fc9a6");
-  arrow(670, 454, 670, 484);
-  box(520, 486, 300, 64, ["5b. Industry load profiles", "dairy / brewery / hotel / aquatic schedules", "→ hourly heat + electricity demand"], "#f2fbf6", "#8fc9a6");
+  box(520, 422, 300, 66, ["4b. Mains water temperature", "BC-Aus model (NREL method refitted to", "AS/NZS 4234 Australian climate zones)"], "#f2fbf6", "#8fc9a6");
+  arrow(670, 488, 670, 520);
+  box(520, 522, 300, 66, ["5b. Industry load profiles", "dairy / brewery / hotel / aquatic schedules", "→ hourly heat + electricity demand"], "#f2fbf6", "#8fc9a6");
 
   // Converge
-  arrow(190, 550, 345, 606);
-  arrow(670, 550, 515, 606);
-  box(290, 608, 280, 58, ["6. Hour-by-hour matching", "every hour: solar covers demand first;", "boiler + grid cover the rest; spare PV exports"], "#fffbe6", "#d9c25c");
-  arrow(430, 666, 430, 696);
-  box(250, 698, 360, 68, ["7. Results", "annual energy, bill savings, payback,", "solar fractions and CO₂-e avoided"], "#0f4f34", "#0c3f2a", "#ffffff");
+  arrow(190, 588, 348, 642);
+  arrow(670, 588, 512, 642);
+  box(290, 644, 280, 60, ["6. Hour-by-hour matching", "every hour: solar covers demand first;", "boiler + grid cover the rest; spare PV exports"], "#fffbe6", "#d9c25c");
+  arrow(430, 704, 430, 734);
+  box(250, 736, 360, 68, ["7. Results", "annual energy, bill savings, payback,", "solar fractions and CO₂-e avoided"], "#0f4f34", "#0c3f2a", "#ffffff");
 
   return `<svg class="chart-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
       <defs><marker id="flowArrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" fill="#5a6e80"/></marker></defs>
