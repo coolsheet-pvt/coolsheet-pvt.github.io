@@ -123,6 +123,35 @@ All scripts are run from the repo root. Python re-fetches PVGIS (~30 s, cached 2
 
 Generated data: `tmy_*.json`, `backend_*.json`, `reference_summary.json`, `deep_results.json`.
 
+Demand-side / industry & economics scripts (added later):
+| File | Purpose | Run |
+|---|---|---|
+| `test_industry.mjs` | Extracts REAL dairy/brewery/aquatic/hotel functions from app.js; checks benchmarks + Q=mcΔT + aquatic physics + hotel per-room-night | `node validation/test_industry.mjs` (14 tests) |
+| `test_economics.mjs` | CRF, NPV annuity, LCOE split, heat-saving conversion, payback | `node validation/test_economics.mjs` (12 tests) |
+| `check_links.mjs` | Verifies every cited URL in app.js resolves | `node validation/check_links.mjs` |
+
+---
+
+## 6b. Demand-side models — validation & Australian references
+
+The four industry demand models were tested (real code, via `test_industry.mjs`) and their
+sources reviewed/strengthened against Australian data. **Model A/B thermal still untouched.**
+
+| Model | Benchmark / basis | Australian references | Tests |
+|---|---|---|---|
+| Dairy | 1.37 L/L milk → 35 °C; 51.7 kWh/kL | RACE for 2030, NADH, Eco-efficiency, EnergySmart (all AU; primary justification PDF unpublished) | ✅ |
+| Brewery | 1.85 L/L beer → 40–45 °C; 11.50 kWh/hL | AU beer-production seasonal; process intensities international | ✅ |
+| **Aquatic** | Physics heat-loss (evap + makeup + sensible) | **Added:** ASHRAE/Shah evaporation, EnergyPlus, Sydney Water best-practice, Deakin (Victoria) benchmark, NSW Govt guide — `buildAquaticModelBasisHtml()` | ✅ (evap dominant; ~1092 kWh/m² pool) |
+| **Hotel** | kWh per occupied room-night | **Added:** NABERS for Hotels, SA Water factsheet — `buildHotelModelBasisHtml()`. **DHW tuned 5.5 → 4.5 kWh/room-night** to match ~3 kWh/guest-night AU benchmark | ✅ |
+
+Reference-link check: 27 OK · 1 review (ScienceDirect bot-block, fine) · **0 broken**.
+Economics: 12/12 finance formulas correct & self-consistent.
+Functional smoke: dairy + brewery run geocode→calculate→charts with **0 console errors**; all
+4 model-basis panels render. (Hotel/aquatic UI need their own inputs; demand math unit-tested.)
+
+Note: the BC-Aus mains-water model already has its own validation pages (`validation.html`,
+`validation2.html`) vs CER, so it was not re-tested here.
+
 ---
 
 ## 7. Open / possible next steps

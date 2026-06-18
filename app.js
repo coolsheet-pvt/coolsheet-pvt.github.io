@@ -1227,8 +1227,11 @@ function isMonToFriDay(dayN){
 // ================================================================
 //  HOTEL DEMAND MODEL
 // ================================================================
+// Thermal energy per occupied room-night (kWh). DHW aligned to the Australian
+// NABERS/SA Water benchmark (~3 kWh/guest-night x ~1.4 guests/room ≈ 4.2-4.5);
+// see buildHotelModelBasisHtml() for sources.
 const HOTEL_PROCESS_PARAMS = {
-  domestic_hot_water:  { kWhPerUnit: 5.50 },
+  domestic_hot_water:  { kWhPerUnit: 4.50 },
   kitchen_dishwashing: { kWhPerUnit: 1.60 },
   laundry:             { kWhPerUnit: 1.20 },
   pool_heating:        { kWhPerUnit: 0.80 }
@@ -2293,6 +2296,73 @@ function buildBreweryModelBasisHtml(){
     </table>`;
 }
 
+function buildAquaticModelBasisHtml(){
+  // Australian + standard engineering sources for the area-based pool heat-loss model.
+  const ashraeHref  = "https://www.mmshah.org/publications/ASHRAE%202014%20Evaporation%20paper.pdf";
+  const eplusHref   = "https://bigladdersoftware.com/epx/docs/24-2/engineering-reference/indoor-swimming-pool.html";
+  const sydWaterHref= "https://www.sydneywater.com.au/content/dam/sydneywater/documents/best-practice-guidelines-for-water-management-in-aquatic-leisure-centres.pdf";
+  const daisyHref   = "https://daisypoolcovers.com.au/assets/fact-sheets/Daisy-Fact-Sheet_1_Evaporation.pdf";
+  const deakinHref  = "https://www.sciencedirect.com/science/article/abs/pii/S0378778817333418";
+  const nswHref     = "https://www.environment.nsw.gov.au/resources/business/aquatic-centres-energy-efficient-water-heating-technology-guide-190115.pdf";
+  const src = (label, href) => `<a href="${href}" target="_blank" rel="noopener">${label}</a>`;
+  const p = AQUATIC_PROCESS_PARAMS;
+
+  return `
+    <div class="panel" style="background:#fff;margin-bottom:10px;">
+      <p style="margin:0 0 8px 0;"><b>Quick summary</b></p>
+      <p style="margin:0 0 6px 0;">Pool thermal demand is built up per square metre of water surface from three physical heat losses: evaporation (latent), heating of makeup water, and convective + radiative surface loss. This is the standard ASHRAE pool-energy method. ${src("ASHRAE/Shah method", ashraeHref)} ${src("EnergyPlus pool model", eplusHref)}</p>
+      <p style="margin:0;">Constants are tuned for Australian public aquatic centres and the result is cross-checked against measured Victorian benchmarks. ${src("Deakin benchmarks (Victoria)", deakinHref)} ${src("NSW Govt water-heating guide", nswHref)}</p>
+    </div>
+    <h4 style="margin:0 0 8px 0;">How it works (per hour, per pool)</h4>
+    <div class="panel" style="background:#fff;margin-bottom:10px;">
+      <p style="margin:0 0 6px 0;"><code>Evap = coeff x (1 + 0.22 x wind) x (Pw - Pair) x splash x area x L</code> <span style="color:#777;">latent loss; L = 0.68 kWh/kg</span></p>
+      <p style="margin:0 0 6px 0;"><code>Makeup = (litres/m2/day x area / openHours) x cp x (Ttarget - Tmains)</code></p>
+      <p style="margin:0 0 6px 0;"><code>Sensible = (Uconv + Urad) x area x (Ttarget - Tair) / 1000</code></p>
+      <p style="margin:0;">A pool cover (when enabled) cuts off-hour evaporation by 60%. The evaporation term is the dominant loss, matching measured pool energy splits (~56% evaporation / 26% radiation / 18% convection). ${src("EnergyPlus pool model", eplusHref)}</p>
+    </div>
+    <h4 style="margin:0 0 8px 0;">Key values &amp; sources</h4>
+    <table class="method-table">
+      <tr><th>Item</th><th>Value used</th><th>Source / basis</th></tr>
+      <tr><td>Setpoint temperatures</td><td>Indoor ${p.indoor_pool.targetTempC}, outdoor ${p.outdoor_pool.targetTempC}, kids ${p.kids_pool.targetTempC}, sauna ${p.sauna.targetTempC} &deg;C</td><td>${src("NSW Govt guide", nswHref)}</td></tr>
+      <tr><td>Evaporation form &amp; coefficient</td><td>coeff 0.060&ndash;0.105, wind factor (1 + 0.22u)</td><td>${src("ASHRAE/Shah 2014", ashraeHref)} ${src("EnergyPlus", eplusHref)}</td></tr>
+      <tr><td>Makeup water</td><td>${p.indoor_pool.makeupLitresPerM2Day}&ndash;${p.outdoor_pool.makeupLitresPerM2Day} L/m&sup2;/day (incl. backwash &amp; splash-out)</td><td>${src("Sydney Water best practice", sydWaterHref)} ${src("Sydney evap ~6.4 L/m2/day", daisyHref)}</td></tr>
+      <tr><td>Convective + radiative U</td><td>${(p.indoor_pool.convectiveUWm2K+p.indoor_pool.radiativeUWm2K).toFixed(1)}&ndash;${(p.outdoor_pool.convectiveUWm2K+p.outdoor_pool.radiativeUWm2K).toFixed(1)} W/m&sup2;K</td><td>${src("ASHRAE pool method", ashraeHref)}</td></tr>
+      <tr><td>Electrical benchmark</td><td>${AQUATIC_ELEC_KWH_PER_M2_PER_YEAR} kWh/m&sup2;/yr (seasonal)</td><td>${src("Deakin benchmarks", deakinHref)}</td></tr>
+    </table>
+    <p class="note" style="margin:10px 0 0;">Cross-check: measured Victorian aquatic centres span ~648&ndash;2283 kWh/m&sup2;/yr of total energy per conditioned floor area, with pool water heating ~33% of the total. CoolSheet models pool heating per <i>water-surface</i> area (a different denominator), so the benchmark is used as an order-of-magnitude bound rather than a direct match. ${src("Deakin (Victoria)", deakinHref)}</p>`;
+}
+
+function buildHotelModelBasisHtml(){
+  const nabersHref  = "https://www.nabers.gov.au/ratings/spaces-we-rate/hotels";
+  const nabersRules = "https://www.nabers.gov.au/sites/default/files/2026-04/Energy%20and%20Water%20for%20Hotels%20-%20The%20Rules%20v4.3.pdf";
+  const saWaterHref = "https://www.sawater.com.au/__data/assets/pdf_file/0004/6691/Factsheet_HotelWaterEfficiency.pdf";
+  const src = (label, href) => `<a href="${href}" target="_blank" rel="noopener">${label}</a>`;
+  const H = HOTEL_PROCESS_PARAMS;
+
+  return `
+    <div class="panel" style="background:#fff;margin-bottom:10px;">
+      <p style="margin:0 0 8px 0;"><b>Quick summary</b></p>
+      <p style="margin:0 0 6px 0;">Hotel demand is built from energy per <i>occupied room-night</i>: domestic hot water, kitchen/dishwashing, laundry, and optional pool heating, shaped by hourly and seasonal profiles. Water heating is typically 10&ndash;20% of a hotel's energy. ${src("NABERS for Hotels", nabersHref)} ${src("SA Water hotel efficiency", saWaterHref)}</p>
+      <p style="margin:0;">Benchmarks are anchored to Australian sources where available; per-room energy intensities are cross-checked against NABERS and SA Water water-use data (Australian hotel benchmarks are mostly water-based, so the kWh figures also draw on international best-practice).</p>
+    </div>
+    <h4 style="margin:0 0 8px 0;">How it works</h4>
+    <div class="panel" style="background:#fff;margin-bottom:10px;">
+      <p style="margin:0 0 6px 0;">1. Occupied room-nights = rooms x 365 x occupancy%.</p>
+      <p style="margin:0 0 6px 0;">2. Each process uses a fixed thermal energy per occupied room-night.</p>
+      <p style="margin:0;"><code>Annual_process = (rooms x 365 x occupancy) x kWhPerRoomNight</code>, distributed by normalised hourly + monthly weights.</p>
+    </div>
+    <h4 style="margin:0 0 8px 0;">Key values &amp; sources</h4>
+    <table class="method-table">
+      <tr><th>Item</th><th>Value used</th><th>Source / basis</th></tr>
+      <tr><td>Domestic hot water</td><td>${H.domestic_hot_water.kWhPerUnit.toFixed(2)} kWh/room-night</td><td>${src("SA Water (~3 kWh/guest-night)", saWaterHref)} ${src("NABERS", nabersHref)}</td></tr>
+      <tr><td>Kitchen / dishwashing</td><td>${H.kitchen_dishwashing.kWhPerUnit.toFixed(2)} kWh/room-night</td><td>${src("NABERS Hotels rules", nabersRules)}</td></tr>
+      <tr><td>Laundry</td><td>${H.laundry.kWhPerUnit.toFixed(2)} kWh/room-night (~100 L/room)</td><td>${src("SA Water", saWaterHref)}</td></tr>
+      <tr><td>Pool heating (optional)</td><td>${H.pool_heating.kWhPerUnit.toFixed(2)} kWh/room-night</td><td>${src("NABERS Hotels rules", nabersRules)}</td></tr>
+      <tr><td>Electrical benchmark</td><td>${HOTEL_ELECTRICAL_KWH_PER_UNIT.toFixed(1)} kWh/room-night</td><td>${src("NABERS Energy", nabersHref)}</td></tr>
+    </table>
+    <p class="note" style="margin:10px 0 0;">Note: Australian hotel benchmarking (NABERS) reports whole-of-building energy/water intensity rather than per-process kWh, so the domestic-hot-water figure is set to the SA Water / NABERS-implied ~3 kWh per guest-night (about 4.5 kWh per room-night at typical occupancy). ${src("NABERS Hotels (rules v4.3)", nabersRules)}</p>`;
+}
+
 function buildDairyWeightingGraphHtml(){
   const series = [
     { label:"Fatty film rinse", color:"#1976d2", values:_normW(DAIRY_PROCESS_PARAMS.fatty_film_rinse.weights24).map(v => v * 100) },
@@ -2454,6 +2524,24 @@ function openBreweryModelBasis(ev){
   if (ev) ev.preventDefault();
   document.getElementById("mainsChartTitle").textContent = "Brewery demand model basis";
   document.getElementById("mainsChartBody").innerHTML = buildBreweryModelBasisHtml();
+  const modal = document.getElementById("mainsChartModal");
+  modal.style.display = "flex";
+  modal.setAttribute("aria-hidden","false");
+}
+
+function openAquaticModelBasis(ev){
+  if (ev) ev.preventDefault();
+  document.getElementById("mainsChartTitle").textContent = "Aquatic centre demand model basis";
+  document.getElementById("mainsChartBody").innerHTML = buildAquaticModelBasisHtml();
+  const modal = document.getElementById("mainsChartModal");
+  modal.style.display = "flex";
+  modal.setAttribute("aria-hidden","false");
+}
+
+function openHotelModelBasis(ev){
+  if (ev) ev.preventDefault();
+  document.getElementById("mainsChartTitle").textContent = "Hotel demand model basis";
+  document.getElementById("mainsChartBody").innerHTML = buildHotelModelBasisHtml();
   const modal = document.getElementById("mainsChartModal");
   modal.style.display = "flex";
   modal.setAttribute("aria-hidden","false");
@@ -4941,6 +5029,7 @@ async function calcAnnualPVT(){
         <div class="mains-links" style="margin:6px 0 10px 0;">
           <a class="mains-link" href="#" onclick="openHotelDailyShape(event)">Daily demand shape</a>
           <a class="mains-link" href="#" onclick="openHotelProfileCompare(event)">24/7 vs Mon\u2013Fri comparison</a>
+          <a class="mains-link" href="#" onclick="openHotelModelBasis(event)" title="Values and Australian (NABERS/SA Water) sources">Model basis &amp; sources</a>
         </div>
         ${buildProcessBreakdown(processRows, totalThermalDemandKWh)}
         <p class="note" style="margin-top:6px;">Assumed specific thermal demand (kWh per occupied room-night): DHW 5.50, Kitchen 1.60, Laundry 1.20, Pool 0.80.</p>
@@ -5101,6 +5190,7 @@ async function calcAnnualPVT(){
         <p style="font-size:13px;"><b>Pool cover assumption:</b> ${coverEnabled ? "On during off-hours with a 60% evaporation reduction." : "No cover reduction applied."}</p>
         <div class="mains-links" style="margin:6px 0 10px 0;">
           <a class="mains-link" href="#" onclick="openAquaticDailyShape(event)">Daily demand shape</a>
+          <a class="mains-link" href="#" onclick="openAquaticModelBasis(event)" title="Physics, values and Australian/ASHRAE sources">Model basis &amp; sources</a>
         </div>
         <p class="note" style="margin:0 0 10px 0;">Aquatic demand is area-based and follows hourly evaporation, makeup-water heating, and convective/radiative heat loss from the loaded weather data.</p>
         ${buildProcessBreakdown(processRows, totalThermalDemandKWh)}
