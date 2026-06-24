@@ -89,6 +89,37 @@ function getCheckedThermalModelLabel(){
     : "Model A - Simple linear thermal model";
 }
 
+function normalizeSignedAngle(deg){
+  const angle = ((deg + 180) % 360 + 360) % 360 - 180;
+  return Math.abs(angle + 180) < 1e-9 ? -180 : angle;
+}
+
+function buildPvgisValidationLink({ latitude, longitude, areaM2, etaPv, tiltAngle, surfaceAzimuth }){
+  const peakPowerKw = Math.max(0, areaM2 * etaPv);
+  const pvgisAspect = normalizeSignedAngle(surfaceAzimuth - 180);
+  const lossPct = 14;
+  const params = new URLSearchParams({
+    lat: latitude.toFixed(6),
+    lon: longitude.toFixed(6),
+    peakpower: peakPowerKw.toFixed(3),
+    loss: String(lossPct),
+    angle: Number(tiltAngle).toFixed(2),
+    aspect: pvgisAspect.toFixed(2),
+    mountingplace: "free",
+    pvtechchoice: "crystSi",
+    raddatabase: "PVGIS-ERA5",
+    outputformat: "basic",
+    browser: "1"
+  });
+  return {
+    url: `https://re.jrc.ec.europa.eu/api/v5_3/PVcalc?${params.toString()}`,
+    toolUrl: "https://re.jrc.ec.europa.eu/pvg_tools/en/tools.html",
+    peakPowerKw,
+    lossPct,
+    pvgisAspect
+  };
+}
+
 function getInstalledCostBasis(){
   const pvCostPerW = getInputNumber("pvInstalledCostPerW", 1.20);
   const thermalCostPerW = getInputNumber("thermalInstalledCostPerW", 1.50);
@@ -3386,7 +3417,7 @@ function buildAmbientChartSvg(){
 // ================================================================
 //  CHART.JS RENDERERS  (Supply-side)
 // ================================================================
-let monthlyChartInstance = null, dailyChartInstance = null, temperatureChartInstance = null;
+let monthlyChartInstance = null, pvComparisonChartInstance = null, dailyChartInstance = null, temperatureChartInstance = null;
 
 function updateSupplySectionVisibility(){
   const monthlyBlock = document.getElementById("monthlySupplyBlock");
@@ -3405,17 +3436,19 @@ function updateSupplySectionVisibility(){
 
   setTimeout(() => {
     if (showMonthly && monthlyChartInstance) monthlyChartInstance.resize();
+    if (showMonthly && pvComparisonChartInstance) pvComparisonChartInstance.resize();
     if (showDaily && dailyChartInstance) dailyChartInstance.resize();
     if (showTemp && temperatureChartInstance) temperatureChartInstance.resize();
   }, 0);
 }
 
 function renderMonthlyChart(monthlyData){
-  const labels=[],pvData=[],thData=[];
+  const labels=[],pvtData=[],pvOnlyData=[],thData=[];
   monthlyData.forEach(row => {
     if (row.month === 0) return;
     labels.push(MONTH_NAMES[row.month - 1]);
-    pvData.push(row.pv_kWh.toFixed(1));
+    pvtData.push(row.pv_kWh.toFixed(1));
+    pvOnlyData.push((row.pvOnly_kWh || 0).toFixed(1));
     thData.push(row.th_kWh.toFixed(1));
   });
   const ctx = document.getElementById('monthlyChart');
@@ -3424,18 +3457,54 @@ function renderMonthlyChart(monthlyData){
   monthlyChartInstance = new Chart(ctx.getContext('2d'), {
     type:'bar',
     data:{labels, datasets:[
-      {label:'PV Energy (kWh)',data:pvData,backgroundColor:'rgba(8,61,91,0.7)',borderColor:'rgba(8,61,91,1)',borderWidth:1},
-      {label:'Thermal Energy (kWh)',data:thData,backgroundColor:'rgba(13,111,143,0.7)',borderColor:'rgba(13,111,143,1)',borderWidth:1}
+      {label:'PVT Electricity (kWh)',data:pvtData,backgroundColor:'rgba(8,61,91,0.72)',borderColor:'rgba(8,61,91,1)',borderWidth:1},
+      {label:'PV-only Electricity (kWh)',data:pvOnlyData,backgroundColor:'rgba(245,166,35,0.58)',borderColor:'rgba(190,111,0,1)',borderWidth:1},
+      {label:'PVT Thermal (kWh)',data:thData,backgroundColor:'rgba(13,111,143,0.58)',borderColor:'rgba(13,111,143,1)',borderWidth:1}
     ]},
-    options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true}},plugins:{title:{display:true,text:'Monthly PV & Thermal Energy'}}}
+    options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true}},plugins:{title:{display:true,text:'Monthly PVT, PV-only & Thermal Energy'}}}
+  });
+}
+
+function renderPvComparisonChart(monthlyData){
+  const labels=[],pvtData=[],pvOnlyData=[],gainData=[];
+  monthlyData.forEach(row => {
+    if (row.month === 0) return;
+    labels.push(MONTH_NAMES[row.month - 1]);
+    const pvt = Number(row.pv_kWh) || 0;
+    const pvOnly = Number(row.pvOnly_kWh) || 0;
+    pvtData.push(pvt.toFixed(1));
+    pvOnlyData.push(pvOnly.toFixed(1));
+    gainData.push((pvt - pvOnly).toFixed(1));
+  });
+  const ctx = document.getElementById('pvComparisonChart');
+  if (!ctx) return;
+  if (pvComparisonChartInstance) pvComparisonChartInstance.destroy();
+  pvComparisonChartInstance = new Chart(ctx.getContext('2d'), {
+    type:'line',
+    data:{labels, datasets:[
+      {label:'PVT Electricity (kWh)',data:pvtData,borderColor:'rgba(8,61,91,1)',backgroundColor:'rgba(8,61,91,0.12)',borderWidth:3,pointRadius:4,pointHoverRadius:5,fill:false,tension:0.3},
+      {label:'PV-only Electricity (kWh)',data:pvOnlyData,borderColor:'rgba(190,111,0,1)',backgroundColor:'rgba(245,166,35,0.12)',borderWidth:3,pointRadius:4,pointHoverRadius:5,fill:false,tension:0.3},
+      {label:'PVT gain from cooling (kWh)',data:gainData,type:'bar',backgroundColor:'rgba(67,160,71,0.32)',borderColor:'rgba(45,125,50,0.85)',borderWidth:1,yAxisID:'gain'}
+    ]},
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      scales:{
+        y:{beginAtZero:true,title:{display:true,text:'Monthly electricity (kWh)'}},
+        gain:{beginAtZero:true,position:'right',grid:{drawOnChartArea:false},title:{display:true,text:'Cooling gain (kWh)'}}
+      },
+      plugins:{title:{display:true,text:'12-Month PV-only vs PVT Electricity Comparison'}}
+    }
   });
 }
 
 function renderDailyChart(dailyData){
-  const labels=[],pvData=[],thData=[];
+  const labels=[],pvtData=[],pvOnlyData=[],thData=[];
   dailyData.forEach(row => {
     labels.push(row.date.split('-')[2]);
-    pvData.push(row.pv_kWh.toFixed(2));
+    pvtData.push(row.pv_kWh.toFixed(2));
+    pvOnlyData.push((row.pvOnly_kWh || 0).toFixed(2));
     thData.push(row.th_kWh.toFixed(2));
   });
   const ctx = document.getElementById('dailyChart');
@@ -3444,20 +3513,23 @@ function renderDailyChart(dailyData){
   dailyChartInstance = new Chart(ctx.getContext('2d'), {
     type:'bar',
     data:{labels, datasets:[
-      {label:'PV Energy (kWh)',data:pvData,backgroundColor:'rgba(8,61,91,0.7)',borderColor:'rgba(8,61,91,1)',borderWidth:1},
-      {label:'Thermal Energy (kWh)',data:thData,backgroundColor:'rgba(13,111,143,0.7)',borderColor:'rgba(13,111,143,1)',borderWidth:1}
+      {label:'PVT Electricity (kWh)',data:pvtData,backgroundColor:'rgba(8,61,91,0.72)',borderColor:'rgba(8,61,91,1)',borderWidth:1},
+      {label:'PV-only Electricity (kWh)',data:pvOnlyData,backgroundColor:'rgba(245,166,35,0.58)',borderColor:'rgba(190,111,0,1)',borderWidth:1},
+      {label:'PVT Thermal (kWh)',data:thData,backgroundColor:'rgba(13,111,143,0.58)',borderColor:'rgba(13,111,143,1)',borderWidth:1}
     ]},
-    options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true}},plugins:{title:{display:true,text:'Daily PV & Thermal Energy'}}}
+    options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true}},plugins:{title:{display:true,text:'Daily PVT, PV-only & Thermal Energy'}}}
   });
 }
 
 function renderTemperatureChartJS(monthlyData){
-  const labels=[],toutData=[],tinData=[];
+  const labels=[],toutData=[],tinData=[],pvPanelData=[],pvtPanelData=[];
   monthlyData.forEach(row => {
     if (row.month === 0) return;
     labels.push(MONTH_NAMES[row.month - 1]);
     toutData.push(row.Tout_C_avg > 0 ? row.Tout_C_avg.toFixed(1) : null);
     tinData.push(row.Tin_C_avg > 0 ? row.Tin_C_avg.toFixed(1) : null);
+    pvPanelData.push(row.PVPanel_C_avg > 0 ? row.PVPanel_C_avg.toFixed(1) : null);
+    pvtPanelData.push(row.PVTPanel_C_avg > 0 ? row.PVTPanel_C_avg.toFixed(1) : null);
   });
   const ctx = document.getElementById('temperatureChart');
   if (!ctx) return;
@@ -3465,10 +3537,12 @@ function renderTemperatureChartJS(monthlyData){
   temperatureChartInstance = new Chart(ctx.getContext('2d'), {
     type:'line',
     data:{labels, datasets:[
-      {label:'Average Outlet Temperature (\u00B0C)',data:toutData,borderColor:'rgba(103,199,216,1)',backgroundColor:'rgba(103,199,216,0.12)',borderWidth:2,fill:true,tension:0.4},
-      {label:'Average Inlet Temperature (\u00B0C)',data:tinData,borderColor:'rgba(8,61,91,1)',backgroundColor:'rgba(8,61,91,0.05)',borderWidth:2,borderDash:[6,4],pointRadius:3,fill:false,tension:0.4}
+      {label:'PV-only Panel Temp (\u00B0C)',data:pvPanelData,borderColor:'rgba(190,111,0,1)',backgroundColor:'rgba(245,166,35,0.08)',borderWidth:2,fill:false,tension:0.35},
+      {label:'PVT Panel Temp (\u00B0C)',data:pvtPanelData,borderColor:'rgba(8,61,91,1)',backgroundColor:'rgba(8,61,91,0.08)',borderWidth:2,fill:false,tension:0.35},
+      {label:'PVT Outlet Temp (\u00B0C)',data:toutData,borderColor:'rgba(103,199,216,1)',backgroundColor:'rgba(103,199,216,0.12)',borderWidth:2,borderDash:[5,4],fill:false,tension:0.35},
+      {label:'Inlet Temp (\u00B0C)',data:tinData,borderColor:'rgba(80,130,80,1)',backgroundColor:'rgba(80,130,80,0.05)',borderWidth:2,borderDash:[2,4],pointRadius:3,fill:false,tension:0.35}
     ]},
-    options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true}},plugins:{title:{display:true,text:'Monthly Average Inlet & Outlet Temperature'}}}
+    options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true}},plugins:{title:{display:true,text:'Daytime Average Panel & Water Temperatures'}}}
   });
 }
 
@@ -3479,10 +3553,11 @@ function renderMonthlyAllTable(monthlyData){
   const container = document.getElementById("monthlyDataTable");
   if (!monthlyData?.length){container.innerHTML="";return;}
   const mn = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  let html = `<table class="result-table"><tr><th>Month</th><th style="text-align:right;">PV (kWh)</th><th style="text-align:right;">Thermal (kWh)</th><th style="text-align:right;">Avg Tout (\u00B0C)</th></tr>`;
+  let html = `<table class="result-table"><tr><th>Month</th><th style="text-align:right;">PVT elec (kWh)</th><th style="text-align:right;">PV-only elec (kWh)</th><th style="text-align:right;">Cooling gain (kWh)</th><th style="text-align:right;">Thermal (kWh)</th><th style="text-align:right;">Daytime PVT panel (\u00B0C)</th></tr>`;
   monthlyData.forEach(row => {
     if (row.month === 0) return;
-    html += `<tr><td>${mn[row.month]}</td><td class="num">${row.pv_kWh.toFixed(1)}</td><td class="num">${row.th_kWh.toFixed(1)}</td><td class="num">${row.Tout_C_avg > 0 ? row.Tout_C_avg.toFixed(1) : '\u2014'}</td></tr>`;
+    const gain = row.pv_kWh - (row.pvOnly_kWh || 0);
+    html += `<tr><td>${mn[row.month]}</td><td class="num">${row.pv_kWh.toFixed(1)}</td><td class="num">${(row.pvOnly_kWh || 0).toFixed(1)}</td><td class="num">${gain >= 0 ? '+' : ''}${gain.toFixed(1)}</td><td class="num">${row.th_kWh.toFixed(1)}</td><td class="num">${row.PVTPanel_C_avg > 0 ? row.PVTPanel_C_avg.toFixed(1) : '\u2014'}</td></tr>`;
   });
   container.innerHTML = html + `</table>`;
 }
@@ -3490,9 +3565,10 @@ function renderMonthlyAllTable(monthlyData){
 function renderDailyAllTable(dailyData){
   const container = document.getElementById("dailyDataTable");
   if (!dailyData?.length){container.innerHTML="";return;}
-  let html = `<table class="result-table"><tr><th>Date</th><th style="text-align:right;">PV (kWh)</th><th style="text-align:right;">Thermal (kWh)</th><th style="text-align:right;">Avg Tout (\u00B0C)</th></tr>`;
+  let html = `<table class="result-table"><tr><th>Date</th><th style="text-align:right;">PVT elec (kWh)</th><th style="text-align:right;">PV-only elec (kWh)</th><th style="text-align:right;">Cooling gain (kWh)</th><th style="text-align:right;">Thermal (kWh)</th><th style="text-align:right;">Daytime PVT panel (\u00B0C)</th></tr>`;
   dailyData.forEach(row => {
-    html += `<tr><td>${row.date}</td><td class="num">${row.pv_kWh.toFixed(2)}</td><td class="num">${row.th_kWh.toFixed(2)}</td><td class="num">${row.Tout_C_avg > 0 ? row.Tout_C_avg.toFixed(1) : '\u2014'}</td></tr>`;
+    const gain = row.pv_kWh - (row.pvOnly_kWh || 0);
+    html += `<tr><td>${row.date}</td><td class="num">${row.pv_kWh.toFixed(2)}</td><td class="num">${(row.pvOnly_kWh || 0).toFixed(2)}</td><td class="num">${gain >= 0 ? '+' : ''}${gain.toFixed(2)}</td><td class="num">${row.th_kWh.toFixed(2)}</td><td class="num">${row.PVTPanel_C_avg > 0 ? row.PVTPanel_C_avg.toFixed(1) : '\u2014'}</td></tr>`;
   });
   container.innerHTML = html + `</table>`;
 }
@@ -3501,10 +3577,11 @@ function renderTemperatureTable(monthlyData){
   const container = document.getElementById("temperatureDataTable");
   if (!monthlyData?.length){container.innerHTML="";return;}
   const mn = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  let html = `<table class="result-table"><tr><th>Month</th><th style="text-align:right;">Avg Tin (\u00B0C)</th><th style="text-align:right;">Avg Tout (\u00B0C)</th></tr>`;
+  let html = `<table class="result-table"><tr><th>Month</th><th style="text-align:right;">Daytime Tin (\u00B0C)</th><th style="text-align:right;">Daytime Tout (\u00B0C)</th><th style="text-align:right;">PV-only panel (\u00B0C)</th><th style="text-align:right;">PVT panel (\u00B0C)</th><th style="text-align:right;">Cooling (\u00B0C)</th></tr>`;
   monthlyData.forEach(row => {
     if (row.month === 0) return;
-    html += `<tr><td>${mn[row.month]}</td><td class="num">${row.Tin_C_avg > 0 ? row.Tin_C_avg.toFixed(1) : '\u2014'}</td><td class="num">${row.Tout_C_avg > 0 ? row.Tout_C_avg.toFixed(1) : '\u2014'}</td></tr>`;
+    const cooling = (row.PVPanel_C_avg > 0 && row.PVTPanel_C_avg > 0) ? row.PVPanel_C_avg - row.PVTPanel_C_avg : null;
+    html += `<tr><td>${mn[row.month]}</td><td class="num">${row.Tin_C_avg > 0 ? row.Tin_C_avg.toFixed(1) : '\u2014'}</td><td class="num">${row.Tout_C_avg > 0 ? row.Tout_C_avg.toFixed(1) : '\u2014'}</td><td class="num">${row.PVPanel_C_avg > 0 ? row.PVPanel_C_avg.toFixed(1) : '\u2014'}</td><td class="num">${row.PVTPanel_C_avg > 0 ? row.PVTPanel_C_avg.toFixed(1) : '\u2014'}</td><td class="num">${cooling != null ? cooling.toFixed(1) : '\u2014'}</td></tr>`;
   });
   container.innerHTML = html + `</table>`;
 }
@@ -3513,7 +3590,13 @@ function renderTemperatureTable(monthlyData){
 //  SUPPLY DATA AGGREGATION  (for Chart.js)
 // ================================================================
 function aggregateMonthlyAll(series, year){
-  const months = Array.from({length:12}, () => ({month:0, pv_kWh:0, th_kWh:0, Tout_C_sum:0, Tout_C_count:0, Tout_C_avg:0, Tin_C_sum:0, Tin_C_count:0, Tin_C_avg:0}));
+  const months = Array.from({length:12}, () => ({
+    month:0, pv_kWh:0, pvOnly_kWh:0, th_kWh:0,
+    Tout_C_sum:0, Tout_C_count:0, Tout_C_avg:0,
+    Tin_C_sum:0, Tin_C_count:0, Tin_C_avg:0,
+    PVPanel_C_sum:0, PVPanel_C_count:0, PVPanel_C_avg:0,
+    PVTPanel_C_sum:0, PVTPanel_C_count:0, PVTPanel_C_avg:0
+  }));
   series.forEach(r => {
     if (!r.date) return;
     const d = new Date(r.date);
@@ -3521,14 +3604,21 @@ function aggregateMonthlyAll(series, year){
       const m = d.getMonth();
       months[m].month = m + 1;
       months[m].pv_kWh += Number(r.pv_kWh) || 0;
+      months[m].pvOnly_kWh += Number(r.pvOnly_kWh) || 0;
       months[m].th_kWh += Number(r.th_kWh) || 0;
-      if (Number(r.Tout_C) > 0){months[m].Tout_C_sum += Number(r.Tout_C); months[m].Tout_C_count += 1;}
-      if (Number(r.Tin_C) > 0){months[m].Tin_C_sum += Number(r.Tin_C); months[m].Tin_C_count += 1;}
+      if (r.daytimeTempSample){
+        if (Number(r.Tout_C) > 0){months[m].Tout_C_sum += Number(r.Tout_C); months[m].Tout_C_count += 1;}
+        if (Number(r.Tin_C) > 0){months[m].Tin_C_sum += Number(r.Tin_C); months[m].Tin_C_count += 1;}
+        if (Number(r.pvPanel_C) > 0){months[m].PVPanel_C_sum += Number(r.pvPanel_C); months[m].PVPanel_C_count += 1;}
+        if (Number(r.pvtPanel_C) > 0){months[m].PVTPanel_C_sum += Number(r.pvtPanel_C); months[m].PVTPanel_C_count += 1;}
+      }
     }
   });
   months.forEach(m => {
     m.Tout_C_avg = m.Tout_C_count > 0 ? m.Tout_C_sum / m.Tout_C_count : 0;
     m.Tin_C_avg  = m.Tin_C_count  > 0 ? m.Tin_C_sum  / m.Tin_C_count  : 0;
+    m.PVPanel_C_avg = m.PVPanel_C_count > 0 ? m.PVPanel_C_sum / m.PVPanel_C_count : 0;
+    m.PVTPanel_C_avg = m.PVTPanel_C_count > 0 ? m.PVTPanel_C_sum / m.PVTPanel_C_count : 0;
   });
   return months;
 }
@@ -3537,7 +3627,9 @@ function aggregateDailyAll(series, year, month){
   const days = new Date(year, month, 0).getDate();
   const daysArr = Array.from({length:days}, (_,i) => ({
     date:`${year}-${String(month).padStart(2,'0')}-${String(i+1).padStart(2,'0')}`,
-    pv_kWh:0, th_kWh:0, Tout_C_sum:0, Tout_C_count:0, Tout_C_avg:0
+    pv_kWh:0, pvOnly_kWh:0, th_kWh:0,
+    Tout_C_sum:0, Tout_C_count:0, Tout_C_avg:0,
+    PVTPanel_C_sum:0, PVTPanel_C_count:0, PVTPanel_C_avg:0
   }));
   series.forEach(r => {
     if (!r.date) return;
@@ -3545,11 +3637,18 @@ function aggregateDailyAll(series, year, month){
     if (d.getFullYear() === year && (d.getMonth()+1) === month){
       const day = d.getDate();
       daysArr[day-1].pv_kWh += Number(r.pv_kWh) || 0;
+      daysArr[day-1].pvOnly_kWh += Number(r.pvOnly_kWh) || 0;
       daysArr[day-1].th_kWh += Number(r.th_kWh) || 0;
-      if (Number(r.Tout_C) > 0){daysArr[day-1].Tout_C_sum += Number(r.Tout_C); daysArr[day-1].Tout_C_count += 1;}
+      if (r.daytimeTempSample){
+        if (Number(r.Tout_C) > 0){daysArr[day-1].Tout_C_sum += Number(r.Tout_C); daysArr[day-1].Tout_C_count += 1;}
+        if (Number(r.pvtPanel_C) > 0){daysArr[day-1].PVTPanel_C_sum += Number(r.pvtPanel_C); daysArr[day-1].PVTPanel_C_count += 1;}
+      }
     }
   });
-  daysArr.forEach(d => d.Tout_C_avg = d.Tout_C_count > 0 ? d.Tout_C_sum / d.Tout_C_count : 0);
+  daysArr.forEach(d => {
+    d.Tout_C_avg = d.Tout_C_count > 0 ? d.Tout_C_sum / d.Tout_C_count : 0;
+    d.PVTPanel_C_avg = d.PVTPanel_C_count > 0 ? d.PVTPanel_C_sum / d.PVTPanel_C_count : 0;
+  });
   return daysArr;
 }
 
@@ -4379,8 +4478,60 @@ const DEFAULT_SITE_SETTINGS = {
   azimuthAngle: "0",
   albedo: "0.2",
   flowRate: "0.02",
-  etaPv: "0.20"
+  etaPv: "0.20",
+  pvTempCoeff: "-0.40",
+  pvNoct: "45"
 };
+const PV_STC_CELL_TEMP_C = 25;
+const PV_DEFAULT_NOCT_C = 45;
+const PV_DAYTIME_TEMP_MIN_IRRADIANCE = 50;
+const PV_DAYTIME_TEMP_START_HOUR = 10;
+const PV_DAYTIME_TEMP_END_HOUR = 16;
+
+function calcNoctPanelTempC(ambientC, irradianceWm2, noctC = PV_DEFAULT_NOCT_C){
+  if (!isFiniteNumber(ambientC)) return null;
+  if (!isFiniteNumber(irradianceWm2) || irradianceWm2 <= 1e-6) return ambientC;
+  const noct = isFiniteNumber(noctC) ? noctC : PV_DEFAULT_NOCT_C;
+  return ambientC + (irradianceWm2 / 800) * (noct - 20);
+}
+
+function calcPvTemperatureFactor(tempCoeffPerC, panelTempC){
+  if (!isFiniteNumber(tempCoeffPerC) || !isFiniteNumber(panelTempC)) return 1;
+  return Math.max(0, 1 + tempCoeffPerC * (panelTempC - PV_STC_CELL_TEMP_C));
+}
+
+function getPvtPanelHeatLossCoeff(thermalModel, modelAA1, modelBA1){
+  const coeff = thermalModel === "B" ? Math.abs(modelBA1) : Math.abs(modelAA1);
+  return isFiniteNumber(coeff) && coeff > 1e-6 ? coeff : null;
+}
+
+function calcPvtPanelTempC(opts){
+  const uncooledC = calcNoctPanelTempC(opts.ambientC, opts.irradianceWm2, opts.noctC);
+  if (!isFiniteNumber(uncooledC)) return null;
+  const ul = opts.heatLossCoeffWm2K;
+  const area = opts.areaM2;
+  if (!isFiniteNumber(ul) || ul <= 1e-6 || !isFiniteNumber(area) || area <= 1e-9) return uncooledC;
+
+  let coolingPowerW = isFiniteNumber(opts.thermalPowerW) ? Math.max(0, opts.thermalPowerW) : 0;
+  if (isFiniteNumber(opts.flowKgPerHr) && opts.flowKgPerHr > 0 && isFiniteNumber(opts.tinC) && isFiniteNumber(opts.toutC)){
+    const mdotCp = (opts.flowKgPerHr / 3600) * 4184;
+    coolingPowerW = Math.max(0, mdotCp * (opts.toutC - opts.tinC));
+  }
+  if (coolingPowerW <= 1e-9) return uncooledC;
+
+  const coolingDeltaC = coolingPowerW / (ul * area);
+  let panelC = uncooledC - coolingDeltaC;
+  if (isFiniteNumber(opts.tinC)) panelC = Math.max(panelC, opts.tinC);
+  return Math.min(uncooledC, panelC);
+}
+
+function isDaytimePanelTempSample(row, irradianceWm2){
+  return isFiniteNumber(irradianceWm2)
+    && irradianceWm2 > PV_DAYTIME_TEMP_MIN_IRRADIANCE
+    && Number.isInteger(row?.hourN)
+    && row.hourN >= PV_DAYTIME_TEMP_START_HOUR
+    && row.hourN <= PV_DAYTIME_TEMP_END_HOUR;
+}
 function resetCoeffs(ids){
   ids.forEach(id => {
     const el = document.getElementById(id);
@@ -4420,11 +4571,12 @@ async function calcAnnualPVT(){
     const A            = parseFloat(document.getElementById("area").value);
     const flowRate     = parseFloat(document.getElementById("flowRate").value);
     const etaPv        = parseFloat(document.getElementById("etaPv").value);
-    // Optional PV temperature correction (comparison only — does not affect economics).
-    // NOCT cell-temperature model + power temperature coefficient, like PVWatts.
-    const pvTempCorrEnable = !!document.getElementById("pvTempCorrEnable")?.checked;
-    const pvTempCoeffPerC  = (parseFloat(document.getElementById("pvTempCoeff")?.value) || 0) / 100; // %/degC -> per degC
-    const PV_NOCT_C = 45;
+    // Standalone PV uses NOCT; cooled PVT uses NOCT minus heat removed by the coolant loop.
+    const pvTempCorrEnable = document.getElementById("pvTempCorrEnable")?.checked !== false;
+    const pvTempCoeffInput = parseFloat(document.getElementById("pvTempCoeff")?.value);
+    const pvTempCoeffPerC  = isFiniteNumber(pvTempCoeffInput) ? pvTempCoeffInput / 100 : -0.004; // %/degC -> per degC
+    const pvNoctInput      = parseFloat(document.getElementById("pvNoct")?.value);
+    const pvNoctC          = isFiniteNumber(pvNoctInput) ? pvNoctInput : PV_DEFAULT_NOCT_C;
     const a0           = parseFloat(document.getElementById("pvtA0").value);
     const a1           = parseFloat(document.getElementById("pvtA1").value);
     const a2           = parseFloat(document.getElementById("pvtA2").value);
@@ -4459,6 +4611,8 @@ async function calcAnnualPVT(){
     if (albedo < 0 || albedo > 1){ setOutput("Ground albedo must be between 0 and 1 (typical grass/roof \u2248 0.2).", true); return; }
     if (!(flowRate > 0)){ setOutput("Flow rate must be greater than 0 L/s/m\u00b2 \u2014 a PVT collector needs coolant flow to capture heat (typical \u2248 0.02).", true); return; }
     if (etaPv < 0 || etaPv > 1){ setOutput("PV efficiency must be between 0 and 1.", true); return; }
+    if (!isFiniteNumber(pvTempCoeffPerC)){ setOutput("PV temperature coefficient must be a valid number.", true); return; }
+    if (pvNoctC < 20 || pvNoctC > 80){ setOutput("PV NOCT must be between 20\u00b0C and 80\u00b0C.", true); return; }
 
     const totalFlow_kg_hr = flowRate * A * 3600;
 
@@ -4479,12 +4633,13 @@ async function calcAnnualPVT(){
 
     // 3) Calculate supply
     const calculator = new TiltedSurfaceRadiation(latitude, longitude, tiltAngle, azimuthAngle, albedo);
-    let E_pv_kWh = 0, E_th_kWh = 0, E_pv_tc_kWh = 0;
+    let E_pv_kWh = 0, E_th_kWh = 0, E_pv_standalone_kWh = 0, E_pv_stc_kWh = 0;
     const out = [];
-    out.push(["dayN","hourN","gtilt_Wm2","eta_th","pv_kWh","th_kWh","totalFlow_kg_hr","Tout_C"].join(","));
+    out.push(["dayN","hourN","gtilt_Wm2","eta_th","pvt_pv_kWh","pv_only_kWh","th_kWh","totalFlow_kg_hr","Tin_C","Tout_C","pv_panel_C","pvt_panel_C","pv_factor","pvt_factor","daytime_temp_sample"].join(","));
     let used = 0;
     const pvtThermalHourly = [];
     const pvElectricHourly = [];
+    const hourlyRows = [];
 
     for (const r of met){
       if (![r.dayN,r.hourN,r.dni,r.dhi,r.ta,r.vwind].every(isFiniteNumber)) continue;
@@ -4498,16 +4653,7 @@ async function calcAnnualPVT(){
       const Tin = CURRENT_MAINS.byDay[r.dayN] ?? CURRENT_MAINS.annualAvgC;
 
       let etaTh = 0, th_W = 0;
-      const pv_kWh = (etaPv * G * A) / 1000;
-
-      // Comparison-only temperature-corrected PV (NOCT cell temp + power coefficient).
-      let pv_kWh_tc = pv_kWh;
-      if (pvTempCorrEnable && G > 1e-6){
-        const Tcell  = r.ta + ((PV_NOCT_C - 20) / 800) * G;     // deg C
-        const factor = 1 + pvTempCoeffPerC * (Tcell - 25);      // 1 at 25 deg C cell
-        pv_kWh_tc = pv_kWh * Math.max(0, factor);
-      }
-      E_pv_tc_kWh += pv_kWh_tc;
+      const pv_stc_kWh = (etaPv * G * A) / 1000;
 
       if (thermalModel === 'A') {
         // Model A: simple linear
@@ -4555,22 +4701,63 @@ async function calcAnnualPVT(){
       }
 
       const th_kWh = th_W / 1000;
-
-      pvtThermalHourly.push(th_kWh);
-      pvElectricHourly.push(pv_kWh);
-
       const hourlyFlow = (th_kWh > 1e-12) ? totalFlow_kg_hr : "";
-      E_pv_kWh += pv_kWh;
-      E_th_kWh += th_kWh;
-
       let Tout_C = "";
       if (th_kWh > 1e-12 && totalFlow_kg_hr > 1e-12){
         Tout_C = Tin + (th_kWh * 3600) / (totalFlow_kg_hr * 4.184);
       }
 
-      out.push([r.dayN, r.hourN + 1, G.toFixed(2), etaTh.toFixed(2), pv_kWh.toFixed(2), th_kWh.toFixed(2),
+      const pvPanelTempC = calcNoctPanelTempC(r.ta, G, pvNoctC);
+      const pvtPanelTempC = calcPvtPanelTempC({
+        ambientC: r.ta,
+        irradianceWm2: G,
+        noctC: pvNoctC,
+        areaM2: A,
+        tinC: Tin,
+        toutC: Tout_C === "" ? null : Tout_C,
+        flowKgPerHr: totalFlow_kg_hr,
+        thermalPowerW: th_W,
+        heatLossCoeffWm2K: getPvtPanelHeatLossCoeff(thermalModel, a1, isoA1)
+      });
+      const pvFactor = pvTempCorrEnable ? calcPvTemperatureFactor(pvTempCoeffPerC, pvPanelTempC) : 1;
+      const pvtFactor = pvTempCorrEnable ? calcPvTemperatureFactor(pvTempCoeffPerC, pvtPanelTempC) : 1;
+      const pv_only_kWh = pv_stc_kWh * pvFactor;
+      const pv_kWh = pv_stc_kWh * pvtFactor;
+      const daytimeTempSample = isDaytimePanelTempSample(r, G);
+
+      pvtThermalHourly.push(th_kWh);
+      pvElectricHourly.push(pv_kWh);
+
+      E_pv_kWh += pv_kWh;
+      E_pv_standalone_kWh += pv_only_kWh;
+      E_pv_stc_kWh += pv_stc_kWh;
+      E_th_kWh += th_kWh;
+
+      hourlyRows.push({
+        dayN: r.dayN,
+        hourN: r.hourN,
+        G,
+        etaTh,
+        pvtPv_kWh: pv_kWh,
+        pvOnly_kWh: pv_only_kWh,
+        pvStc_kWh: pv_stc_kWh,
+        th_kWh,
+        Tin_C: Tin,
+        Tout_C: Tout_C === "" ? 0 : Tout_C,
+        pvPanel_C: pvPanelTempC,
+        pvtPanel_C: pvtPanelTempC,
+        daytimeTempSample
+      });
+
+      out.push([r.dayN, r.hourN + 1, G.toFixed(2), etaTh.toFixed(2), pv_kWh.toFixed(2), pv_only_kWh.toFixed(2), th_kWh.toFixed(2),
         (hourlyFlow === "" ? "" : (+hourlyFlow).toFixed(2)),
-        (Tout_C === "" ? "" : (+Tout_C).toFixed(2))].join(","));
+        Tin.toFixed(2),
+        (Tout_C === "" ? "" : (+Tout_C).toFixed(2)),
+        isFiniteNumber(pvPanelTempC) ? pvPanelTempC.toFixed(2) : "",
+        isFiniteNumber(pvtPanelTempC) ? pvtPanelTempC.toFixed(2) : "",
+        pvFactor.toFixed(4),
+        pvtFactor.toFixed(4),
+        daytimeTempSample ? "1" : "0"].join(","));
       used++;
     }
 
@@ -4608,19 +4795,33 @@ async function calcAnnualPVT(){
     const fmtNumber = (v, d=2) => Number(v).toLocaleString(undefined, { minimumFractionDigits:d, maximumFractionDigits:d });
     const fmtE = (v, d=2, unit='') => v != null ? `${fmtNumber(v, d)}${unit ? ' '+unit : ''}` : '&mdash;';
     const fmtC = (v) => v != null ? `$${fmtNumber(v, 2)}` : '&mdash;';
-    // Temperature-correction comparison strings (only when the toggle is on).
-    const pvTcDeltaPct = (pvTempCorrEnable && E_pv_kWh > 1e-9) ? (E_pv_tc_kWh / E_pv_kWh - 1) * 100 : 0;
-    const pvTcSign = pvTcDeltaPct >= 0 ? '+' : '';
-    const pvTcBox = pvTempCorrEnable
-      ? `<div class="annual-summary-item annual-tempcorr">
-          <span>PV (temp-corrected)</span>
-          <strong>${fmtE(E_pv_tc_kWh,1,'kWh')}</strong>
-          <small>Uncooled-equivalent &middot; ${pvTcSign}${pvTcDeltaPct.toFixed(1)}%</small>
-        </div>`
-      : '';
-    const pvTcDetailRow = pvTempCorrEnable
-      ? `<tr><td><b>PV Energy (temp-corrected, &gamma;=${(pvTempCoeffPerC*100).toFixed(2)}%/&deg;C)</b></td><td class="num"><span class="ok">${fmtE(E_pv_tc_kWh,1,'kWh')}</span> <span style="color:#b35900;">(${pvTcSign}${pvTcDeltaPct.toFixed(1)}%)</span></td></tr>`
-      : '';
+    const pvtElectricGainKWh = E_pv_kWh - E_pv_standalone_kWh;
+    const pvtElectricGainPct = E_pv_standalone_kWh > 1e-9 ? (pvtElectricGainKWh / E_pv_standalone_kWh) * 100 : 0;
+    const gainSign = pvtElectricGainKWh >= 0 ? '+' : '-';
+    const stcLossPct = E_pv_stc_kWh > 1e-9 ? (E_pv_standalone_kWh / E_pv_stc_kWh - 1) * 100 : 0;
+    const pvtTempDeltaPct = E_pv_stc_kWh > 1e-9 ? (E_pv_kWh / E_pv_stc_kWh - 1) * 100 : 0;
+    const avgOf = (rows, key) => {
+      const vals = rows.map(r => r[key]).filter(isFiniteNumber);
+      return vals.length ? vals.reduce((s,v)=>s+v,0) / vals.length : null;
+    };
+    const daytimeRows = hourlyRows.filter(r => r.daytimeTempSample);
+    const daytimePvPanelAvg = avgOf(daytimeRows, "pvPanel_C");
+    const daytimePvtPanelAvg = avgOf(daytimeRows, "pvtPanel_C");
+    const daytimeTinAvg = avgOf(daytimeRows, "Tin_C");
+    const daytimeToutAvg = avgOf(daytimeRows.filter(r => r.Tout_C > 0), "Tout_C");
+    const daytimeCoolingAvg = (isFiniteNumber(daytimePvPanelAvg) && isFiniteNumber(daytimePvtPanelAvg)) ? daytimePvPanelAvg - daytimePvtPanelAvg : null;
+    const tempModelText = pvTempCorrEnable
+      ? `NOCT ${pvNoctC.toFixed(1)}&deg;C, &gamma;=${(pvTempCoeffPerC*100).toFixed(2)}%/&deg;C, STC reference ${PV_STC_CELL_TEMP_C}&deg;C`
+      : `Temperature correction disabled; PV and PVT electricity use constant &eta;<sub>STC</sub>`;
+    const pvgisValidation = buildPvgisValidationLink({
+      latitude,
+      longitude,
+      areaM2: A,
+      etaPv,
+      tiltAngle,
+      surfaceAzimuth: azimuthAngle
+    });
+    const pvgisValidationText = `PVGIS ERA5, ${pvgisValidation.peakPowerKw.toFixed(1)} kWp, ${tiltAngle.toFixed(0)}&deg; tilt, PVGIS azimuth ${pvgisValidation.pvgisAspect.toFixed(0)}&deg;, ${pvgisValidation.lossPct}% loss`;
     let html = `
       <div class="output-card output-card-annual" style="position:relative;">
       <div class="annual-card-head">
@@ -4632,14 +4833,24 @@ async function calcAnnualPVT(){
       </div>
       <div class="annual-summary-grid">
         <div class="annual-summary-item">
-          <span>PV electricity</span>
+          <span>PVT electricity</span>
           <strong>${fmtE(E_pv_kWh,1,'kWh')}</strong>
-          <small>Annual electrical yield</small>
+          <small>${pvTempCorrEnable ? 'Temperature-corrected cooled yield' : 'Constant-efficiency yield'}</small>
         </div>
         <div class="annual-summary-item">
           <span>PVT thermal</span>
           <strong>${fmtE(E_th_kWh,1,'kWh')}</strong>
           <small>Annual thermal yield</small>
+        </div>
+        <div class="annual-summary-item annual-tempcorr">
+          <span>PV-only baseline</span>
+          <strong>${fmtE(E_pv_standalone_kWh,1,'kWh')}</strong>
+          <small>${pvTempCorrEnable ? 'Same area, uncooled NOCT model' : 'Same area, constant efficiency'}</small>
+        </div>
+        <div class="annual-summary-item annual-tempcorr">
+          <span>Electricity from cooling</span>
+          <strong>${gainSign}${fmtE(Math.abs(pvtElectricGainKWh),1,'kWh')}</strong>
+          <small>${gainSign}${pvtElectricGainPct.toFixed(1)}% vs PV-only</small>
         </div>
         <div class="annual-summary-item">
           <span>Total output</span>
@@ -4651,25 +4862,39 @@ async function calcAnnualPVT(){
           <strong>${fmtC(netAnnualBenefit)} /yr</strong>
           <small>Upper-bound annual value (100% utilisation)</small>
         </div>
-        ${pvTcBox}
       </div>
       <div class="annual-actions">
         <button type="button" class="detail-toggle" onclick="toggleAnnualDetails(this)" aria-expanded="false">Show detailed results</button>
+        <a class="validation-link" href="${pvgisValidation.url}" target="_blank" rel="noopener">Open PVGIS validation result</a>
+        <a class="validation-link validation-link-secondary" href="${pvgisValidation.toolUrl}" target="_blank" rel="noopener">Open PVGIS tool</a>
+        <span class="note">${pvgisValidationText}</span>
+      </div>
+      <div class="annual-actions annual-actions-subtle">
         <span class="note">Open for economics, levelised costs, and calculation detail.</span>
       </div>
       <div class="annual-detail-panel" hidden>
       <h4 style="margin:4px 0 6px;color:#1a5276;">Energy Detail</h4>
       <table class="result-table">
-        <tr><td><b>PV Energy</b></td><td class="num"><span class="ok">${fmtE(E_pv_kWh,1,'kWh')}</span></td></tr>
-        ${pvTcDetailRow}
+        <tr><td><b>PVT electricity</b> (${pvTempCorrEnable ? 'cooled, temperature-corrected' : 'constant efficiency'})</td><td class="num"><span class="ok">${fmtE(E_pv_kWh,1,'kWh')}</span> <span style="color:#6b6b6b;">(${pvtTempDeltaPct >= 0 ? '+' : ''}${pvtTempDeltaPct.toFixed(1)}% vs STC)</span></td></tr>
+        <tr><td><b>Standalone PV electricity</b> (${pvTempCorrEnable ? 'uncooled NOCT baseline' : 'constant efficiency'})</td><td class="num"><span class="ok">${fmtE(E_pv_standalone_kWh,1,'kWh')}</span> <span style="color:#6b6b6b;">(${stcLossPct >= 0 ? '+' : ''}${stcLossPct.toFixed(1)}% vs STC)</span></td></tr>
+        <tr><td><b>Extra electricity from PVT cooling</b></td><td class="num"><span class="${pvtElectricGainKWh>=0?'ok':'err'}">${gainSign}${fmtE(Math.abs(pvtElectricGainKWh),1,'kWh')} (${gainSign}${pvtElectricGainPct.toFixed(1)}%)</span></td></tr>
         <tr><td><b>Thermal Energy (PVT model)</b></td><td class="num"><span class="ok">${fmtE(E_th_kWh,1,'kWh')}</span></td></tr>
         <tr><td><b>Total Energy</b></td><td class="num"><span class="ok">${fmtE(totalEnergy,1,'kWh')}</span></td></tr>
+      </table>
+      <h4 style="margin:14px 0 6px;color:#1a5276;">Panel Temperature Model</h4>
+      <table class="result-table">
+        <tr><td><b>PV/PVT electrical model</b></td><td class="num">${tempModelText}</td></tr>
+        <tr><td><b>Daytime window</b></td><td class="num">10:00-17:00, G &gt; ${PV_DAYTIME_TEMP_MIN_IRRADIANCE} W/m&sup2;</td></tr>
+        <tr><td><b>Daytime PV-only panel temperature</b></td><td class="num">${fmtE(daytimePvPanelAvg,1,'&deg;C')}</td></tr>
+        <tr><td><b>Daytime PVT panel temperature</b></td><td class="num">${fmtE(daytimePvtPanelAvg,1,'&deg;C')}</td></tr>
+        <tr><td><b>Average PVT cooling</b></td><td class="num">${fmtE(daytimeCoolingAvg,1,'&deg;C')}</td></tr>
+        <tr><td><b>Daytime Tin / Tout</b></td><td class="num">${fmtE(daytimeTinAvg,1,'&deg;C')} / ${fmtE(daytimeToutAvg,1,'&deg;C')}</td></tr>
       </table>
       <h4 style="margin:14px 0 6px;color:#1a5276;">Economic Analysis</h4>
       <table class="result-table">
         <tr><td><b>CAPEX</b> (${fmtE(capexPerM2,0,'AUD/m\u00B2')} &times; ${fmtE(A,1,'m\u00B2')})</td><td class="num">${fmtC(capex)}</td></tr>
         <tr><td><b>OPEX (annual)</b></td><td class="num">${fmtC(opexAnnual)} /yr</td></tr>
-        <tr><td><b>Annual Electricity Saving</b></td><td class="num"><span class="ok">${fmtC(annualSavingPV)} /yr</span></td></tr>
+        <tr><td><b>Annual PVT Electricity Saving</b></td><td class="num"><span class="ok">${fmtC(annualSavingPV)} /yr</span></td></tr>
         <tr><td><b>Annual Heat Saving</b> (gas displaced @ ${(boilerEff*100).toFixed(0)}% boiler)</td><td class="num"><span class="ok">${fmtC(annualSavingHeat)} /yr</span></td></tr>
         <tr><td><b>Annual Net Benefit</b></td><td class="num"><span class="${netAnnualBenefit>=0?'ok':'err'}">${fmtC(netAnnualBenefit)} /yr</span></td></tr>
         <tr><td><b>Simple Payback Period (SPP)</b></td><td class="num">${spp != null ? fmtE(spp,1,'years') : '&mdash;'}</td></tr>
@@ -5346,19 +5571,29 @@ async function calcAnnualPVT(){
     // 6) Chart.js supply charts
     const BASE_YEAR = new Date().getFullYear() - 1;
     const timeSeries = [];
-    for (let i = 1; i < out.length; i++){
-      const cols = out[i].split(",");
-      const dayN = +cols[0], hourN = +cols[1]-1, pvKwh = +cols[4], thKwh = +cols[5];
-      const toutC = cols[7] === "" ? 0 : +cols[7];
-      const tinC = CURRENT_MAINS?.byDay?.[dayN] ?? CURRENT_MAINS?.annualAvgC ?? 0;
+    for (const row of hourlyRows){
+      const dayN = row.dayN, hourN = row.hourN;
       const d = new Date(BASE_YEAR, 0, 1);
       d.setDate(d.getDate() + (dayN - 1));
-      timeSeries.push({ date:d.toISOString().slice(0,10), dayN, hourN, pv_kWh:pvKwh, th_kWh:thKwh, Tout_C:toutC, Tin_C:tinC });
+      timeSeries.push({
+        date: d.toISOString().slice(0,10),
+        dayN,
+        hourN,
+        pv_kWh: row.pvtPv_kWh,
+        pvOnly_kWh: row.pvOnly_kWh,
+        th_kWh: row.th_kWh,
+        Tout_C: row.Tout_C,
+        Tin_C: row.Tin_C,
+        pvPanel_C: row.pvPanel_C,
+        pvtPanel_C: row.pvtPanel_C,
+        daytimeTempSample: row.daytimeTempSample
+      });
     }
 
     const monthlyAll = aggregateMonthlyAll(timeSeries, BASE_YEAR);
     renderMonthlyAllTable(monthlyAll);
     renderMonthlyChart(monthlyAll);
+    renderPvComparisonChart(monthlyAll);
     renderTemperatureChartJS(monthlyAll);
     renderTemperatureTable(monthlyAll);
 

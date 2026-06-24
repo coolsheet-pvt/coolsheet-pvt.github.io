@@ -73,32 +73,14 @@
             <div class="full-row" style="margin:6px 0 2px;">
               <label class="tempcorr-toggle">
                 <input type="checkbox" id="pvTempCorrEnable" checked />
-                <span><b>Apply PV temperature correction</b> <span style="color:#6b6b6b;font-weight:400;">(comparison only)</span></span>
+                <span><b>Apply PV temperature correction</b> <span style="color:#6b6b6b;font-weight:400;">(PVT + PV-only comparison)</span></span>
               </label>
             </div>
-            <label for="pvTempCoeff">Temp. coefficient &gamma; (%/&deg;C):</label>
+            <label for="pvTempCoeff">PV temp. coefficient &gamma; (%/&deg;C):</label>
             <input id="pvTempCoeff" type="number" step="0.01" value="-0.40" />
-            <div class="note full-row" style="margin:-2px 0 4px;">Shows an extra &ldquo;uncooled-equivalent&rdquo; PV figure next to the result using a NOCT cell-temperature model (NOCT 45&deg;C). Does not change the economics. PVWatts Standard module &asymp; &minus;0.47.</div>
-
-            <details class="formula-details full-row">
-              <summary>Cell-temperature assumption &amp; formula</summary>
-              <div class="formula-box" style="margin-top:8px;">
-                <span class="formula-main">
-                  T<sub>cell</sub> = T<sub>a</sub> + (
-                  <span class="math-frac">
-                    <span class="math-frac-top">NOCT &minus; 20</span>
-                    <span class="math-frac-bottom">800</span>
-                  </span>
-                  ) G &nbsp;&middot;&nbsp; PV<sub>corr</sub> = PV &times; [ 1 + &gamma;(T<sub>cell</sub> &minus; 25) ]
-                </span>
-                <span class="formula-sub">
-                  <b>NOCT = 45&nbsp;&deg;C</b> (nominal operating cell temperature &mdash; fixed assumption).
-                  T<sub>a</sub> = ambient air temperature (&deg;C); G = plane-of-array irradiance (W/m&sup2;);
-                  &gamma; = power temperature coefficient (the field above). At a 25&nbsp;&deg;C cell the factor = 1.
-                  This is an <b>uncooled-equivalent</b> comparison only and does not change the economics. PVWatts Standard module &asymp; &minus;0.47&thinsp;%/&deg;C.
-                </span>
-              </div>
-            </details>
+            <label for="pvNoct">PV NOCT T<sub>NOCT</sub> (&deg;C):</label>
+            <input id="pvNoct" type="number" min="20" max="80" step="0.1" value="45" />
+            <div class="note full-row" style="margin:-2px 0 4px;">Applies the module temperature coefficient to actual PVT electricity and to a standalone PV baseline. PV-only temperature uses NOCT. PVT temperature uses NOCT minus coolant heat removal, with U<sub>L</sub> taken from the selected thermal model slope.</div>
 
             <div class="strike-row">
               <label for="tin">Inlet temperature Tin (&deg;C):</label>
@@ -430,13 +412,15 @@
       <div class="display-controls">
         <label><input id="showMonthlySupply" type="checkbox" /> Monthly Supply</label>
         <label><input id="showDailyDetail" type="checkbox" /> Daily Detail</label>
-        <label><input id="showOutletTemperature" type="checkbox" /> Outlet Temperature</label>
+        <label><input id="showOutletTemperature" type="checkbox" /> Panel Temperature</label>
       </div>
       <div id="supplyChartsEmpty" class="note" style="margin-top:10px;">Select a section to display its chart and table.</div>
 
       <div id="monthlySupplyBlock" class="results-block" style="display:none;">
         <h5>Monthly Supply</h5>
         <div class="chart-container"><canvas id="monthlyChart"></canvas></div>
+        <h5 style="margin-top:18px;">PV-only vs PVT Electricity</h5>
+        <div class="chart-container pv-comparison-chart"><canvas id="pvComparisonChart"></canvas></div>
         <div id="monthlyDataTable" class="data-table-container"></div>
       </div>
 
@@ -456,7 +440,7 @@
       </div>
 
       <div id="outletTemperatureBlock" class="results-block" style="display:none;">
-        <h5>Outlet Temperature</h5>
+        <h5>Daytime Panel &amp; Water Temperature</h5>
         <div class="chart-container"><canvas id="temperatureChart"></canvas></div>
         <div id="temperatureDataTable" class="data-table-container"></div>
       </div>
