@@ -295,6 +295,16 @@ body.testing-mode .kwater-label{display:inline;}
 .math-frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.05;margin:0 2px;}
 .math-frac-top{padding:0 4px 2px;border-bottom:1px solid currentColor;}
 .math-frac-bottom{padding-top:2px;}
+.mains-edit-wrap{padding:2px;}
+.mains-month-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:8px;}
+.mains-month-cell{display:flex;flex-direction:column;gap:3px;font-size:11px;font-weight:600;color:#4a5a6a;}
+.mains-month-cell input{width:100%;padding:5px 6px;}
+.mains-month-cell input:disabled{background:#f1f4f7;color:#8a97a3;cursor:not-allowed;}
+.mains-edit-actions{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;}
+.mains-quickset{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0 2px;font-size:12px;}
+.mains-quickset label{font-weight:600;color:#4a5a6a;}
+.mains-quickset input{width:92px;padding:5px 6px;}
+@media (max-width:560px){.mains-month-grid{grid-template-columns:repeat(3,1fr);}}
 .formula-details{border:1px solid #b8d0e8;border-radius:8px;overflow:hidden;}
 .formula-details>summary{font-size:12px;font-weight:600;color:#155f9d;cursor:pointer;user-select:none;padding:8px 12px;list-style:none;display:flex;align-items:center;gap:6px;background:#dceaf7;transition:background 0.15s;}
 .formula-details>summary:hover{background:#c8ddf0;}

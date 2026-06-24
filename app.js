@@ -959,7 +959,8 @@ function normalizeTMYRecords(raw){
 let CURRENT_LOC  = null;   // {name, lat, lon}
 let CURRENT_MET  = null;   // normalized weather array
 let CURRENT_TZ   = null;   // {timeZone, gmtOffset}
-let CURRENT_MAINS = null;  // {annualAvgC, minC, maxC, byDay, byMonth}
+let CURRENT_MAINS = null;  // effective mains used everywhere {annualAvgC, minC, maxC, byDay, byMonth}
+let CURRENT_MAINS_MODEL = null;  // raw BC-Aus model output (before any custom monthly overrides)
 let CURRENT_PROCESS_DETAIL = null;
 let CURRENT_EVAN_VIEW = null;
 let evanPrimaryChartInstance = null;
@@ -1058,7 +1059,7 @@ function updateMainsDisplay(){
     <div class="mains-summary-box">
       <div class="mains-links">
       </div>
-      <div><b>Monthly average T_mains (&deg;C):</b></div>
+      <div><b>Monthly average T_mains (&deg;C):</b>${CURRENT_MAINS.custom ? ' <span style="color:#b35900;font-weight:600;">(custom override)</span>' : ''}</div>
       <table class="result-table mains-monthly" style="margin-top:6px;">
         <tr>${monthHeader}</tr>
         <tr>${monthValues}</tr>
@@ -1075,6 +1076,105 @@ function updateMainsDisplay(){
         <a class="mains-link" href="cer_comparison.html" target="_blank" rel="noopener">CER Comparison</a>
       </div>
     </div>`;
+}
+
+// ================================================================
+//  CUSTOM MONTHLY MAINS OVERRIDES
+// ================================================================
+// The user can override the BC-Aus model with their own 12 monthly mains-water
+// temperatures. When the toggle is OFF the model is used verbatim (default path
+// unchanged). When ON, each day takes its month's custom value as a step profile;
+// blank months fall back to the model's own daily value so partial edits are safe.
+// The effective result feeds BOTH supply (collector inlet Tin) and demand (ΔT).
+const MAINS_MONTH_INPUT_IDS = Array.from({ length: 12 }, (_, i) => "mainsM" + i);
+
+function isCustomMainsEnabled(){
+  return !!document.getElementById("mainsCustomEnable")?.checked;
+}
+
+function populateMainsInputsFromModel(model, force = false){
+  if (!model || !Array.isArray(model.byMonth)) return;
+  const custom = isCustomMainsEnabled();
+  model.byMonth.forEach((m, i) => {
+    const el = document.getElementById(MAINS_MONTH_INPUT_IDS[i]);
+    if (!el || m?.avgC == null) return;
+    // Only overwrite when the model is in charge (custom off), the field is empty,
+    // or the user explicitly reset — never silently clobber custom values on reload.
+    if (force || !custom || el.value === "") el.value = m.avgC.toFixed(1);
+  });
+  syncMainsCustomUI();
+}
+
+function getEffectiveMains(model){
+  if (!model || !isCustomMainsEnabled()) return model;
+  const custom = MAINS_MONTH_INPUT_IDS.map(id => {
+    const v = parseFloat(document.getElementById(id)?.value);
+    return Number.isFinite(v) ? v : null;
+  });
+  if (custom.every(v => v == null)) return model; // nothing entered yet
+  const byDay = {};
+  const byMonthBuckets = Array.from({ length: 12 }, () => []);
+  let minC = Infinity, maxC = -Infinity, sumC = 0;
+  for (let day = 1; day <= 365; day++){
+    const mIdx = monthFromDayN(day) - 1;
+    const v = custom[mIdx] != null ? custom[mIdx] : (model.byDay[day] ?? model.annualAvgC);
+    byDay[day] = v;
+    byMonthBuckets[mIdx].push(v);
+    minC = Math.min(minC, v);
+    maxC = Math.max(maxC, v);
+    sumC += v;
+  }
+  const byMonth = byMonthBuckets.map((arr, i) => ({
+    month: i + 1,
+    avgC: arr.length ? (arr.reduce((a, b) => a + b, 0) / arr.length) : null
+  }));
+  return { annualAvgC: sumC / 365, minC, maxC, byDay, byMonth, custom: true };
+}
+
+function syncMainsCustomUI(){
+  const enabled = isCustomMainsEnabled();
+  MAINS_MONTH_INPUT_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = !enabled;
+  });
+  const status = document.getElementById("mainsCustomStatus");
+  if (status){
+    status.textContent = CURRENT_MAINS_MODEL
+      ? (enabled
+          ? "Custom values in use — these override the BC-Aus model for inlet Tin and demand ΔT."
+          : "Using the BC-Aus model. Tick the box to edit individual months.")
+      : "Load TMY to populate model values.";
+  }
+}
+
+function recomputeEffectiveMains(){
+  if (!CURRENT_MAINS_MODEL) { syncMainsCustomUI(); return; }
+  CURRENT_MAINS = getEffectiveMains(CURRENT_MAINS_MODEL);
+  updateMainsDisplay();
+  syncMainsCustomUI();
+}
+
+function resetMainsToModel(){
+  if (!CURRENT_MAINS_MODEL) return;
+  populateMainsInputsFromModel(CURRENT_MAINS_MODEL, true);
+  recomputeEffectiveMains();
+}
+
+// Quick-set: fill all 12 months with one value, then the user can fine-tune months.
+function applyMainsQuickSet(){
+  const v = parseFloat(document.getElementById("mainsQuickSet")?.value);
+  if (!Number.isFinite(v)){
+    alert("Enter a temperature (°C) to set all months.");
+    return;
+  }
+  const toggle = document.getElementById("mainsCustomEnable");
+  if (toggle) toggle.checked = true; // a single override implies custom mode is on
+  MAINS_MONTH_INPUT_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = v.toFixed(1);
+  });
+  recomputeEffectiveMains();
+  saveInputsToStorage(); // values set via JS don't fire change events, so persist explicitly
 }
 
 // ================================================================
@@ -3712,7 +3812,7 @@ async function loadTMYByAddress(){
   if (requestSeq !== LOAD_REQUEST_SEQ) return;
 
   CURRENT_LOC = loc;
-  CURRENT_MET = null; CURRENT_MAINS = null; CURRENT_TZ = null;
+  CURRENT_MET = null; CURRENT_MAINS = null; CURRENT_MAINS_MODEL = null; CURRENT_TZ = null;
   updateMainsDisplay();
   setLocationConfirm(loc, null, true);
   showLocationMap(loc.lat, loc.lon);
@@ -3721,7 +3821,9 @@ async function loadTMYByAddress(){
   if (requestSeq !== LOAD_REQUEST_SEQ) return;
 
   CURRENT_MET = normalizeTMYRecords(raw);
-  CURRENT_MAINS = calculateLocalTMains(CURRENT_MET, loc.lat, loc.lon);
+  CURRENT_MAINS_MODEL = calculateLocalTMains(CURRENT_MET, loc.lat, loc.lon);
+  populateMainsInputsFromModel(CURRENT_MAINS_MODEL);
+  CURRENT_MAINS = getEffectiveMains(CURRENT_MAINS_MODEL);
   CURRENT_TZ = normalizeTimezoneInfo(raw); // tz ships with the TMY response
   setLocationConfirm(loc, CURRENT_TZ, !CURRENT_TZ);
   updateMainsDisplay();
@@ -4366,10 +4468,13 @@ async function calcAnnualPVT(){
     const longitude = CURRENT_LOC.lon;
     const met = CURRENT_MET;
 
-    if (!CURRENT_MAINS){
-      CURRENT_MAINS = calculateLocalTMains(met, latitude, longitude);
-      updateMainsDisplay();
+    if (!CURRENT_MAINS_MODEL){
+      CURRENT_MAINS_MODEL = calculateLocalTMains(met, latitude, longitude);
+      populateMainsInputsFromModel(CURRENT_MAINS_MODEL);
     }
+    // Recompute the effective mains each run so custom monthly edits take effect.
+    CURRENT_MAINS = getEffectiveMains(CURRENT_MAINS_MODEL);
+    updateMainsDisplay();
     if (!met || !met.length){ setOutput("TMY contains no usable records.", true); return; }
 
     // 3) Calculate supply
@@ -5362,6 +5467,19 @@ document.querySelectorAll('input[name="thermalModel"]').forEach(radio => {
   el.addEventListener("change", syncInstalledCostInputs);
 });
 syncInstalledCostInputs();
+
+// Custom monthly mains overrides: seed from model on enable, recompute live on edit.
+document.getElementById("mainsCustomEnable")?.addEventListener("change", () => {
+  if (isCustomMainsEnabled() && CURRENT_MAINS_MODEL) populateMainsInputsFromModel(CURRENT_MAINS_MODEL);
+  recomputeEffectiveMains();
+});
+MAINS_MONTH_INPUT_IDS.forEach(id => {
+  document.getElementById(id)?.addEventListener("input", () => {
+    if (isCustomMainsEnabled()) recomputeEffectiveMains();
+  });
+});
+syncMainsCustomUI();
+
 warmHostedTMYService();
 
 document.getElementById("btnLoadTMY").addEventListener("click", async () => {

@@ -80,6 +80,26 @@
             <input id="pvTempCoeff" type="number" step="0.01" value="-0.40" />
             <div class="note full-row" style="margin:-2px 0 4px;">Shows an extra &ldquo;uncooled-equivalent&rdquo; PV figure next to the result using a NOCT cell-temperature model (NOCT 45&deg;C). Does not change the economics. PVWatts Standard module &asymp; &minus;0.47.</div>
 
+            <details class="formula-details full-row">
+              <summary>Cell-temperature assumption &amp; formula</summary>
+              <div class="formula-box" style="margin-top:8px;">
+                <span class="formula-main">
+                  T<sub>cell</sub> = T<sub>a</sub> + (
+                  <span class="math-frac">
+                    <span class="math-frac-top">NOCT &minus; 20</span>
+                    <span class="math-frac-bottom">800</span>
+                  </span>
+                  ) G &nbsp;&middot;&nbsp; PV<sub>corr</sub> = PV &times; [ 1 + &gamma;(T<sub>cell</sub> &minus; 25) ]
+                </span>
+                <span class="formula-sub">
+                  <b>NOCT = 45&nbsp;&deg;C</b> (nominal operating cell temperature &mdash; fixed assumption).
+                  T<sub>a</sub> = ambient air temperature (&deg;C); G = plane-of-array irradiance (W/m&sup2;);
+                  &gamma; = power temperature coefficient (the field above). At a 25&nbsp;&deg;C cell the factor = 1.
+                  This is an <b>uncooled-equivalent</b> comparison only and does not change the economics. PVWatts Standard module &asymp; &minus;0.47&thinsp;%/&deg;C.
+                </span>
+              </div>
+            </details>
+
             <div class="strike-row">
               <label for="tin">Inlet temperature Tin (&deg;C):</label>
               <input id="tin" type="number" step="0.1" value="10" disabled />
@@ -157,6 +177,46 @@
                   <div class="full-row" style="margin-top:6px;display:flex;justify-content:flex-end;"><button type="button" class="secondary-action" onclick="resetModelBCoeffs()">Reset to defaults</button></div>
                 </div>
               </details>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details class="advanced-settings full-row" id="mainsCustomDetails">
+        <summary>Mains water temperature (monthly)</summary>
+        <div class="advanced-settings-body">
+          <div class="mains-edit-wrap">
+            <div class="note">
+              Monthly mains-water temperatures from the BC-Aus model auto-fill once TMY weather is loaded.
+              They feed <b>both</b> the collector inlet T<sub>in</sub> and the water-heating demand &Delta;T
+              (dairy, brewery, aquatic make-up, hotel tank).
+            </div>
+            <label class="tempcorr-toggle" style="margin:10px 0 2px;">
+              <input type="checkbox" id="mainsCustomEnable" />
+              <span><b>Use custom monthly mains temperatures</b> <span style="color:#6b6b6b;font-weight:400;">(override the model)</span></span>
+            </label>
+            <div class="mains-quickset">
+              <label for="mainsQuickSet">Set all months to (&deg;C):</label>
+              <input id="mainsQuickSet" type="number" step="0.1" placeholder="e.g. 18" />
+              <button type="button" class="secondary-action" onclick="applyMainsQuickSet()">Apply to all months</button>
+            </div>
+            <div class="mains-month-grid" id="mainsMonthGrid">
+              <label class="mains-month-cell"><span>Jan</span><input id="mainsM0"  type="number" step="0.1" disabled /></label>
+              <label class="mains-month-cell"><span>Feb</span><input id="mainsM1"  type="number" step="0.1" disabled /></label>
+              <label class="mains-month-cell"><span>Mar</span><input id="mainsM2"  type="number" step="0.1" disabled /></label>
+              <label class="mains-month-cell"><span>Apr</span><input id="mainsM3"  type="number" step="0.1" disabled /></label>
+              <label class="mains-month-cell"><span>May</span><input id="mainsM4"  type="number" step="0.1" disabled /></label>
+              <label class="mains-month-cell"><span>Jun</span><input id="mainsM5"  type="number" step="0.1" disabled /></label>
+              <label class="mains-month-cell"><span>Jul</span><input id="mainsM6"  type="number" step="0.1" disabled /></label>
+              <label class="mains-month-cell"><span>Aug</span><input id="mainsM7"  type="number" step="0.1" disabled /></label>
+              <label class="mains-month-cell"><span>Sep</span><input id="mainsM8"  type="number" step="0.1" disabled /></label>
+              <label class="mains-month-cell"><span>Oct</span><input id="mainsM9"  type="number" step="0.1" disabled /></label>
+              <label class="mains-month-cell"><span>Nov</span><input id="mainsM10" type="number" step="0.1" disabled /></label>
+              <label class="mains-month-cell"><span>Dec</span><input id="mainsM11" type="number" step="0.1" disabled /></label>
+            </div>
+            <div class="mains-edit-actions">
+              <span class="note" id="mainsCustomStatus">Load TMY to populate model values.</span>
+              <button type="button" class="secondary-action" onclick="resetMainsToModel()">Reset to model</button>
             </div>
           </div>
         </div>
