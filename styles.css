@@ -281,6 +281,14 @@ body.testing-mode .kwater-label{display:inline;}
 .advanced-settings-body{padding:12px 14px;border-top:1px solid #e5ebf2;}
 .advanced-settings-body.animate{animation:slideDown 0.65s ease;}
 .advanced-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;align-items:center;}
+/* PV efficiency input + its note side by side (note to the right, smaller) */
+.eta-cell{display:flex;align-items:center;gap:10px;}
+.eta-cell input{flex:0 0 110px;}
+.eta-note{flex:1 1 auto;font-size:11px;color:#666;line-height:1.3;margin:0;}
+/* Consolidated inlet / monthly-mains override card inside Advanced Settings */
+.inlet-block{margin:2px 0 6px;padding:12px 14px;background:#f3f7fb;border:1px solid #dce5ee;border-radius:8px;}
+.inlet-block .strike-row{display:flex;align-items:center;gap:12px;}
+.inlet-block .strike-row input{flex:0 0 110px;}
 /* PV temperature-correction toggle — keep the checkbox small so the label reads on one line */
 .tempcorr-toggle{display:flex;align-items:center;gap:9px;cursor:pointer;font-size:13px;line-height:1.35;}
 .tempcorr-toggle input[type=checkbox]{width:17px;height:17px;min-width:17px;min-height:17px;max-height:17px;flex:0 0 17px;margin:0;padding:0;align-self:center;}

@@ -6,7 +6,7 @@
   <title>Annual PVT Calculator</title>
   <meta name="description" content="Estimates annual energy output, savings and payback of photovoltaic-thermal (PVT) solar systems for Australian commercial sites." />
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
-  <link rel="stylesheet" href="styles.css?v=11.9" />
+  <link rel="stylesheet" href="styles.css?v=12.1" />
   <!-- Chart.js v4.5.1 vendored locally (assets/vendor/) so charts work offline / on flaky wifi. -->
   <script src="assets/vendor/chart.umd.min.js"></script>
   <script src="bc_aus_zone_constants.js"></script>
@@ -66,9 +66,50 @@
             <label for="flowRate">Flow Rate (L/s/m&sup2;):</label>
             <input id="flowRate" type="number" min="0.001" step="0.001" value="0.02" />
 
+            <div class="full-row inlet-block">
+              <div class="strike-row inlet-head">
+                <label for="tin">Inlet temperature Tin (&deg;C):</label>
+                <input id="tin" type="number" step="0.1" value="10" disabled />
+              </div>
+              <div class="note" style="margin:6px 0 2px;">
+                A single inlet value isn&rsquo;t used &mdash; the collector inlet T<sub>in</sub> follows the
+                <b>monthly mains-water temperature</b> below, which also drives the water-heating demand &Delta;T
+                (dairy, brewery, aquatic make-up, hotel tank). BC-Aus model values auto-fill once TMY weather is loaded.
+              </div>
+              <label class="tempcorr-toggle" style="margin:8px 0 2px;">
+                <input type="checkbox" id="mainsCustomEnable" />
+                <span><b>Use custom monthly values</b> <span style="color:#6b6b6b;font-weight:400;">(override the model)</span></span>
+              </label>
+              <div class="mains-quickset">
+                <label for="mainsQuickSet">Set all months to (&deg;C):</label>
+                <input id="mainsQuickSet" type="number" step="0.1" placeholder="e.g. 18" />
+                <button type="button" class="secondary-action" onclick="applyMainsQuickSet()">Apply to all months</button>
+              </div>
+              <div class="mains-month-grid" id="mainsMonthGrid">
+                <label class="mains-month-cell"><span>Jan</span><input id="mainsM0"  type="number" step="0.1" disabled /></label>
+                <label class="mains-month-cell"><span>Feb</span><input id="mainsM1"  type="number" step="0.1" disabled /></label>
+                <label class="mains-month-cell"><span>Mar</span><input id="mainsM2"  type="number" step="0.1" disabled /></label>
+                <label class="mains-month-cell"><span>Apr</span><input id="mainsM3"  type="number" step="0.1" disabled /></label>
+                <label class="mains-month-cell"><span>May</span><input id="mainsM4"  type="number" step="0.1" disabled /></label>
+                <label class="mains-month-cell"><span>Jun</span><input id="mainsM5"  type="number" step="0.1" disabled /></label>
+                <label class="mains-month-cell"><span>Jul</span><input id="mainsM6"  type="number" step="0.1" disabled /></label>
+                <label class="mains-month-cell"><span>Aug</span><input id="mainsM7"  type="number" step="0.1" disabled /></label>
+                <label class="mains-month-cell"><span>Sep</span><input id="mainsM8"  type="number" step="0.1" disabled /></label>
+                <label class="mains-month-cell"><span>Oct</span><input id="mainsM9"  type="number" step="0.1" disabled /></label>
+                <label class="mains-month-cell"><span>Nov</span><input id="mainsM10" type="number" step="0.1" disabled /></label>
+                <label class="mains-month-cell"><span>Dec</span><input id="mainsM11" type="number" step="0.1" disabled /></label>
+              </div>
+              <div class="mains-edit-actions">
+                <span class="note" id="mainsCustomStatus">Load TMY to populate model values.</span>
+                <button type="button" class="secondary-action" onclick="resetMainsToModel()">Reset to model</button>
+              </div>
+            </div>
+
             <label for="etaPv">PV efficiency &eta;<sub>STC</sub> (0&ndash;1):</label>
-            <input id="etaPv" type="number" min="0" max="1" step="0.01" value="0.20" />
-            <div class="note full-row" style="margin:-2px 0 4px;">Nominal efficiency at Standard Test Conditions (25&deg;C cell, 1000 W/m&sup2;).</div>
+            <div class="eta-cell">
+              <input id="etaPv" type="number" min="0" max="1" step="0.01" value="0.20" />
+              <span class="note eta-note">Nominal efficiency at STC (25&deg;C cell, 1000 W/m&sup2;).</span>
+            </div>
 
             <div class="full-row" style="margin:6px 0 2px;">
               <label class="tempcorr-toggle">
@@ -82,10 +123,34 @@
             <input id="pvNoct" type="number" min="20" max="80" step="0.1" value="45" />
             <div class="note full-row" style="margin:-2px 0 4px;">Applies the module temperature coefficient to actual PVT electricity and to a standalone PV baseline. PV-only temperature uses NOCT. PVT temperature uses NOCT minus coolant heat removal, with U<sub>L</sub> taken from the selected thermal model slope.</div>
 
-            <div class="strike-row">
-              <label for="tin">Inlet temperature Tin (&deg;C):</label>
-              <input id="tin" type="number" step="0.1" value="10" disabled />
-            </div>
+            <details class="formula-details full-row">
+              <summary>Show the formula</summary>
+              <div class="formula-box" style="margin-top:8px;">
+                <span class="formula-main">
+                  T<sub>cell</sub> = T<sub>a</sub> +
+                  <span class="math-frac">
+                    <span class="math-frac-top">G</span>
+                    <span class="math-frac-bottom">800</span>
+                  </span>
+                  (T<sub>NOCT</sub> &minus; 20)
+                </span>
+                <span class="formula-sub"><b>Step 1 — uncooled cell temperature.</b> How hot a bare panel runs above ambient T<sub>a</sub> under sun G. Used for the standalone PV baseline.</span>
+
+                <span class="formula-main" style="margin-top:12px;">
+                  T<sub>PVT</sub> = T<sub>cell</sub> &minus;
+                  <span class="math-frac">
+                    <span class="math-frac-top">&#7745;&thinsp;c<sub>p</sub>&thinsp;(T<sub>out</sub> &minus; T<sub>in</sub>)</span>
+                    <span class="math-frac-bottom">U<sub>L</sub>&thinsp;A</span>
+                  </span>
+                </span>
+                <span class="formula-sub"><b>Step 2 — cooled PVT cell temperature.</b> The circulating water carries heat away (&#7745;c<sub>p</sub>&Delta;T), so PVT cells run <i>cooler</i> than a plain panel. U<sub>L</sub> = a<sub>1</sub> from the selected thermal model.</span>
+
+                <span class="formula-main" style="margin-top:12px;">
+                  P = P<sub>STC</sub> &times; [ 1 + &gamma;&thinsp;(T<sub>cell</sub> &minus; 25) ]
+                </span>
+                <span class="formula-sub"><b>Step 3 — power correction.</b> Output scaled by the coefficient &gamma; (%/&deg;C &divide; 100), referenced to the 25&deg;C STC cell. &gamma; is negative, so hotter cells lose power and the cooler PVT cells beat PV-only.</span>
+              </div>
+            </details>
 
             <div class="full-row" style="margin:8px 0 4px;">
               <b style="font-size:13px;">PVT Thermal Efficiency Model:</b><br/>
@@ -159,46 +224,6 @@
                   <div class="full-row" style="margin-top:6px;display:flex;justify-content:flex-end;"><button type="button" class="secondary-action" onclick="resetModelBCoeffs()">Reset to defaults</button></div>
                 </div>
               </details>
-            </div>
-          </div>
-        </div>
-      </details>
-
-      <details class="advanced-settings full-row" id="mainsCustomDetails">
-        <summary>Mains water temperature (monthly)</summary>
-        <div class="advanced-settings-body">
-          <div class="mains-edit-wrap">
-            <div class="note">
-              Monthly mains-water temperatures from the BC-Aus model auto-fill once TMY weather is loaded.
-              They feed <b>both</b> the collector inlet T<sub>in</sub> and the water-heating demand &Delta;T
-              (dairy, brewery, aquatic make-up, hotel tank).
-            </div>
-            <label class="tempcorr-toggle" style="margin:10px 0 2px;">
-              <input type="checkbox" id="mainsCustomEnable" />
-              <span><b>Use custom monthly mains temperatures</b> <span style="color:#6b6b6b;font-weight:400;">(override the model)</span></span>
-            </label>
-            <div class="mains-quickset">
-              <label for="mainsQuickSet">Set all months to (&deg;C):</label>
-              <input id="mainsQuickSet" type="number" step="0.1" placeholder="e.g. 18" />
-              <button type="button" class="secondary-action" onclick="applyMainsQuickSet()">Apply to all months</button>
-            </div>
-            <div class="mains-month-grid" id="mainsMonthGrid">
-              <label class="mains-month-cell"><span>Jan</span><input id="mainsM0"  type="number" step="0.1" disabled /></label>
-              <label class="mains-month-cell"><span>Feb</span><input id="mainsM1"  type="number" step="0.1" disabled /></label>
-              <label class="mains-month-cell"><span>Mar</span><input id="mainsM2"  type="number" step="0.1" disabled /></label>
-              <label class="mains-month-cell"><span>Apr</span><input id="mainsM3"  type="number" step="0.1" disabled /></label>
-              <label class="mains-month-cell"><span>May</span><input id="mainsM4"  type="number" step="0.1" disabled /></label>
-              <label class="mains-month-cell"><span>Jun</span><input id="mainsM5"  type="number" step="0.1" disabled /></label>
-              <label class="mains-month-cell"><span>Jul</span><input id="mainsM6"  type="number" step="0.1" disabled /></label>
-              <label class="mains-month-cell"><span>Aug</span><input id="mainsM7"  type="number" step="0.1" disabled /></label>
-              <label class="mains-month-cell"><span>Sep</span><input id="mainsM8"  type="number" step="0.1" disabled /></label>
-              <label class="mains-month-cell"><span>Oct</span><input id="mainsM9"  type="number" step="0.1" disabled /></label>
-              <label class="mains-month-cell"><span>Nov</span><input id="mainsM10" type="number" step="0.1" disabled /></label>
-              <label class="mains-month-cell"><span>Dec</span><input id="mainsM11" type="number" step="0.1" disabled /></label>
-            </div>
-            <div class="mains-edit-actions">
-              <span class="note" id="mainsCustomStatus">Load TMY to populate model values.</span>
-              <button type="button" class="secondary-action" onclick="resetMainsToModel()">Reset to model</button>
             </div>
           </div>
         </div>
