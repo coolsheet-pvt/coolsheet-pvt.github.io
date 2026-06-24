@@ -4488,6 +4488,14 @@ const PV_DAYTIME_TEMP_MIN_IRRADIANCE = 50;
 const PV_DAYTIME_TEMP_START_HOUR = 10;
 const PV_DAYTIME_TEMP_END_HOUR = 16;
 
+// ============================================================================
+// NOCT CODE — PV/PVT cell-temperature model
+//   T_PVT = T_a + (G/800)(T_NOCT - 20) - mdot*cp*(T_out - T_in)/(U_L*A)
+//   Part 1 (calcNoctPanelTempC):  bare-panel NOCT temperature.
+//   Part 2 (calcPvtPanelTempC):   subtract heat removed by the coolant loop.
+//   getPvtPanelHeatLossCoeff supplies U_L (from Model A/B a1, read-only).
+//   Comparison-only: feeds the PV temp-correction display, not the economics.
+// ============================================================================
 function calcNoctPanelTempC(ambientC, irradianceWm2, noctC = PV_DEFAULT_NOCT_C){
   if (!isFiniteNumber(ambientC)) return null;
   if (!isFiniteNumber(irradianceWm2) || irradianceWm2 <= 1e-6) return ambientC;
