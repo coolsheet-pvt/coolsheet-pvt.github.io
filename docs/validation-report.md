@@ -1,6 +1,7 @@
 # Validation Report
 
-Last local validation run: 2026-06-29.
+Last local/offline validation run: 2026-06-29.
+Last live deployed industry matrix run: 2026-06-30.
 
 ## Summary
 
@@ -25,6 +26,48 @@ Browser smoke:
 npm run test:browser
 PASS: 3/3 Playwright tests
 ```
+
+Live deployed industry matrix:
+
+```text
+npm run test:live-industries
+PASS: 15/15 live/local scenarios checked
+Hard failures: 0
+Known backend solarHour failures: 15
+```
+
+## Live Deployed Industry Matrix
+
+`validation/live_industry_matrix.spec.mjs` checks the deployed GitHub Pages frontend at `https://coolsheet-pvt.github.io/` against the live Render backend. It runs every implemented industry for Sydney and Melbourne, and also compares Sydney live outputs against the local frontend using the same live weather source.
+
+Industries covered:
+
+| Industry | Validation classification |
+|---|---|
+| Dairy farm | Benchmarked plus hand-equation checked |
+| Brewery | Benchmarked plus hand-equation checked |
+| Aquatic centre | Engineering model with documented assumptions |
+| Hotel | Benchmark-based demand model |
+| Commercial laundry | Assumption-based hot-water washing model with hand-equation checks |
+
+The live run verified:
+
+- live app load, industry selection, required input visibility, chart/table rendering, and no console/page errors
+- finite PV-only electricity, PVT electricity, PVT thermal, matched solar heat, industry demand, backup heat, coverage, savings, payback, NPV, LCOE, and LCOH outputs
+- no `NaN`, `Infinity`, `undefined`, or visible `null` output text
+- industry-specific monotonic checks, such as higher throughput/occupancy/area/kg increasing demand
+- commercial laundry excludes drying/process electricity and covers hot-water washing demand only
+- live/local Sydney comparisons matched exactly for all checked annual output fields
+- hourly CSV, summary CSV, share payload, share-link reload, and generated report HTML content were verified from generated content/state
+
+The known live backend mismatch remains:
+
+```text
+records=8760
+solarHourRecords=0
+```
+
+This is recorded as a known failure in the live matrix so that all industry checks can continue. After Render is redeployed, strict mode should be run with `LIVE_MATRIX_STRICT_SOLARHOUR=1`, where the expected result is `solarHourRecords=8760`.
 
 ## Phase 2: Backend solarHour
 

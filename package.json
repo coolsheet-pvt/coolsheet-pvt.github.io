@@ -15,6 +15,7 @@
     "test:no-nan": "node validation/test_no_nan.mjs",
     "test:export-share": "node validation/test_export_share_state.mjs",
     "test:browser": "playwright test validation/browser_smoke.spec.mjs",
+    "test:live-industries": "playwright test validation/live_industry_matrix.spec.mjs",
     "fixtures:weather": "python validation/generate_weather_fixtures.py",
     "test:flow-rate": "node validation/flow_rate_test.mjs",
     "test:links": "node validation/check_links.mjs"

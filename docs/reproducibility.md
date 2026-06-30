@@ -40,6 +40,38 @@ Run:
 npm run test:browser
 ```
 
+## Live Site Industry Matrix
+
+Run the deployed-site validation with:
+
+```text
+npm run test:live-industries
+```
+
+By default this checks `https://coolsheet-pvt.github.io/`, uses the live Render backend, covers Sydney and Melbourne, and writes an ignored artifact to:
+
+```text
+validation/live-results/live-industry-matrix.json
+```
+
+Useful overrides:
+
+```powershell
+$env:LIVE_BASE_URL="https://coolsheet-pvt.github.io/"
+$env:LIVE_MATRIX_CITIES="sydney,melbourne"
+$env:LIVE_MATRIX_SKIP_LOCAL="1"
+npm run test:live-industries
+```
+
+After the Render backend is redeployed, run strict backend-contract validation:
+
+```powershell
+$env:LIVE_MATRIX_STRICT_SOLARHOUR="1"
+npm run test:live-industries
+```
+
+Strict mode should pass only when the live backend returns 8,760 TMY records and 8,760 records with `solarHour`.
+
 ## Locked Weather Fixtures
 
 Locked fixtures live in:
@@ -127,7 +159,7 @@ pages/
 After pushing frontend changes, verify:
 
 ```powershell
-Invoke-WebRequest -Uri "https://m-lorusso.github.io/PVT-calculator-tool/index.html" -UseBasicParsing -TimeoutSec 30
+Invoke-WebRequest -Uri "https://coolsheet-pvt.github.io/" -UseBasicParsing -TimeoutSec 30
 ```
 
 Then open the page in a browser, select `Commercial Laundry`, and confirm the laundry inputs appear.

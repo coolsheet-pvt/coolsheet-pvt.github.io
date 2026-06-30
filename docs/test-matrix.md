@@ -39,11 +39,24 @@ Run:
 
 ```text
 npm run test:links
+npm run test:live-industries
 ```
 
 | Script | Scope | Requirement | Current local result |
 |---|---|---|---|
 | Link checker | Public links in `js/app.js` | Internet access | 26 OK, 4 review/403, 0 broken |
+| Live industry matrix | Deployed GitHub Pages frontend plus live Render backend across dairy, brewery, aquatic centre, hotel, and commercial laundry for Sydney and Melbourne | Internet access, Playwright Chromium | Pass: 15 scenarios, 0 hard failures, 15 known backend `solarHour` failures |
+
+`npm run test:live-industries` writes an ignored JSON artifact to `validation/live-results/live-industry-matrix.json`. The command validates app load, industry controls, finite outputs, chart/table rendering, industry-specific physical checks, live/local Sydney output comparison, hourly CSV content, summary CSV content, share payloads, share reloads, and generated report HTML.
+
+The current live backend result is still:
+
+```text
+records=8760
+solarHourRecords=0
+```
+
+After the Render backend is redeployed, rerun strict live validation with `LIVE_MATRIX_STRICT_SOLARHOUR=1`; strict mode expects `solarHourRecords=8760`.
 
 ## Fixture Refresh
 
