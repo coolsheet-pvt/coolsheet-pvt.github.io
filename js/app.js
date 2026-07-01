@@ -1270,8 +1270,8 @@ function syncMainsCustomUI(){
   if (status){
     status.textContent = CURRENT_MAINS_MODEL
       ? (enabled
-          ? "Custom values in use — these override the BC-Aus model for inlet Tin and demand ΔT."
-          : "Using the BC-Aus model. Tick the box to edit individual months.")
+          ? "Custom monthly values active."
+          : "BC-Aus model active.")
       : "";
   }
 }
@@ -3331,17 +3331,6 @@ function buildIndustryPerformanceSummary(opts){
     </div>`;
 }
 
-// Caveat shown when the user targets more coverage than they already have.
-// Coverage has diminishing returns (extra collectors add unused midday surplus
-// without storage), so linear area-scaling under-estimates the real design size.
-function recommendedSizeCaveatHtml(targetPct, currentCoveragePct){
-  if (!isFiniteNumber(targetPct) || !isFiniteNumber(currentCoveragePct) || currentCoveragePct <= 0) return "";
-  if (targetPct > currentCoveragePct + 1){
-    return `\u26A0 Target is above your current ${currentCoveragePct.toFixed(0)}% coverage, so treat this as an optimistic lower bound &mdash; beyond current coverage, extra collectors mostly add midday surplus heat that goes unused without storage. Reaching high coverage usually needs heat storage, not just more area.`;
-  }
-  return "";
-}
-
 function buildRecommendedSystemSizeBox(opts){
   const areaM2 = Number(opts?.areaM2);
   const heatCoverage = Number(opts?.heatCoverageFraction);
@@ -3360,7 +3349,6 @@ function buildRecommendedSystemSizeBox(opts){
   const defaultAreaText = isFiniteNumber(defaultArea)
     ? `${defaultArea.toLocaleString(undefined, { maximumFractionDigits: 0 })} m\u00B2`
     : "Not available";
-  const defaultCaveat = recommendedSizeCaveatHtml(defaultTargetPct, isFiniteNumber(heatCoverage) ? heatCoverage * 100 : NaN);
 
   return `
     <div class="recommended-size-box">
@@ -3395,8 +3383,6 @@ function buildRecommendedSystemSizeBox(opts){
           <strong data-recommended-size-output>${defaultAreaText}</strong>
         </div>
       </div>
-      <div class="recommended-size-warn" data-recommended-size-warn${defaultCaveat ? "" : " hidden"}>${defaultCaveat}</div>
-      <div class="recommended-size-note">Rough guide only: it assumes heat coverage scales linearly with collector area. In reality coverage has diminishing returns &mdash; hourly demand timing, storage and unused surplus heat all change the real design size.</div>
     </div>`;
 }
 
@@ -3412,19 +3398,12 @@ function updateRecommendedSizeTarget(input){
   // Correct genuinely out-of-range entries (e.g. "500") without disrupting mid-typing.
   if (isFiniteNumber(raw) && raw !== targetPct) input.value = targetPct;
 
-  const warn = box?.querySelector?.("[data-recommended-size-warn]");
   if (!isFiniteNumber(areaM2) || areaM2 <= 0 || !isFiniteNumber(heatCoverage) || heatCoverage <= 1e-6 || !isFiniteNumber(targetPct)){
     output.textContent = "Not available";
-    if (warn){ warn.innerHTML = ""; warn.hidden = true; }
     return;
   }
   const needed = areaM2 * (targetPct / 100) / heatCoverage;
   output.textContent = `${needed.toLocaleString(undefined, { maximumFractionDigits: 0 })} m\u00B2`;
-  if (warn){
-    const caveat = recommendedSizeCaveatHtml(targetPct, heatCoverage * 100);
-    warn.innerHTML = caveat;
-    warn.hidden = !caveat;
-  }
 }
 
 function buildIndustryEnergyFlowSummary(opts){
@@ -6476,6 +6455,12 @@ function buildShareUrl(){
   return `${location.origin}${location.pathname}#s=${b64}`;
 }
 
+function buildNormalCalculatorUrl(){
+  const url = new URL(location.href);
+  url.hash = "";
+  return url.href;
+}
+
 // On load: if the URL carries a shared scenario, apply it (takes precedence
 // over localStorage). Returns true if a scenario was applied.
 function applySharedScenarioFromUrl(){
@@ -6605,12 +6590,13 @@ document.addEventListener("change", ev => {
 //  EVENT LISTENERS
 // ================================================================
 restoreInputsFromStorage();
-// A shared link (#s=…) overrides stored inputs, then is persisted so it survives reloads.
+// A shared link (#s=...) overrides stored inputs for this page load.
 const _sharedScenarioApplied = applySharedScenarioFromUrl();
 if (_sharedScenarioApplied){
-  saveInputsToStorage();
   const banner = document.getElementById("sharedScenarioBanner");
   if (banner) banner.hidden = false;
+  const normalLink = document.getElementById("sharedScenarioNormalLink");
+  if (normalLink) normalLink.href = buildNormalCalculatorUrl();
 }
 // Sync UI that depends on restored values: thermal-model panel + testing mode.
 {

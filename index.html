@@ -15,8 +15,11 @@
 <body>
 <div class="wrap">
   <div id="sharedScenarioBanner" class="shared-scenario-banner" role="alert" hidden>
-    <b>SHARED SCENARIO LOADED</b>
-    <span>Inputs restored from a shared link &mdash; re-load TMY before calculating; live weather/API data may differ from the original run.</span>
+    <div>
+      <b>Shared scenario loaded</b>
+      <span>Inputs restored from a shared link.</span>
+    </div>
+    <a id="sharedScenarioNormalLink" class="shared-scenario-link" href="index.html">Open normal calculator</a>
   </div>
   <div class="brand-hero" style="position:relative;">
     <div class="brand-logos">
@@ -88,6 +91,7 @@
               <div class="note" style="margin:2px 0 2px;">
                 Inlet temperature T<sub>in</sub> comes from the <b>monthly mains-water temperature</b> below, auto-filled once TMY weather is loaded.
               </div>
+              <div class="note mains-model-status" id="mainsCustomStatus" aria-live="polite"></div>
               <label class="tempcorr-toggle" style="margin:8px 0 2px;">
                 <input type="checkbox" id="mainsCustomEnable" />
                 <span><b>Use custom monthly values</b> <span style="color:#6b6b6b;font-weight:400;">(override the model)</span></span>
@@ -112,31 +116,32 @@
                 <label class="mains-month-cell"><span>Dec</span><input id="mainsM11" type="number" step="0.1" disabled /></label>
               </div>
               <div class="mains-edit-actions">
-                <span class="note" id="mainsCustomStatus"></span>
                 <button type="button" class="secondary-action" onclick="resetMainsToModel()">Reset to model</button>
               </div>
             </div>
 
-            <label for="etaPv">PV efficiency &eta;<sub>STC</sub> (0&ndash;1):</label>
+            <label for="etaPv">PV efficiency at STC (0&ndash;1):</label>
             <div class="eta-cell">
               <input id="etaPv" type="number" min="0" max="1" step="0.01" value="0.20" />
-              <span class="note eta-note">Nominal efficiency at STC (25&deg;C cell, 1000 W/m&sup2;).</span>
+              <span class="note eta-note">Lab-rated efficiency at 25&deg;C cell temperature.</span>
             </div>
 
             <div class="full-row" style="margin:6px 0 2px;">
               <label class="tempcorr-toggle">
                 <input type="checkbox" id="pvTempCorrEnable" checked />
-                <span><b>Apply PV temperature correction</b> <span style="color:#6b6b6b;font-weight:400;">(PVT + PV-only comparison)</span></span>
+                <span><b>Account for panel temperature</b> <span style="color:#6b6b6b;font-weight:400;">(PV-only vs cooled PVT)</span></span>
               </label>
             </div>
-            <label for="pvTempCoeff">PV temp. coefficient &gamma; (%/&deg;C):</label>
+            <label for="pvTempCoeff">PV temperature loss (%/&deg;C):</label>
             <input id="pvTempCoeff" type="number" step="0.01" value="-0.40" />
-            <label for="pvNoct">PV NOCT T<sub>NOCT</sub> (&deg;C):</label>
+            <label for="pvNoct">NOCT &mdash; normal panel temperature (&deg;C):</label>
             <input id="pvNoct" type="number" min="20" max="80" step="0.1" value="45" />
-            <div class="note full-row" style="margin:-2px 0 4px;">Corrects PV output for cell temperature: PV-only runs hotter (NOCT), while PVT runs cooler because the coolant carries heat away.</div>
+            <div class="note full-row noct-explainer">
+              NOCT means <b>Nominal Operating Cell Temperature</b>: roughly how hot a normal PV panel gets outdoors in the sun. We use it because panels lose a little electrical output when they heat up. The PV-only case runs hotter, while PVT is cooled by water, so this makes the electricity comparison more realistic.
+            </div>
 
             <details class="formula-details full-row">
-              <summary>Show the formula</summary>
+              <summary>Show technical formula</summary>
               <div class="formula-box" style="margin-top:8px;">
                 <span class="formula-main">
                   T<sub>cell</sub> = T<sub>a</sub> +
@@ -146,7 +151,7 @@
                   </span>
                   (T<sub>NOCT</sub> &minus; 20)
                 </span>
-                <span class="formula-sub"><b>Step 1 — uncooled cell temperature.</b> How hot a bare panel gets in the sun. Used for the PV-only baseline.</span>
+                <span class="formula-sub"><b>PV-only temperature.</b> Estimate how hot a normal uncooled panel gets.</span>
 
                 <span class="formula-main" style="margin-top:12px;">
                   T<sub>PVT</sub> = T<sub>cell</sub> &minus;
@@ -155,87 +160,92 @@
                     <span class="math-frac-bottom">U<sub>L</sub>&thinsp;A</span>
                   </span>
                 </span>
-                <span class="formula-sub"><b>Step 2 — cooled PVT cell temperature.</b> Coolant flow keeps PVT cells <i>cooler</i> than a bare panel.</span>
+                <span class="formula-sub"><b>PVT temperature.</b> Subtract the heat removed by the water loop.</span>
 
                 <span class="formula-main" style="margin-top:12px;">
                   P = P<sub>STC</sub> &times; [ 1 + &gamma;&thinsp;(T<sub>cell</sub> &minus; 25) ]
                 </span>
-                <span class="formula-sub"><b>Step 3 — power correction.</b> Hotter cells produce less power, so the cooler PVT cells output more than PV-only.</span>
+                <span class="formula-sub"><b>Electricity adjustment.</b> Hotter panels make slightly less power.</span>
               </div>
             </details>
 
-            <div class="full-row" style="margin:8px 0 4px;">
-              <b style="font-size:13px;">PVT Thermal Efficiency Model:</b><br/>
-              <label style="display:inline-flex;align-items:center;gap:6px;margin-right:18px;margin-top:6px;cursor:pointer;">
-                <input type="radio" name="thermalModel" id="modelA" value="A" checked />
-                <span style="font-size:13px;"><b>Model A</b> &ndash; Simple linear</span>
-              </label>
-              <label style="display:inline-flex;align-items:center;gap:6px;margin-top:6px;cursor:pointer;">
-                <input type="radio" name="thermalModel" id="modelB" value="B" />
-                <span style="font-size:13px;"><b>Model B</b> &ndash; ISO 9806 full model (Eq.12)</span>
-              </label>
-            </div>
+            <div class="thermal-model-card full-row">
+              <div class="thermal-model-head">
+                <b>PVT Thermal Efficiency Model</b>
+                <span>This controls how the calculator turns sunlight into useful hot-water heat.</span>
+              </div>
+              <div class="thermal-model-options" role="radiogroup" aria-label="PVT thermal efficiency model">
+                <label class="thermal-model-option">
+                  <input type="radio" name="thermalModel" id="modelA" value="A" checked />
+                  <span><b>Model A</b><small>Simple linear</small></span>
+                </label>
+                <label class="thermal-model-option">
+                  <input type="radio" name="thermalModel" id="modelB" value="B" />
+                  <span><b>Model B</b><small>ISO 9806 full model (Eq.12)</small></span>
+                </label>
+              </div>
 
-            <!-- Model A params -->
-            <div id="modelAParams" class="full-row">
-              <details class="formula-details full-row">
-                <summary>Expand</summary>
-                <div class="formula-box" style="margin-top:8px;">
-                  <span class="formula-main">
-                    &eta;<sub>th</sub> = a<sub>0</sub> + a<sub>1</sub>
-                    &thinsp;(
-                    <span class="math-frac">
-                      <span class="math-frac-top">T<sub>in</sub> &minus; T<sub>a</sub></span>
-                      <span class="math-frac-bottom">G</span>
+              <!-- Model A params -->
+              <div id="modelAParams" class="thermal-model-params">
+                <details class="formula-details thermal-model-details full-row">
+                  <summary>Show model details</summary>
+                  <div class="formula-box" style="margin-top:8px;">
+                    <span class="formula-main">
+                      &eta;<sub>th</sub> = a<sub>0</sub> + a<sub>1</sub>
+                      &thinsp;(
+                      <span class="math-frac">
+                        <span class="math-frac-top">T<sub>in</sub> &minus; T<sub>a</sub></span>
+                        <span class="math-frac-bottom">G</span>
+                      </span>
+                      ) + a<sub>2</sub>u<sub>wind</sub>
                     </span>
-                    ) + a<sub>2</sub>u<sub>wind</sub>
-                  </span>
-                  <span class="formula-sub">T<sub>in</sub> and T<sub>a</sub> in &deg;C, G in W/m&sup2;, and u<sub>wind</sub> in m/s.</span>
-                </div>
-                <div class="advanced-grid" style="margin:8px 0 0;">
-                  <label for="pvtA0">PVT a0:</label>
-                  <input id="pvtA0" type="number" step="0.000000001" value="0.279952866" />
-                  <label for="pvtA1">PVT a1:</label>
-                  <input id="pvtA1" type="number" step="0.000000001" value="-10.52839866" />
-                  <label for="pvtA2">PVT a2:</label>
-                  <input id="pvtA2" type="number" step="0.000000001" value="-0.008135537" />
-                  <div class="full-row" style="margin-top:6px;display:flex;justify-content:flex-end;"><button type="button" class="secondary-action" onclick="resetModelACoeffs()">Reset to defaults</button></div>
-                </div>
-              </details>
-            </div>
+                    <span class="formula-sub">T<sub>in</sub> and T<sub>a</sub> in &deg;C, G in W/m&sup2;, and u<sub>wind</sub> in m/s.</span>
+                  </div>
+                  <div class="advanced-grid" style="margin:8px 0 0;">
+                    <label for="pvtA0">PVT a0:</label>
+                    <input id="pvtA0" type="number" step="0.000000001" value="0.279952866" />
+                    <label for="pvtA1">PVT a1:</label>
+                    <input id="pvtA1" type="number" step="0.000000001" value="-10.52839866" />
+                    <label for="pvtA2">PVT a2:</label>
+                    <input id="pvtA2" type="number" step="0.000000001" value="-0.008135537" />
+                    <div class="full-row" style="margin-top:6px;display:flex;justify-content:flex-end;"><button type="button" class="secondary-action" onclick="resetModelACoeffs()">Reset to defaults</button></div>
+                  </div>
+                </details>
+              </div>
 
-            <!-- Model B params (ISO 9806 Eq.12) -->
-            <div id="modelBParams" class="full-row" style="display:none;">
-              <details class="formula-details full-row">
-                <summary>Expand</summary>
-                <div class="formula-box" style="margin-top:8px;">
-                  <span class="formula-main">
-                    Q = A<sub>G</sub>[&eta;<sub>0,hem</sub>G<sub>hem</sub> &minus; a<sub>1</sub>(T<sub>m</sub> &minus; T<sub>a</sub>) &minus; a<sub>2</sub>(T<sub>m</sub> &minus; T<sub>a</sub>)<sup>2</sup> &minus; a<sub>3</sub>u(T<sub>m</sub> &minus; T<sub>a</sub>) + a<sub>4</sub>(E<sub>L</sub> &minus; &sigma;T<sub>a</sub><sup>4</sup>) &minus; a<sub>6</sub>uG<sub>hem</sub> &minus; a<sub>8</sub>(T<sub>m</sub> &minus; T<sub>a</sub>)<sup>4</sup>]
-                  </span>
-                  <span class="formula-sub">T<sub>m</sub> = (T<sub>in</sub> + T<sub>out</sub>)/2, solved iteratively each hour. Set a<sub>3</sub>, a<sub>4</sub>, a<sub>6</sub>, and a<sub>8</sub> to 0 to ignore those terms.</span>
-                </div>
-                <div class="advanced-grid" style="margin:8px 0 0;">
-                  <label for="isoEta0">&eta;<sub>0,hem</sub> &ndash; peak efficiency:</label>
-                  <input id="isoEta0" type="number" step="0.0001" value="0.762" />
-                  <label for="isoA1">a1 &ndash; heat loss coeff (W/m&sup2;K):</label>
-                  <input id="isoA1" type="number" step="0.0001" value="3.93" />
-                  <label for="isoA2">a2 &ndash; temp&sup2; loss coeff (W/m&sup2;K&sup2;):</label>
-                  <input id="isoA2" type="number" step="0.00001" value="0.0095" />
-                  <label for="isoA3">a3 &ndash; wind&times;temp loss (J/m&sup3;K):</label>
-                  <input id="isoA3" type="number" step="0.00001" value="0" />
-                  <label for="isoA4">a4 &ndash; sky temp coeff:</label>
-                  <input id="isoA4" type="number" step="0.00001" value="0" />
-                  <label for="isoA6">a6 &ndash; wind&times;G coeff (s/m):</label>
-                  <input id="isoA6" type="number" step="0.00001" value="0" />
-                  <label for="isoA8">a8 &ndash; 4th order loss (W/m&sup2;K<sup>4</sup>):</label>
-                  <input id="isoA8" type="number" step="0.0000001" value="0" />
-                  <label for="isoTout0">Initial T<sub>out</sub> guess (&deg;C):</label>
-                  <input id="isoTout0" type="number" step="0.1" value="40" />
-                  <label for="isoIterMax">Max iterations (Newton):</label>
-                  <input id="isoIterMax" type="number" min="1" max="10" step="1" value="5" />
-                  <div class="full-row" style="margin-top:6px;display:flex;justify-content:flex-end;"><button type="button" class="secondary-action" onclick="resetModelBCoeffs()">Reset to defaults</button></div>
-                </div>
-              </details>
+              <!-- Model B params (ISO 9806 Eq.12) -->
+              <div id="modelBParams" class="thermal-model-params" style="display:none;">
+                <details class="formula-details thermal-model-details full-row">
+                  <summary>Show model details</summary>
+                  <div class="formula-box" style="margin-top:8px;">
+                    <span class="formula-main">
+                      Q = A<sub>G</sub>[&eta;<sub>0,hem</sub>G<sub>hem</sub> &minus; a<sub>1</sub>(T<sub>m</sub> &minus; T<sub>a</sub>) &minus; a<sub>2</sub>(T<sub>m</sub> &minus; T<sub>a</sub>)<sup>2</sup> &minus; a<sub>3</sub>u(T<sub>m</sub> &minus; T<sub>a</sub>) + a<sub>4</sub>(E<sub>L</sub> &minus; &sigma;T<sub>a</sub><sup>4</sup>) &minus; a<sub>6</sub>uG<sub>hem</sub> &minus; a<sub>8</sub>(T<sub>m</sub> &minus; T<sub>a</sub>)<sup>4</sup>]
+                    </span>
+                    <span class="formula-sub">T<sub>m</sub> = (T<sub>in</sub> + T<sub>out</sub>)/2, solved iteratively each hour. Set a<sub>3</sub>, a<sub>4</sub>, a<sub>6</sub>, and a<sub>8</sub> to 0 to ignore those terms.</span>
+                  </div>
+                  <div class="advanced-grid" style="margin:8px 0 0;">
+                    <label for="isoEta0">&eta;<sub>0,hem</sub> &ndash; peak efficiency:</label>
+                    <input id="isoEta0" type="number" step="0.0001" value="0.762" />
+                    <label for="isoA1">a1 &ndash; heat loss coeff (W/m&sup2;K):</label>
+                    <input id="isoA1" type="number" step="0.0001" value="3.93" />
+                    <label for="isoA2">a2 &ndash; temp&sup2; loss coeff (W/m&sup2;K&sup2;):</label>
+                    <input id="isoA2" type="number" step="0.00001" value="0.0095" />
+                    <label for="isoA3">a3 &ndash; wind&times;temp loss (J/m&sup3;K):</label>
+                    <input id="isoA3" type="number" step="0.00001" value="0" />
+                    <label for="isoA4">a4 &ndash; sky temp coeff:</label>
+                    <input id="isoA4" type="number" step="0.00001" value="0" />
+                    <label for="isoA6">a6 &ndash; wind&times;G coeff (s/m):</label>
+                    <input id="isoA6" type="number" step="0.00001" value="0" />
+                    <label for="isoA8">a8 &ndash; 4th order loss (W/m&sup2;K<sup>4</sup>):</label>
+                    <input id="isoA8" type="number" step="0.0000001" value="0" />
+                    <label for="isoTout0">Initial T<sub>out</sub> guess (&deg;C):</label>
+                    <input id="isoTout0" type="number" step="0.1" value="40" />
+                    <label for="isoIterMax">Max iterations (Newton):</label>
+                    <input id="isoIterMax" type="number" min="1" max="10" step="1" value="5" />
+                    <div class="full-row" style="margin-top:6px;display:flex;justify-content:flex-end;"><button type="button" class="secondary-action" onclick="resetModelBCoeffs()">Reset to defaults</button></div>
+                  </div>
+                </details>
+              </div>
             </div>
           </div>
         </div>
@@ -386,7 +396,7 @@
         <div class="advanced-settings-body">
           <div class="advanced-grid">
             <div class="note full-row advanced-usage-note">
-              <span>These values affect savings, payback, NPV, and levelised cost. They do not change solar energy production.</span>
+              <span>Financial assumptions for savings and payback.</span>
               <span class="setting-chip annual">Annual PVT</span>
               <span class="setting-chip industry">Industry</span>
               <span class="setting-chip disabled">Not used</span>
@@ -416,7 +426,7 @@
               <option value="0.56">NT (DKIS) &mdash; 0.56</option>
             </select>
             <div id="gridEmissionFactorSource" class="note full-row" style="margin:-4px 0 4px;">
-              Source: DCCEEW <a href="https://www.dcceew.gov.au/climate-change/publications/national-greenhouse-accounts-factors-2025" target="_blank" rel="noopener">National Greenhouse Accounts Factors 2025</a>, electricity Scope 2 location-based emission factors (kg CO&#8322;-e/kWh): National average, NSW &amp; ACT, VIC, QLD, SA, WA (SWIS), TAS, and NT (DKIS).
+              Source: DCCEEW <a href="https://www.dcceew.gov.au/climate-change/publications/national-greenhouse-accounts-factors-2025" target="_blank" rel="noopener">National Greenhouse Accounts Factors 2025</a>.
             </div>
 
             <label for="capexInput" class="setting-label"><b>CAPEX &ndash; Unit Cost (AUD/m&sup2;):</b><span class="setting-tags"><span class="setting-chip annual">Annual PVT</span></span></label>
@@ -446,7 +456,7 @@
                 </label>
               </div>
               <div class="note">
-                Auto-converts installed $/W into $/m&sup2; and $/ft&sup2;.
+                Uses installed $/W to fill AUD/m&sup2; and AUD/ft&sup2;.
               </div>
             </div>
 
@@ -460,7 +470,7 @@
             <input id="discountRateInput" type="number" min="0" max="30" step="0.1" value="6" />
 
             <div class="note full-row" style="margin-top:6px;">
-              Defaults are editable estimates. Replace them with site contract rates where available.
+              Defaults are editable estimates.
             </div>
           </div>
         </div>

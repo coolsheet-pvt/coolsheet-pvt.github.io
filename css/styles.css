@@ -15,10 +15,12 @@ html{overflow-x:hidden;overflow-y:scroll;scrollbar-gutter:stable;}
 html{scrollbar-width:thin;scrollbar-color:#2e6fa3 #0d1f30;}
 body{font-family:Arial,Helvetica,sans-serif;margin:18px;color:#111;padding-bottom:120px;background-color:#fff;background-image:linear-gradient(to bottom,#09131f 0px,#10253a 80px,#1a3a55 160px,#d6e4ef 420px,#eef3f7 520px,#fff 680px);background-repeat:no-repeat;background-size:100% 680px;overflow-y:visible;overflow-x:hidden;}
 .wrap{max-width:1070px;margin:0 auto;}
-.shared-scenario-banner{margin:0 0 14px;padding:14px 18px;border:2px solid #c0392b;border-radius:10px;background:#fdecea;text-align:center;}
+.shared-scenario-banner{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 14px;padding:12px 14px;border:1px solid #d36a5c;border-radius:8px;background:#fff1ef;text-align:left;}
 .shared-scenario-banner[hidden]{display:none;}
-.shared-scenario-banner b{display:block;font-size:22px;font-weight:800;letter-spacing:.03em;color:#c0392b;}
-.shared-scenario-banner span{display:block;margin-top:6px;font-size:13px;font-weight:500;color:#8a3227;}
+.shared-scenario-banner b{display:block;font-size:14px;font-weight:800;color:#b93426;}
+.shared-scenario-banner span{display:block;margin-top:2px;font-size:12px;font-weight:500;color:#8a3227;}
+.shared-scenario-link{display:inline-flex;align-items:center;justify-content:center;min-height:32px;padding:7px 11px;border:1px solid #c95a4b;border-radius:5px;background:#fff;color:#9f2f22;text-decoration:none;font-size:12px;font-weight:800;white-space:nowrap;}
+.shared-scenario-link:hover,.shared-scenario-link:focus{background:#ffe6e2;color:#842418;text-decoration:none;}
 h1{font-size:20px;margin:0 0 10px;}
 .brand-hero{margin:0 0 14px;padding:24px 20px;border:1px solid #17324b;border-radius:16px;background:linear-gradient(135deg,#09131f 0%,#10253a 48%,#194d74 100%);box-shadow:0 10px 28px rgba(10,28,45,0.18);}
 .brand-logos{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;}
@@ -137,9 +139,6 @@ body.testing-mode .kwater-label{display:inline;}
 .recommended-size-input-row b{font-size:15px;color:#536a83;}
 .recommended-size-answer{border-color:#9ac9e8;background:#eaf6ff;}
 .recommended-size-answer strong{font-size:24px;color:#0d5b78;}
-.recommended-size-warn{margin-top:10px;padding:9px 12px;border:1px solid #e6c35a;border-radius:7px;background:#fdf6e3;color:#6b4e12;font-size:12px;line-height:1.45;}
-.recommended-size-warn[hidden]{display:none;}
-.recommended-size-note{margin-top:10px;font-size:12px;color:#5c6d78;line-height:1.4;}
 .energy-flow-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0;}
 .energy-flow-group{padding:13px;border:1px solid #d4e1dc;border-radius:10px;background:rgba(255,255,255,0.72);}
 .energy-flow-group.thermal{border-color:#efb17f;background:#fff1e6;}
@@ -318,6 +317,22 @@ body.testing-mode .kwater-label{display:inline;}
 .eta-cell{display:flex;align-items:center;gap:10px;}
 .eta-cell input{flex:0 0 110px;}
 .eta-note{flex:1 1 auto;font-size:11px;color:#666;line-height:1.3;margin:0;}
+.noct-explainer{margin:-2px 0 6px;color:#3f4d5b;max-width:900px;}
+.thermal-model-card{margin:10px 0 4px;padding:14px;border:1px solid #e1b86f;border-left:4px solid #b97916;border-radius:8px;background:#fffaf0;box-shadow:0 1px 0 rgba(120,83,24,0.08);}
+.thermal-model-head{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;color:#173047;}
+.thermal-model-head b{font-size:14px;}
+.thermal-model-head span{font-size:12px;color:#5d6470;line-height:1.35;}
+.thermal-model-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:10px;}
+.thermal-model-option{display:flex;align-items:center;gap:9px;min-height:48px;padding:10px 12px;border:1px solid #e7cf9d;border-radius:7px;background:#fff;cursor:pointer;}
+.thermal-model-option input{width:16px;height:16px;flex:0 0 16px;margin:0;}
+.thermal-model-option span{display:flex;flex-direction:column;gap:3px;min-width:0;font-size:13px;line-height:1.2;color:#173047;}
+.thermal-model-option small{font-size:11px;color:#68706f;line-height:1.25;}
+.thermal-model-params{margin-top:2px;}
+.thermal-model-details{border-color:#d7ad64;background:#fffdf8;}
+.thermal-model-details>summary{background:#f5e7c8;color:#76480e;}
+.thermal-model-details>summary:hover{background:#efd9aa;}
+.thermal-model-details[open]>summary{background:#9b6419;color:#fff;}
+.thermal-model-details[open]>.advanced-grid{background:#fff6e1;}
 /* Consolidated inlet / monthly-mains override card inside Advanced Settings */
 .inlet-block{margin:2px 0 6px;padding:12px 14px;background:#f3f7fb;border:1px solid #dce5ee;border-radius:8px;}
 /* PV temperature-correction toggle — keep the checkbox small so the label reads on one line */
@@ -346,7 +361,8 @@ body.testing-mode .kwater-label{display:inline;}
 .mains-month-cell{display:flex;flex-direction:column;gap:3px;font-size:11px;font-weight:600;color:#4a5a6a;}
 .mains-month-cell input{width:100%;padding:5px 6px;}
 .mains-month-cell input:disabled{background:#f1f4f7;color:#8a97a3;cursor:not-allowed;}
-.mains-edit-actions{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;}
+.mains-model-status{margin:6px 0 4px;color:#4a5a6a;}
+.mains-edit-actions{display:flex;justify-content:flex-end;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;}
 .mains-quickset{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0 2px;font-size:12px;}
 .mains-quickset label{font-weight:600;color:#4a5a6a;}
 .mains-quickset input{width:92px;padding:5px 6px;}
@@ -368,8 +384,8 @@ body.testing-mode .kwater-label{display:inline;}
 input:disabled{background:#eee;color:#666;cursor:not-allowed;}
 button:disabled{opacity:0.55;cursor:wait;transform:none;box-shadow:none;}
 .step-kicker{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#1a5f9a;margin:0 0 4px;}
-.how-it-works-btn{display:inline-flex;align-items:center;justify-content:center;margin-top:12px;height:32px;padding:0 16px;border:1px solid rgba(255,255,255,0.6);border-radius:999px;background:rgba(255,255,255,0.18);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;line-height:1;box-sizing:border-box;text-decoration:none;letter-spacing:0.02em;transition:background 0.18s,border-color 0.18s,box-shadow 0.18s;}
-.how-it-works-btn:hover{background:rgba(255,255,255,0.30);border-color:rgba(255,255,255,0.85);box-shadow:0 0 12px rgba(255,255,255,0.15);transform:none;color:#fff;}
+.how-it-works-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;min-height:36px;padding:8px 12px;border:1px solid rgba(255,255,255,0.38);border-radius:5px;background:rgba(255,255,255,0.10);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;line-height:1.2;box-sizing:border-box;text-decoration:none;letter-spacing:0;box-shadow:none;transition:background 0.18s,border-color 0.18s,transform 0.14s;}
+.how-it-works-btn:hover{background:rgba(255,255,255,0.18);border-color:rgba(255,255,255,0.68);transform:translateY(-1px);color:#fff;}
 .footer-note{margin:16px 0 0;text-align:center;font-size:11px;color:#5a6a7a;line-height:1.5;}
 .footer-fineprint{font-size:9px;line-height:1.5;}
 .footer-details{max-width:760px;margin:16px auto 0;font-size:11.5px;color:#5a6a7a;text-align:left;}
@@ -391,6 +407,7 @@ button:disabled{opacity:0.55;cursor:wait;transform:none;box-shadow:none;}
   .industry-chart-grid{grid-template-columns:1fr;}
   .setting-label{grid-template-columns:1fr;align-items:start;gap:6px;}
   .setting-tags{justify-content:flex-start;}
+  .thermal-model-options{grid-template-columns:1fr;}
   .address-actions{flex-direction:column;align-items:stretch;}
   .address-actions .btns,.address-actions .btns button{width:100%;}
   .inline-form-row{grid-template-columns:1fr;}
@@ -409,6 +426,8 @@ button:disabled{opacity:0.55;cursor:wait;transform:none;box-shadow:none;}
 @media (max-width:640px){
   body{margin:8px;padding-bottom:72px;background-size:100% 520px;}
   .wrap{width:100%;max-width:none;}
+  .shared-scenario-banner{align-items:stretch;flex-direction:column;}
+  .shared-scenario-link{width:100%;}
   .panel{padding:12px;border-radius:8px;}
   .brand-hero{padding:14px 12px 16px !important;border-radius:12px;}
   .brand-logos{gap:10px;}
