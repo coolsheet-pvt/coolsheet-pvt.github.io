@@ -6,7 +6,7 @@
   <title>Annual PVT Calculator</title>
   <meta name="description" content="Estimates annual energy output, savings and payback of photovoltaic-thermal (PVT) solar systems for Australian commercial sites." />
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
-  <link rel="stylesheet" href="css/styles.css?v=13.4" />
+  <link rel="stylesheet" href="css/styles.css?v=13.5" />
   <!-- Chart.js v4.5.1 vendored locally (assets/vendor/) so charts work offline / on flaky wifi. -->
   <script src="assets/vendor/chart.umd.min.js"></script>
   <script src="js/bc_aus_zone_constants.js"></script>
@@ -36,7 +36,7 @@
       </div>
     </div>
     <div class="brand-meta" style="position:absolute;bottom:10px;right:14px;text-align:right;">
-      <span id="appVersionLabel" style="font-size:11px;font-style:italic;color:rgba(255,255,255,0.35);">Version 13.4</span><br/>
+      <span id="appVersionLabel" style="font-size:11px;font-style:italic;color:rgba(255,255,255,0.35);">Version 13.5</span><br/>
       <label style="font-size:11px;color:rgba(255,255,255,0.35);cursor:pointer;display:inline-flex;align-items:center;gap:5px;margin-top:4px;">
         <input type="checkbox" id="chkHideMains" style="width:auto;margin:0;cursor:pointer;" onchange="onTestingModeChange();" />
         Testing
@@ -81,14 +81,8 @@
             <input id="flowRate" type="number" min="0.001" step="0.001" value="0.02" />
 
             <div class="full-row inlet-block">
-              <div class="strike-row inlet-head">
-                <label for="tin">Inlet temperature Tin (&deg;C):</label>
-                <input id="tin" type="number" step="0.1" value="10" disabled />
-              </div>
-              <div class="note" style="margin:6px 0 2px;">
-                A single inlet value isn&rsquo;t used &mdash; the collector inlet T<sub>in</sub> follows the
-                <b>monthly mains-water temperature</b> below, which also drives the water-heating demand &Delta;T
-                (dairy, brewery, aquatic make-up, hotel tank). BC-Aus model values auto-fill once TMY weather is loaded.
+              <div class="note" style="margin:2px 0 2px;">
+                Inlet temperature T<sub>in</sub> comes from the <b>monthly mains-water temperature</b> below, auto-filled once TMY weather is loaded.
               </div>
               <label class="tempcorr-toggle" style="margin:8px 0 2px;">
                 <input type="checkbox" id="mainsCustomEnable" />
@@ -589,6 +583,6 @@
 
 </div>
 
-<script src="js/app.js?v=13.4"></script>
+<script src="js/app.js?v=13.5"></script>
 </body>
 </html>

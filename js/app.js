@@ -3,7 +3,7 @@
 
 // Single source of truth for the app version shown in the header + PDF/report.
 // Keep in sync with the ?v= cache-bust query on css/js in index.html.
-const APP_VERSION = "13.4";
+const APP_VERSION = "13.5";
 
 // ================================================================
 //  DETAILS ANIMATION — replay slideDown every time a panel opens
@@ -1186,13 +1186,10 @@ function getAmbientMonthlyAverages(met){
 
 function updateMainsDisplay(){
   const el  = document.getElementById("mainsTempDisplay");
-  const tin = document.getElementById("tin");
   if (!CURRENT_MAINS){
     el.innerHTML = `<div class="mains-summary-box"><div><b>Monthly average T_mains (\xb0C):</b></div><table class="result-table mains-monthly" style="margin-top:6px;pointer-events:none;"><tbody><tr><td colspan="12" style="text-align:center;font-style:italic;font-family:inherit;opacity:0.5;border:none;">not available yet, load TMY</td></tr></tbody></table></div>`;
-    tin.value = "10.0";
     return;
   }
-  tin.value = CURRENT_MAINS.annualAvgC.toFixed(1);
   const monthHeader = MONTH_NAMES.map(m => `<th>${m}</th>`).join("");
   const monthValues = (CURRENT_MAINS.byMonth || [])
     .map(m => `<td class="num">${m.avgC == null ? "-" : m.avgC.toFixed(2)}</td>`).join("");
@@ -6440,11 +6437,10 @@ async function calcAnnualPVT(){
 // ================================================================
 const INPUT_STORE_KEY = "pvtCalcInputs.v1";
 
-// Serialize every user-set input/select (tin is derived from weather, never user-set).
+// Serialize every user-set input/select.
 function collectInputState(){
   const data = {};
   document.querySelectorAll("input[id], select[id]").forEach(el => {
-    if (el.id === "tin") return;
     data[el.id] = (el.type === "checkbox" || el.type === "radio") ? el.checked : el.value;
   });
   return data;
@@ -6454,7 +6450,7 @@ function collectInputState(){
 function applyInputState(data){
   for (const [id, value] of Object.entries(data || {})){
     const el = document.getElementById(id);
-    if (!el || id === "tin") continue;
+    if (!el) continue;
     if (el.type === "checkbox" || el.type === "radio") el.checked = !!value;
     else el.value = value;
   }

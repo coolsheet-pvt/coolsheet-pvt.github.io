@@ -171,9 +171,6 @@ body.testing-mode .kwater-label{display:inline;}
 .mains-summary-box .result-table td{color:#f4f7fb;border-bottom:1px solid rgba(255,255,255,0.12);}
 .mains-links{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:8px;}
 .mains-link{display:inline-block;font-size:12px;}
-.strike-row{display:contents;}
-.strike-row > label,
-.strike-row > input{text-decoration:line-through;}
 #mainsTempDisplay{min-height:150px;align-self:start;background:#575d66;border-color:#464b53;color:#f4f7fb;}
 #mainsTempDisplay b{color:#fff;}
 #mainsTempDisplay .note{color:#d7dfe8;}
@@ -320,8 +317,6 @@ body.testing-mode .kwater-label{display:inline;}
 .eta-note{flex:1 1 auto;font-size:11px;color:#666;line-height:1.3;margin:0;}
 /* Consolidated inlet / monthly-mains override card inside Advanced Settings */
 .inlet-block{margin:2px 0 6px;padding:12px 14px;background:#f3f7fb;border:1px solid #dce5ee;border-radius:8px;}
-.inlet-block .strike-row{display:flex;align-items:center;gap:12px;}
-.inlet-block .strike-row input{flex:0 0 110px;}
 /* PV temperature-correction toggle — keep the checkbox small so the label reads on one line */
 .tempcorr-toggle{display:flex;align-items:center;gap:9px;cursor:pointer;font-size:13px;line-height:1.35;}
 .tempcorr-toggle input[type=checkbox]{width:17px;height:17px;min-width:17px;min-height:17px;max-height:17px;flex:0 0 17px;margin:0;padding:0;align-self:center;}
