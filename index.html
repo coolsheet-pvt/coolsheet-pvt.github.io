@@ -6,7 +6,7 @@
   <title>Annual PVT Calculator</title>
   <meta name="description" content="Estimates annual energy output, savings and payback of photovoltaic-thermal (PVT) solar systems for Australian commercial sites." />
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
-  <link rel="stylesheet" href="css/styles.css?v=13.5" />
+  <link rel="stylesheet" href="css/styles.css?v=13.10" />
   <!-- Chart.js v4.5.1 vendored locally (assets/vendor/) so charts work offline / on flaky wifi. -->
   <script src="assets/vendor/chart.umd.min.js"></script>
   <script src="js/bc_aus_zone_constants.js"></script>
@@ -14,6 +14,10 @@
 
 <body>
 <div class="wrap">
+  <div id="sharedScenarioBanner" class="shared-scenario-banner" role="alert" hidden>
+    <b>SHARED SCENARIO LOADED</b>
+    <span>Inputs restored from a shared link &mdash; re-load TMY before calculating; live weather/API data may differ from the original run.</span>
+  </div>
   <div class="brand-hero" style="position:relative;">
     <div class="brand-logos">
       <img class="brand-logo brand-logo-coolsheet" src="assets/coolsheet-logo.jpg" alt="Coolsheet logo" />
@@ -36,7 +40,7 @@
       </div>
     </div>
     <div class="brand-meta" style="position:absolute;bottom:10px;right:14px;text-align:right;">
-      <span id="appVersionLabel" style="font-size:11px;font-style:italic;color:rgba(255,255,255,0.35);">Version 13.5</span><br/>
+      <span id="appVersionLabel" style="font-size:11px;font-style:italic;color:rgba(255,255,255,0.35);">Version 13.10</span><br/>
       <label style="font-size:11px;color:rgba(255,255,255,0.35);cursor:pointer;display:inline-flex;align-items:center;gap:5px;margin-top:4px;">
         <input type="checkbox" id="chkHideMains" style="width:auto;margin:0;cursor:pointer;" onchange="onTestingModeChange();" />
         Testing
@@ -108,7 +112,7 @@
                 <label class="mains-month-cell"><span>Dec</span><input id="mainsM11" type="number" step="0.1" disabled /></label>
               </div>
               <div class="mains-edit-actions">
-                <span class="note" id="mainsCustomStatus">Load TMY to populate model values.</span>
+                <span class="note" id="mainsCustomStatus"></span>
                 <button type="button" class="secondary-action" onclick="resetMainsToModel()">Reset to model</button>
               </div>
             </div>
@@ -129,7 +133,7 @@
             <input id="pvTempCoeff" type="number" step="0.01" value="-0.40" />
             <label for="pvNoct">PV NOCT T<sub>NOCT</sub> (&deg;C):</label>
             <input id="pvNoct" type="number" min="20" max="80" step="0.1" value="45" />
-            <div class="note full-row" style="margin:-2px 0 4px;">Applies the module temperature coefficient to actual PVT electricity and to a standalone PV baseline. PV-only temperature uses NOCT. PVT temperature uses NOCT minus coolant heat removal, with U<sub>L</sub> taken from the selected thermal model slope.</div>
+            <div class="note full-row" style="margin:-2px 0 4px;">Corrects PV output for cell temperature: PV-only runs hotter (NOCT), while PVT runs cooler because the coolant carries heat away.</div>
 
             <details class="formula-details full-row">
               <summary>Show the formula</summary>
@@ -142,7 +146,7 @@
                   </span>
                   (T<sub>NOCT</sub> &minus; 20)
                 </span>
-                <span class="formula-sub"><b>Step 1 — uncooled cell temperature.</b> How hot a bare panel runs above ambient T<sub>a</sub> under sun G. Used for the standalone PV baseline.</span>
+                <span class="formula-sub"><b>Step 1 — uncooled cell temperature.</b> How hot a bare panel gets in the sun. Used for the PV-only baseline.</span>
 
                 <span class="formula-main" style="margin-top:12px;">
                   T<sub>PVT</sub> = T<sub>cell</sub> &minus;
@@ -151,12 +155,12 @@
                     <span class="math-frac-bottom">U<sub>L</sub>&thinsp;A</span>
                   </span>
                 </span>
-                <span class="formula-sub"><b>Step 2 — cooled PVT cell temperature.</b> The circulating water carries heat away (&#7745;c<sub>p</sub>&Delta;T), so PVT cells run <i>cooler</i> than a plain panel. U<sub>L</sub> = a<sub>1</sub> from the selected thermal model.</span>
+                <span class="formula-sub"><b>Step 2 — cooled PVT cell temperature.</b> Coolant flow keeps PVT cells <i>cooler</i> than a bare panel.</span>
 
                 <span class="formula-main" style="margin-top:12px;">
                   P = P<sub>STC</sub> &times; [ 1 + &gamma;&thinsp;(T<sub>cell</sub> &minus; 25) ]
                 </span>
-                <span class="formula-sub"><b>Step 3 — power correction.</b> Output scaled by the coefficient &gamma; (%/&deg;C &divide; 100), referenced to the 25&deg;C STC cell. &gamma; is negative, so hotter cells lose power and the cooler PVT cells beat PV-only.</span>
+                <span class="formula-sub"><b>Step 3 — power correction.</b> Hotter cells produce less power, so the cooler PVT cells output more than PV-only.</span>
               </div>
             </details>
 
@@ -466,10 +470,8 @@
         <button id="btnAnnual" type="button">Calculate Annual PV + Thermal</button>
         <span id="calcHint" style="display:none;margin-left:10px;font-size:12px;color:#666;line-height:2.5;">Calculating 8,760 hourly timesteps&hellip;</span>
         <a id="downloadLink" href="#" target="_blank" rel="noopener">Download hourly details CSV</a>
-        <button id="btnSummaryCsv" type="button" class="secondary-action" style="display:none;">Download summary CSV</button>
         <button id="btnGeneratePdf" type="button" class="secondary-action" disabled>Generate PDF report</button>
         <button id="btnShareLink" type="button" class="secondary-action" style="display:inline-block;">Copy share link</button>
-        <span id="shareStatus" class="note" style="display:none;margin-left:8px;"></span>
       </div>
 
     </div>
@@ -583,6 +585,6 @@
 
 </div>
 
-<script src="js/app.js?v=13.5"></script>
+<script src="js/app.js?v=13.10"></script>
 </body>
 </html>

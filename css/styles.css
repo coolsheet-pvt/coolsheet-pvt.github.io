@@ -15,6 +15,10 @@ html{overflow-x:hidden;overflow-y:scroll;scrollbar-gutter:stable;}
 html{scrollbar-width:thin;scrollbar-color:#2e6fa3 #0d1f30;}
 body{font-family:Arial,Helvetica,sans-serif;margin:18px;color:#111;padding-bottom:120px;background-color:#fff;background-image:linear-gradient(to bottom,#09131f 0px,#10253a 80px,#1a3a55 160px,#d6e4ef 420px,#eef3f7 520px,#fff 680px);background-repeat:no-repeat;background-size:100% 680px;overflow-y:visible;overflow-x:hidden;}
 .wrap{max-width:1070px;margin:0 auto;}
+.shared-scenario-banner{margin:0 0 14px;padding:14px 18px;border:2px solid #c0392b;border-radius:10px;background:#fdecea;text-align:center;}
+.shared-scenario-banner[hidden]{display:none;}
+.shared-scenario-banner b{display:block;font-size:22px;font-weight:800;letter-spacing:.03em;color:#c0392b;}
+.shared-scenario-banner span{display:block;margin-top:6px;font-size:13px;font-weight:500;color:#8a3227;}
 h1{font-size:20px;margin:0 0 10px;}
 .brand-hero{margin:0 0 14px;padding:24px 20px;border:1px solid #17324b;border-radius:16px;background:linear-gradient(135deg,#09131f 0%,#10253a 48%,#194d74 100%);box-shadow:0 10px 28px rgba(10,28,45,0.18);}
 .brand-logos{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;}
@@ -87,8 +91,8 @@ body.testing-mode .kwater-label{display:inline;}
 .annual-kicker{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,0.78);font-weight:700;margin-bottom:5px;}
 .annual-card-head h3{margin:0 0 6px;font-size:22px;}
 .annual-location{margin:0;color:rgba(255,255,255,0.92);line-height:1.4;max-width:860px;}
-.annual-summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:14px 0;}
-.annual-summary-item{padding:12px 14px;border:1px solid rgba(255,255,255,0.16);background:rgba(255,255,255,0.14);border-radius:10px;min-height:92px;backdrop-filter:blur(6px);}
+.annual-summary-grid{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0;}
+.annual-summary-item{flex:1 1 170px;padding:12px 14px;border:1px solid rgba(255,255,255,0.16);background:rgba(255,255,255,0.14);border-radius:10px;min-height:92px;backdrop-filter:blur(6px);}
 .annual-summary-item span{display:block;font-size:12px;color:rgba(255,255,255,0.78);font-weight:700;margin-bottom:8px;}
 .annual-summary-item strong{display:block;font-size:20px;line-height:1.15;color:#fff;font-variant-numeric:tabular-nums;}
 .annual-summary-item small{display:block;margin-top:6px;color:rgba(255,255,255,0.82);line-height:1.35;}
@@ -103,8 +107,6 @@ body.testing-mode .kwater-label{display:inline;}
 .flow-suggestion{margin:2px 0 12px;padding:11px 14px;border:1px solid rgba(120,180,255,0.5);background:rgba(90,150,230,0.18);border-radius:10px;color:#eaf2ff;font-size:13px;line-height:1.45;}
 .flow-suggestion b{color:#fff;}
 .annual-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.22);}
-.annual-actions-subtle{margin-top:6px;padding-top:0;border-top:0;}
-.output-card-annual .annual-actions .note{color:rgba(255,255,255,0.86);}
 .output-card-annual .detail-toggle{background:#fff;color:#0d5b78;border-color:rgba(255,255,255,0.5);}
 .output-card-annual .detail-toggle:hover{background:#eefaff;color:#083d5b;box-shadow:0 4px 14px rgba(0,0,0,0.16);}
 .validation-link{display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:9px 13px;border:1px solid rgba(255,255,255,0.48);border-radius:6px;background:#fff;color:#0d5b78;text-decoration:none;font-size:13px;font-weight:700;line-height:1.2;transition:background 0.18s,box-shadow 0.18s,transform 0.14s;}
@@ -201,7 +203,8 @@ body.testing-mode .kwater-label{display:inline;}
 .chart-modal{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:1000;}
 .chart-card{background:#fff;border-radius:8px;padding:12px;width:min(920px,95vw);max-height:90vh;overflow:auto;}
 .chart-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
-.chart-close{padding:6px 10px;border:1px solid #bbb;background:#fff;border-radius:6px;cursor:pointer;}
+.chart-close{padding:6px 10px;border:1px solid #bbb;background:#fff;border-radius:6px;cursor:pointer;color:#333;}
+.chart-close:hover{background:#eef2f6;color:#111;box-shadow:none;transform:none;}
 .chart-svg{width:100%;height:auto;border:1px solid #ddd;border-radius:6px;background:#fff;}
 .chart-grid{display:grid;grid-template-columns:1fr;gap:12px;}
 .diagram-controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
@@ -382,7 +385,8 @@ button:disabled{opacity:0.55;cursor:wait;transform:none;box-shadow:none;}
   .wrap{width:100%;max-width:none;}
   .panel{padding:12px;}
   .summary-card-grid,.advanced-grid{grid-template-columns:1fr;}
-  .metric-cards,.annual-summary-grid,.industry-summary-row,.insight-strip,.recommended-size-grid{grid-template-columns:1fr 1fr;}
+  .metric-cards,.industry-summary-row,.insight-strip,.recommended-size-grid{grid-template-columns:1fr 1fr;}
+  .annual-summary-grid .annual-summary-item{flex-basis:calc(50% - 5px);}
   .energy-flow-summary{grid-template-columns:1fr;}
   .industry-chart-grid{grid-template-columns:1fr;}
   .setting-label{grid-template-columns:1fr;align-items:start;gap:6px;}
@@ -454,7 +458,8 @@ button:disabled{opacity:0.55;cursor:wait;transform:none;box-shadow:none;}
 }
 @media (max-width:520px){
   body{margin:6px;}
-  .metric-cards,.annual-summary-grid,.industry-summary-row,.insight-strip,.recommended-size-grid{grid-template-columns:1fr;}
+  .metric-cards,.industry-summary-row,.insight-strip,.recommended-size-grid{grid-template-columns:1fr;}
+  .annual-summary-grid .annual-summary-item{flex-basis:100%;}
   .energy-flow-cards{grid-template-columns:1fr;}
   .annual-card-head h3{font-size:20px;}
   .brand-logo-coolsheet{max-height:54px;}

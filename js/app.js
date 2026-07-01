@@ -3,7 +3,7 @@
 
 // Single source of truth for the app version shown in the header + PDF/report.
 // Keep in sync with the ?v= cache-bust query on css/js in index.html.
-const APP_VERSION = "13.5";
+const APP_VERSION = "13.10";
 
 // ================================================================
 //  DETAILS ANIMATION — replay slideDown every time a panel opens
@@ -58,8 +58,6 @@ function resetExportActions(){
     pdfBtn.disabled = true;
     pdfBtn.textContent = "Generate PDF report";
   }
-  const sumBtn = document.getElementById("btnSummaryCsv");
-  if (sumBtn) sumBtn.style.display = "none";
 }
 
 function escapeHtml(value){
@@ -472,8 +470,6 @@ function buildPdfTemplateDocument(){
     .balance-table td{font-weight:700;color:#102d45;text-align:right;font-size:10px;}
     .report-table{font-size:9.2px;}
     .report-table th{width:23%;}
-    .basis-note{margin-top:9px;padding-top:8px;border-top:1px solid #dfe8f1;color:#5d6f84;font-size:9px;}
-    .basis-note b{color:#34495e;}
     .empty-note{padding:8px;border:1px dashed #bac8d6;border-radius:6px;color:#617286;background:#fff;}
     @media (max-width:720px){
       .report-head{grid-template-columns:1fr;}
@@ -499,7 +495,6 @@ function buildPdfTemplateDocument(){
       .industry-headline{padding:6px 8px;margin-bottom:6px;}
       .balance-grid{gap:6px;margin-top:6px;}
       .balance-table th,.balance-table td,.report-table th,.report-table td{padding:3px 4px;}
-      .basis-note{font-size:8.2px;margin-top:7px;padding-top:6px;}
     }
   </style>
 </head>
@@ -559,10 +554,6 @@ function buildPdfTemplateDocument(){
         </div>
         ${renderReportTable(assumptionRows, "compact-table")}
       </section>
-
-      <div class="basis-note">
-        <b>Basis of estimate:</b> PVGIS typical meteorological year weather is evaluated hour by hour against the selected PVT model and, where selected, the industry demand profile. Financial results use the editable rates, lifetime, CAPEX, OPEX, boiler efficiency, and discount rate above. Final design, compliance, and procurement decisions should be confirmed by the responsible project team.
-      </div>
     </article>
   </main>
   <script>
@@ -1281,7 +1272,7 @@ function syncMainsCustomUI(){
       ? (enabled
           ? "Custom values in use — these override the BC-Aus model for inlet Tin and demand ΔT."
           : "Using the BC-Aus model. Tick the box to edit individual months.")
-      : "Load TMY to populate model values.";
+      : "";
   }
 }
 
@@ -5303,10 +5294,8 @@ async function calcAnnualPVT(){
     const outletTooLow = isFiniteNumber(daytimeToutAvg) && daytimeToutAvg < LOW_OUTLET_THRESHOLD_C;
     const flowSuggestionHtml = outletTooLow ? `
       <div class="flow-suggestion">
-        <b>❄ Winter tip:</b> average daytime outlet temperature is ${daytimeToutAvg.toFixed(1)}&deg;C
-        &mdash; below the ${LOW_OUTLET_THRESHOLD_C}&deg;C useful threshold. Try lowering the
-        <b>flow rate</b> (currently ${flowRate} L/s/m&sup2;): slower flow raises outlet temperature,
-        making the heat more useful for winter water heating, at the cost of a small drop in total thermal energy.
+        <b>&#10052; Winter tip:</b> outlet ${daytimeToutAvg.toFixed(1)}&deg;C &lt; ${LOW_OUTLET_THRESHOLD_C}&deg;C.
+        Try &darr; <b>flow rate</b> (now ${flowRate} L/s/m&sup2;) &rarr; &uarr; outlet temp, small &darr; in total heat.
       </div>` : "";
     const tempModelText = pvTempCorrEnable
       ? `NOCT ${pvNoctC.toFixed(1)}&deg;C, &gamma;=${(pvTempCoeffPerC*100).toFixed(2)}%/&deg;C, STC reference ${PV_STC_CELL_TEMP_C}&deg;C`
@@ -5319,7 +5308,6 @@ async function calcAnnualPVT(){
       tiltAngle,
       surfaceAzimuth: azimuthAngle
     });
-    const pvgisValidationText = `PVGIS ERA5, ${pvgisValidation.peakPowerKw.toFixed(1)} kWp, ${tiltAngle.toFixed(0)}&deg; tilt, PVGIS azimuth ${pvgisValidation.pvgisAspect.toFixed(0)}&deg;, ${pvgisValidation.lossPct}% loss`;
     let html = `
       <div class="output-card output-card-annual" style="position:relative;">
       <div class="annual-card-head">
@@ -5333,7 +5321,6 @@ async function calcAnnualPVT(){
         <div class="annual-summary-item">
           <span>PVT electricity</span>
           <strong>${fmtE(E_pv_kWh,1,'kWh')}</strong>
-          <small>${pvTempCorrEnable ? 'Temperature-corrected cooled yield' : 'Constant-efficiency yield'}</small>
         </div>
         <div class="annual-summary-item">
           <span>PVT thermal</span>
@@ -5358,7 +5345,6 @@ async function calcAnnualPVT(){
         <div class="annual-summary-item${outletTooLow ? ' annual-outlet-low' : ''}">
           <span>Avg daytime outlet temp</span>
           <strong>${fmtE(daytimeToutAvg,1,'&deg;C')}</strong>
-          <small>Avg daytime air ${fmtE(daytimeAmbientAvg,1,'&deg;C')}${outletTooLow ? ' &middot; below 20&deg;C' : ''}</small>
         </div>
         <div class="annual-summary-item annual-finance ${netAnnualBenefit>=0?'':'negative'}">
           <span>PVT supply value</span>
@@ -5370,10 +5356,6 @@ async function calcAnnualPVT(){
       <div class="annual-actions">
         <button type="button" class="detail-toggle" onclick="toggleAnnualDetails(this)" aria-expanded="false">Show detailed results</button>
         <a class="validation-link" href="${pvgisValidation.toolUrl}" target="_blank" rel="noopener">Open PVGIS tool</a>
-        <span class="note">${pvgisValidationText}</span>
-      </div>
-      <div class="annual-actions annual-actions-subtle">
-        <span class="note">Open for economics, levelised costs, and calculation detail.</span>
       </div>
       <div class="annual-detail-panel" hidden>
       <h4 style="margin:4px 0 6px;color:#1a5276;">Energy Detail</h4>
@@ -6420,8 +6402,6 @@ async function calcAnnualPVT(){
       pdfBtn.disabled = false;
       pdfBtn.textContent = "Generate PDF report";
     }
-    const sumBtn = document.getElementById("btnSummaryCsv");
-    if (sumBtn) sumBtn.style.display = "inline-block";
 
   } catch(err){
     console.error(err);
@@ -6617,24 +6597,6 @@ function buildSummaryCsv(){
   return lines.join("\n").replace(/\n+$/,"") + "\n";
 }
 
-function downloadSummaryCsv(){
-  const root = document.getElementById("annualOutput");
-  if (!CURRENT_CALC_RESULT && (!root || !root.textContent.trim() || root.textContent.trim().startsWith("Ready"))){
-    alert("Run a calculation first, then download the summary.");
-    return;
-  }
-  const blob = new Blob([buildSummaryCsv()], { type: "text/csv;charset=utf-8;" });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement("a");
-  const safeName = (CURRENT_LOC?.name || "location").toLowerCase().replace(/[^a-z0-9]+/g, "_");
-  a.href = url;
-  a.download = `PVT_summary_${safeName}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
 document.addEventListener("change", ev => {
   if (ev.target?.matches?.("input[id], select[id]")) saveInputsToStorage();
 });
@@ -6647,12 +6609,8 @@ restoreInputsFromStorage();
 const _sharedScenarioApplied = applySharedScenarioFromUrl();
 if (_sharedScenarioApplied){
   saveInputsToStorage();
-  const shareStatus = document.getElementById("shareStatus");
-  if (shareStatus){
-    shareStatus.textContent = "Shared scenario loaded — press “Geocode & Load TMY”, then Calculate.";
-    shareStatus.style.display = "inline";
-    shareStatus.textContent = "Shared scenario loaded - inputs restored. Re-load TMY before calculating; live weather/API data may differ from the original run.";
-  }
+  const banner = document.getElementById("sharedScenarioBanner");
+  if (banner) banner.hidden = false;
 }
 // Sync UI that depends on restored values: thermal-model panel + testing mode.
 {
@@ -6695,7 +6653,6 @@ onTestingModeChange();
   if (versionLabel) versionLabel.textContent = `Version ${APP_VERSION}`;
 }
 document.getElementById("btnShareLink")?.addEventListener("click", copyShareLink);
-document.getElementById("btnSummaryCsv")?.addEventListener("click", downloadSummaryCsv);
 document.querySelectorAll('input[name="thermalModel"]').forEach(radio => {
   radio.addEventListener('change', function(){
     const isA = this.value === 'A';
