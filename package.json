@@ -3,17 +3,24 @@
   "private": true,
   "scripts": {
     "test": "npm run test:offline",
-    "test:offline": "npm run test:geometry && npm run test:industry && npm run test:economics && npm run test:solar-e2e && npm run test:golden-reference && npm run test:pvt-models && npm run test:weather-fixtures && npm run test:backend-solarhour && npm run test:no-nan && npm run test:export-share",
+    "test:offline": "npm run test:geometry && npm run test:industry && npm run test:industry-evidence && npm run test:economics && npm run test:pv-boundary && npm run test:solar-e2e && npm run test:golden-reference && npm run test:pvt-models && npm run test:weather-fixtures && npm run test:weather-contract && npm run test:backend-solarhour && npm run test:mains-zones && npm run test:no-nan && npm run test:export-share && npm run test:supply-aggregation && npm run test:input-parsing",
     "test:geometry": "node validation/unit/test_geometry.mjs",
     "test:industry": "node validation/unit/test_industry.mjs",
+    "test:industry-evidence": "node validation/unit/test_industry_evidence.mjs",
     "test:economics": "node validation/unit/test_economics.mjs",
+    "test:pv-boundary": "node validation/unit/test_pv_boundary.mjs",
     "test:solar-e2e": "node validation/scripts/verify_js_e2e.mjs",
     "test:golden-reference": "node validation/unit/test_golden_reference.mjs",
     "test:pvt-models": "node validation/unit/test_pvt_models.mjs",
     "test:weather-fixtures": "node validation/unit/test_weather_fixtures.mjs",
+    "test:weather-contract": "node validation/unit/test_weather_contract.mjs",
     "test:backend-solarhour": "python validation/backend/test_backend_solarhour.py",
+    "test:live-backend-contract": "python validation/backend/test_live_contract.py",
+    "test:mains-zones": "node validation/unit/test_mains_zones.mjs",
     "test:no-nan": "node validation/unit/test_no_nan.mjs",
     "test:export-share": "node validation/unit/test_export_share_state.mjs",
+    "test:supply-aggregation": "node validation/unit/test_supply_aggregation.mjs",
+    "test:input-parsing": "node validation/unit/test_input_parsing.mjs",
     "test:browser": "playwright test validation/browser/browser_smoke.spec.mjs",
     "test:live-industries": "playwright test validation/browser/live_industry_matrix.spec.mjs",
     "fixtures:weather": "python validation/scripts/generate_weather_fixtures.py",
@@ -21,6 +28,6 @@
     "test:links": "node validation/scripts/check_links.mjs"
   },
   "devDependencies": {
-    "@playwright/test": "^1.61.1"
+    "@playwright/test": "1.61.1"
   }
 }

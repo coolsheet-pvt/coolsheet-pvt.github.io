@@ -290,16 +290,16 @@ if (stored) {
 
 const ZONE_DATA = {
   zone1: {
-    name: "Zone 1 \u2014 Alice Springs",
-    city: "Alice Springs",
+    name: "Zone 1 \u2014 Rockhampton",
+    city: "Rockhampton",
     latitude: -23.4,
-    longitude: 133.88,
-    elevation: 545,
-    // Zone 1 - Alice Springs
+    longitude: 150.51,
+    elevation: 10,
+    // Zone 1 - Rockhampton
     // Source: monthly means computed from CER DomDecks V30h alicesprings2.tmy
     // (TRNSYS climate input, format 1X,3I2,5I3,I2,I1, ambient temp at chars 14-16
     // in DEG.C * 10). 8760 hourly records averaged per month.
-    taMonthlyCER: [27.91, 26.49, 23.55, 20.61, 16.39, 13.07, 9.65, 13.13, 16.65, 23.95, 24.80, 27.88],
+    taMonthlyCER: [26.74, 25.48, 25.83, 23.07, 19.73, 16.56, 16.14, 18.02, 19.01, 21.56, 23.79, 25.88],
     taMonthlyPVGIS: null,
     // Source: CER DomDecks V30h zone1_NW_Domestic.inc, UNIT 17 TYPE 14 block.
     // Verified directly from the .inc file. Latitude also taken from the file's
@@ -307,16 +307,16 @@ const ZONE_DATA = {
     cerMains: [28.0, 28.0, 27.0, 25.0, 23.0, 20.0, 20.0, 21.0, 24.0, 26.0, 28.0, 28.0]
   },
   zone2: {
-    name: "Zone 2 \u2014 Rockhampton",
-    city: "Rockhampton",
+    name: "Zone 2 \u2014 Alice Springs",
+    city: "Alice Springs",
     latitude: -23.5,
-    longitude: 150.51,
-    elevation: 10,
-    // Zone 2 - Rockhampton
+    longitude: 133.88,
+    elevation: 545,
+    // Zone 2 - Alice Springs
     // Source: monthly means computed from CER DomDecks V30h rockhampton2.tmy.
     // NOTE: March (25.83) is essentially tied with February (25.48) - small
     // autumn/summer inversion is a quirk of CER's TMY year selection, not an error.
-    taMonthlyCER: [26.74, 25.48, 25.83, 23.07, 19.73, 16.56, 16.14, 18.02, 19.01, 21.56, 23.79, 25.88],
+    taMonthlyCER: [27.91, 26.49, 23.55, 20.61, 16.39, 13.07, 9.65, 13.13, 16.65, 23.95, 24.80, 27.88],
     taMonthlyPVGIS: null,
     // Source: CER DomDecks V30h zone2_NW_Domestic.inc, UNIT 17 TYPE 14 block.
     // Verified directly from the .inc file. NOTE: This zone shows an unusually
@@ -917,8 +917,6 @@ initialise();
 </script>
 </body>
 </html>
-
-
 
 
 

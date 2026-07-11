@@ -51,9 +51,10 @@ const SYMBOLS = [
   ["calcHotelElectricalWeatherFactor","func"],["calcHotelElectricalHourlyDemand","func"],
   ["calcDairyHourlyDemand","func"],["calcBreweryHourlyDemand","func"],["calcAquaticHourlyDemand","func"],
   ["laundryOperatingDayWeight","func"],["calcCommercialLaundryHourlyDemand","func"],
+  ["calculateThermalStorage","func"],
 ];
 const code = SYMBOLS.map(([n,k]) => extract(n,k)).join("\n");
-const mod = new Function(code + "\nreturn {calcDairyHourlyDemand,calcBreweryHourlyDemand,calcAquaticHourlyDemand,calcCommercialLaundryHourlyDemand,calcHotelElectricalHourlyDemand,calcHotelElectricalWeatherFactor,DAIRY_PROCESS_PARAMS,BREWERY_PROCESS_PARAMS,DAIRY_ELEC_PARAMS,BREWERY_ELEC_PARAMS,HOTEL_PROCESS_PARAMS,HOTEL_ELECTRICAL_KWH_PER_UNIT,LAUNDRY_DEFAULTS,LAUNDRY_PROCESS_STACK_ORDER,normalizeSeasonalFactors,DAIRY_SEASONAL,MONTH_DAYS,WATER_CP_KWH_PER_KG_C};")();
+const mod = new Function(code + "\nreturn {calcDairyHourlyDemand,calcBreweryHourlyDemand,calcAquaticHourlyDemand,getAquaticRelativeHumidity,calcCommercialLaundryHourlyDemand,calcHotelElectricalHourlyDemand,calcHotelElectricalWeatherFactor,calculateThermalStorage,DAIRY_PROCESS_PARAMS,BREWERY_PROCESS_PARAMS,DAIRY_ELEC_PARAMS,BREWERY_ELEC_PARAMS,HOTEL_PROCESS_PARAMS,HOTEL_ELECTRICAL_KWH_PER_UNIT,LAUNDRY_DEFAULTS,LAUNDRY_PROCESS_STACK_ORDER,normalizeSeasonalFactors,DAIRY_SEASONAL,MONTH_DAYS,WATER_CP_KWH_PER_KG_C};")();
 
 // --- synthetic full-year weather + constant mains so thermal totals are predictable ---
 const MAINS_C = 18;
@@ -77,6 +78,10 @@ console.log("\n# DAIRY  (throughput 5,000,000 L milk; mains "+MAINS_C+"C)");
   const expTh=T*kW*4.184*(35-MAINS_C)/3600;
   near("Thermal = V*cp*dT  (1.37 L/L milk -> 35C)", th, expTh, 1);
   ok("Total heated water = 1.37 L/L", Math.abs(kW-1.37)<1e-9, `kW=${kW}`);
+  const customParams=Object.fromEntries(keys.map(k=>[k,{...mod.DAIRY_PROCESS_PARAMS[k],kWater:mod.DAIRY_PROCESS_PARAMS[k].kWater*2}]));
+  const custom=mod.calcDairyHourlyDemand(T,"continuous",keys,met,mains,{electricalKWhPerKL:60,processParams:customParams});
+  near("editable dairy electricity intensity is applied", sum(custom.electricHourly), 60*(T/1000), 0.5);
+  near("editable dairy water rates scale thermal demand", sum(custom.thermalHourly), th*2, 1);
 }
 
 console.log("\n# BREWERY  (throughput 500,000 L beer; mains "+MAINS_C+"C)");
@@ -91,6 +96,10 @@ console.log("\n# BREWERY  (throughput 500,000 L beer; mains "+MAINS_C+"C)");
   near("Thermal = sum V*cp*dT  (per-process targets 40-45C)", th, expTh, 1);
   const kW=keys.reduce((a,k)=>a+P[k].kWater,0);
   ok("Total warm water = 1.85 L/L beer", Math.abs(kW-1.85)<1e-9, `kW=${kW}`);
+  const customParams=Object.fromEntries(keys.map(k=>[k,{...P[k],kWater:P[k].kWater*0.5}]));
+  const custom=mod.calcBreweryHourlyDemand(T,"continuous",keys,met,mains,{electricalKWhPerHL:8,processParams:customParams});
+  near("editable brewery electricity intensity is applied", sum(custom.electricHourly), 0.08*T, 0.5);
+  near("editable brewery water rates scale thermal demand", sum(custom.thermalHourly), th*0.5, 1);
 }
 
 console.log("\n# AQUATIC  (indoor pool 500 m2; physics heat-loss model)");
@@ -112,7 +121,94 @@ console.log("\n# AQUATIC  (indoor pool 500 m2; physics heat-loss model)");
   ok("Evaporation is the dominant loss (~ASHRAE 56%)", b.evaporation>b.makeup && b.evaporation>b.sensible,
      `evap=${b.evaporation.toFixed(0)} makeup=${b.makeup.toFixed(0)} sens=${b.sensible.toFixed(0)}`);
   ok("Annual pool-heat per m2 in sane band 300-6000 kWh/m2", perM2>300 && perM2<6000, `perM2=${perM2.toFixed(0)}`);
+  const halfEvap = mod.calcAquaticHourlyDemand({
+    met:amet, activeProcesses:["indoor_pool"], profileType:"continuous",
+    processAreas:{indoor_pool:500}, coverEnabled:false, mainsTempC:18, evaporationScale:0.5, makeupScale:1
+  });
+  near("editable evaporation multiplier scales evaporation component", halfEvap.processBreakdownAnnuals.indoor_pool.evaporation, b.evaporation*0.5, 0.01);
   console.log(`        (info) indoor pool heating = ${perM2.toFixed(0)} kWh/m2 surface; split evap ${(b.evaporation/total*100).toFixed(0)}% / makeup ${(b.makeup/total*100).toFixed(0)}% / sensible ${(b.sensible/total*100).toFixed(0)}%`);
+}
+
+console.log("\n# AQUATIC MAINS PROFILE  (daily byDay drives makeup-water dT, v13.12)");
+{
+  const amet = [];
+  for (let d=1; d<=365; d++) for (let h=0; h<24; h++){
+    amet.push({ dayN:d, hourN:h, ta:20, vwind:2 });
+  }
+  const base = { met:amet, activeProcesses:["indoor_pool"], profileType:"continuous",
+    processAreas:{indoor_pool:500}, coverEnabled:false };
+  const flat18 = Object.fromEntries(Array.from({length:365},(_,i)=>[i+1,18]));
+  const scalar = mod.calcAquaticHourlyDemand({ ...base, mainsTempC:18 });
+  const flatByDay = mod.calcAquaticHourlyDemand({ ...base, mainsTempC:99, mains:{ byDay:flat18, annualAvgC:18 } });
+  near("constant byDay 18C equals scalar mains 18C", sum(flatByDay.thermalHourly), sum(scalar.thermalHourly), 0.01);
+  // Seasonal mains averaging 18C: colder winter water must RAISE annual makeup heat
+  // relative to the flat annual average (dT clamps at 0 never bind here).
+  const seasonal = Object.fromEntries(Array.from({length:365},(_,i)=>{
+    const d=i+1; return [d, 18 - 6*Math.cos(2*Math.PI*(d-15-182)/365)];
+  }));
+  const seasonalRes = mod.calcAquaticHourlyDemand({ ...base, mainsTempC:18, mains:{ byDay:seasonal, annualAvgC:18 } });
+  const bScalar = scalar.processBreakdownAnnuals.indoor_pool;
+  const bSeason = seasonalRes.processBreakdownAnnuals.indoor_pool;
+  ok("evaporation & sensible unchanged by mains profile",
+    Math.abs(bScalar.evaporation-bSeason.evaporation)<1e-6 && Math.abs(bScalar.sensible-bSeason.sensible)<1e-6);
+  // Makeup dT is linear in Tmains and litres are uniform, so a zero-mean seasonal
+  // swing redistributes demand across the year but preserves the annual total
+  // (the max(0, dT) clamp never binds at pool setpoints). Winter days rise,
+  // summer days fall.
+  near("annual makeup preserved for zero-mean seasonal swing", bSeason.makeup, bScalar.makeup, 0.01);
+  const dayTotal = (res, d) => res.thermalHourly.slice((d-1)*24, d*24).reduce((a,b)=>a+b,0);
+  const winterDay = 197, summerDay = 15; // coldest / warmest mains in the synthetic profile
+  ok("winter-day demand higher with cold winter mains",
+    dayTotal(seasonalRes, winterDay) > dayTotal(scalar, winterDay) + 1,
+    `seasonal=${dayTotal(seasonalRes, winterDay).toFixed(1)} flat=${dayTotal(scalar, winterDay).toFixed(1)}`);
+  ok("summer-day demand lower with warm summer mains",
+    dayTotal(seasonalRes, summerDay) < dayTotal(scalar, summerDay) - 1,
+    `seasonal=${dayTotal(seasonalRes, summerDay).toFixed(1)} flat=${dayTotal(scalar, summerDay).toFixed(1)}`);
+}
+
+console.log("\n# AQUATIC PVGIS HUMIDITY POLICY");
+{
+  const makeMet = rh => Array.from({length:24},(_,h)=>({dayN:1,hourN:h,ta:25,vwind:2,relativeHumidityPct:rh}));
+  const config = {activeProcesses:["outdoor_pool"],profileType:"continuous",
+    processAreas:{outdoor_pool:100},coverEnabled:false,mainsTempC:18};
+  const dry = mod.calcAquaticHourlyDemand({...config,met:makeMet(25)});
+  const humid = mod.calcAquaticHourlyDemand({...config,met:makeMet(85)});
+  ok("higher validated outdoor RH lowers evaporation heat",
+    dry.processBreakdownAnnuals.outdoor_pool.evaporation > humid.processBreakdownAnnuals.outdoor_pool.evaporation);
+
+  const indoorConfig = {...config,activeProcesses:["indoor_pool"],processAreas:{indoor_pool:100}};
+  const indoorDry = mod.calcAquaticHourlyDemand({...indoorConfig,met:makeMet(25)});
+  const indoorHumid = mod.calcAquaticHourlyDemand({...indoorConfig,met:makeMet(85)});
+  near("indoor pools retain controlled design RH", sum(indoorDry.thermalHourly), sum(indoorHumid.thermalHourly), 1e-9);
+  ok("invalid RH falls back safely", Number.isFinite(mod.getAquaticRelativeHumidity({relativeHumidityPct:150},"outdoor_pool")));
+}
+
+console.log("\n# HOTEL STORAGE TANK  (capacity from mains profile, lossless)");
+{
+  const N = 48;
+  const supply = new Array(N).fill(0).map((_,i)=> (i%24>=8 && i%24<16) ? 10 : 0);
+  const demand = new Array(N).fill(2);
+  const scalar = mod.calculateThermalStorage({
+    tank_volume_litres: 5000, pvt_supply_array: supply, hotel_demand_array: demand, mains_temp: 14
+  });
+  near("capacity = V*cp*(35-14)/3600 = 122.03 kWh", scalar.tank_capacity_kwh, 5000*4.184*21/3600, 1e-6);
+  const flatArr = new Array(N).fill(14);
+  const withArr = mod.calculateThermalStorage({
+    tank_volume_litres: 5000, pvt_supply_array: supply, hotel_demand_array: demand,
+    mains_temp: 99, mains_temp_array: flatArr
+  });
+  near("constant mains array reproduces scalar capacity", withArr.tank_capacity_kwh, scalar.tank_capacity_kwh, 1e-9);
+  near("constant mains array reproduces scalar unmet", withArr.total_unmet_demand_kwh, scalar.total_unmet_demand_kwh, 1e-9);
+  near("energy balance closes: supply - demand = excess - unmet + final SOC",
+    sum(supply) - sum(demand),
+    scalar.total_excess_pvt_kwh - scalar.total_unmet_demand_kwh + scalar.tank_soc_kwh[N-1], 1e-9);
+  const coldArr = new Array(N).fill(8); // colder mains -> larger usable capacity
+  const cold = mod.calculateThermalStorage({
+    tank_volume_litres: 5000, pvt_supply_array: supply, hotel_demand_array: demand,
+    mains_temp: 14, mains_temp_array: coldArr
+  });
+  ok("colder mains raises usable tank capacity", cold.tank_capacity_kwh > scalar.tank_capacity_kwh,
+    `cold=${cold.tank_capacity_kwh.toFixed(1)} base=${scalar.tank_capacity_kwh.toFixed(1)}`);
 }
 
 console.log("\n# HOTEL  (60,000 occupied room-nights; energy per room-night)");

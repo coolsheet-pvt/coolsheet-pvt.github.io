@@ -1,0 +1,400 @@
+/* ============================================================================
+   MODERN UI (beta) — presentation-only styles, active ONLY under body.ui-modern
+   (set by js/ui-modern.js when the URL carries ?ui=modern).
+   The classic UI is untouched: nothing here applies without the body class,
+   except the small opt-in header link (.ui-modern-switch).
+   To revert permanently: delete this file + js/ui-modern.js and their two
+   include lines in index.html.
+   ========================================================================== */
+
+/* Opt-in link shown in the classic header */
+.ui-modern-switch{ opacity:.85; }
+.ui-modern-switch:hover{ opacity:1; }
+
+/* ---- Base look ---------------------------------------------------------- */
+body.ui-modern{
+  background:
+    radial-gradient(1200px 500px at 15% -10%, #12324a 0%, transparent 60%),
+    #0d2233;
+}
+body.ui-modern .wrap{ max-width:1020px; }
+body.ui-modern .panel{
+  border-radius:14px;
+  box-shadow:0 10px 34px rgba(4,18,30,.35);
+  border:1px solid rgba(255,255,255,.06);
+}
+body.ui-modern .brand-hero{ border-radius:14px; }
+body.ui-modern .header-actions{ align-items:center; }
+body.ui-modern .header-actions .brand-meta{
+  position:static !important;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  min-height:36px;
+  margin-left:auto;
+  text-align:right !important;
+}
+body.ui-modern .header-actions .brand-meta br{ display:none; }
+body.ui-modern .header-actions .brand-meta #appVersionLabel{
+  white-space:nowrap;
+  color:rgba(255,255,255,.48) !important;
+}
+body.ui-modern .header-actions .brand-meta label{
+  min-height:36px;
+  margin-top:0 !important;
+  padding:7px 10px;
+  border:1px solid rgba(255,255,255,.28);
+  border-radius:5px;
+  background:rgba(255,255,255,.08);
+  color:rgba(255,255,255,.76) !important;
+  font-size:12px !important;
+  white-space:nowrap;
+}
+body.ui-modern .step-kicker{
+  font-size:13px;
+  letter-spacing:.14em;
+}
+
+/* ---- Provenance chips ----------------------------------------------------- */
+body.ui-modern .prov-chip{
+  display:inline-block;
+  margin-left:7px;
+  padding:1.5px 7px;
+  border-radius:999px;
+  font-size:10px; font-weight:700;
+  letter-spacing:.03em;
+  vertical-align:middle;
+  white-space:nowrap;
+}
+body.ui-modern .prov-input{ background:#e7f3ec; color:#1c6b3c; border:1px solid #b9dcc8; }
+body.ui-modern .prov-model{ background:#e8f1fa; color:#1a5f9a; border:1px solid #bcd6ec; }
+body.ui-modern .prov-assumption{ background:#fdf3e2; color:#8a5a00; border:1px solid #ecd3a4; }
+
+body.ui-modern .prov-legend{
+  grid-column:1 / -1;
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  padding:9px 12px;
+  border-radius:10px;
+  background:#f5f9fc;
+  border:1px solid #d8e5ef;
+  font-size:12px; color:#41586b;
+}
+body.ui-modern .prov-legend b{ color:#16324a; margin-right:4px; }
+
+/* ---- Assumptions at a glance ---------------------------------------------- */
+body.ui-modern .modern-assumptions{
+  grid-column:1 / -1;
+  margin-top:10px;
+  border-radius:10px;
+  background:#fbfdff;
+  border:1px solid #d7e1ec;
+  font-size:12.5px; color:#33475a;
+}
+body.ui-modern .modern-assumptions summary,
+body.ui-modern .modern-evidence-details summary{
+  padding:11px 14px;
+  color:#16324a;
+  font-size:13px;
+  font-weight:750;
+  cursor:pointer;
+}
+body.ui-modern .modern-assumptions-body{ padding:0 14px 12px; border-top:1px solid #e5edf2; }
+body.ui-modern .modern-assumptions ul{ margin:10px 0 0; padding-left:20px; }
+body.ui-modern .modern-assumptions li{ margin:4px 0; line-height:1.45; }
+body.ui-modern .modern-evidence-details{
+  grid-column:1 / -1;
+  margin:3px 0 8px;
+  border:1px solid #dfd3ab;
+  border-radius:9px;
+  background:#fffdf6;
+}
+body.ui-modern .modern-evidence-details #industryEvidenceNotice{
+  margin:0 !important;
+  padding:10px 14px 12px !important;
+  border:0 !important;
+  border-top:1px solid #eee3bc !important;
+  border-radius:0 !important;
+  background:transparent !important;
+}
+body.ui-modern .modern-demand-details{
+  grid-column:1 / -1;
+  margin:8px 0 2px;
+  border:1px solid #d7e1e8;
+  border-radius:9px;
+  background:#f8fafc;
+}
+body.ui-modern .modern-demand-details summary{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:11px 13px;
+  color:#24455c;
+  font-size:13px;
+  font-weight:750;
+  cursor:pointer;
+}
+body.ui-modern .modern-demand-details summary small{
+  color:#758894;
+  font-size:10px;
+  font-weight:600;
+  text-align:right;
+}
+body.ui-modern .modern-demand-details-body,
+body.ui-modern .modern-demand-assumption-grid{
+  padding:12px;
+  border-top:1px solid #dfe7ec;
+}
+body.ui-modern .modern-demand-details-body > div{ margin:0 !important; }
+body.ui-modern .modern-demand-assumption-grid{ grid-template-columns:minmax(0,1.25fr) minmax(130px,.75fr); }
+
+/* ---- Results: decision first, diagnostics second ------------------------- */
+body.ui-modern .modern-results-anchor{
+  display:none;
+  margin:22px 2px 10px;
+  color:#dceaf5;
+}
+body.ui-modern.modern-results-ready .modern-results-anchor{ display:block; }
+body.ui-modern .modern-results-anchor > span{
+  display:block;
+  margin-bottom:5px;
+  color:#8fd0f5;
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+}
+body.ui-modern .modern-results-anchor h2{
+  margin:0;
+  color:#fff;
+  font-size:26px;
+  line-height:1.15;
+}
+body.ui-modern .modern-results-anchor p{
+  margin:7px 0 0;
+  max-width:720px;
+  color:#aec6d7;
+  font-size:13px;
+  line-height:1.5;
+}
+
+body.ui-modern #industryOutput{
+  background:#f6faf8;
+  border-color:#bdd8c8;
+}
+body.ui-modern #industryOutput > .industry-section-head{ display:none; }
+body.ui-modern #industryOutput > .output-card{ margin:0; }
+body.ui-modern .modern-secondary-result{ display:none !important; }
+
+body.ui-modern .insight-hero{
+  padding:18px 20px;
+  background:linear-gradient(135deg,#123f31 0%,#176447 100%);
+  box-shadow:0 8px 22px rgba(15,79,52,.14);
+}
+body.ui-modern .insight-title{ max-width:720px; }
+body.ui-modern .insight-strip{ grid-template-columns:repeat(3,minmax(0,1fr)); }
+body.ui-modern .insight-pill{
+  min-height:112px;
+  background:rgba(255,255,255,.1);
+  border-color:rgba(255,255,255,.14);
+}
+body.ui-modern .modern-coverage-track{
+  height:8px;
+  margin-top:12px;
+  overflow:hidden;
+  border-radius:999px;
+  background:rgba(255,255,255,.18);
+}
+body.ui-modern .modern-coverage-track span{
+  display:block;
+  height:100%;
+  border-radius:inherit;
+  background:#9be2b9;
+}
+body.ui-modern .modern-decision-note{
+  margin:13px 0 0;
+  padding:10px 12px;
+  border-radius:9px;
+  background:rgba(255,255,255,.1);
+  color:#e8f6ee;
+  font-size:12px;
+  line-height:1.45;
+}
+body.ui-modern .modern-decision-note b{ color:#fff; }
+
+body.ui-modern .energy-flow-summary{ gap:14px; }
+body.ui-modern .energy-flow-group{
+  padding:15px;
+  background:#fff;
+  border-color:#d8e3ea;
+}
+body.ui-modern .energy-flow-group.electrical,
+body.ui-modern .energy-flow-group.thermal{ background:#fff; }
+body.ui-modern .energy-flow-heading{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:14px;
+  padding-bottom:10px;
+  border-bottom:1px solid #e4ebef;
+}
+body.ui-modern .modern-flow-total{
+  display:block;
+  color:#687985;
+  font-size:10px;
+  line-height:1.25;
+  text-align:right;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+body.ui-modern .modern-flow-total strong{
+  display:block;
+  margin-top:3px;
+  color:#17334a;
+  font-size:14px;
+  letter-spacing:0;
+  text-transform:none;
+}
+body.ui-modern .energy-flow-cards{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+body.ui-modern .energy-flow-card{
+  min-height:86px;
+  padding:12px;
+  border-color:#dce5ea;
+  box-shadow:none;
+}
+body.ui-modern .energy-flow-card.modern-flow-context-card{ display:none; }
+body.ui-modern .modern-flow-footer{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  margin-top:10px;
+  padding-top:10px;
+  border-top:1px solid #e4ebef;
+  color:#667782;
+  font-size:11px;
+}
+body.ui-modern .modern-flow-footer strong{
+  color:#334c5c;
+  font-size:12px;
+  font-variant-numeric:tabular-nums;
+}
+body.ui-modern .recommended-size-box{
+  margin-top:14px;
+  border-color:#d6e0e6;
+  background:#f8fafb;
+  box-shadow:none;
+}
+
+/* Supply yield is supporting evidence, so it is visually quieter. */
+body.ui-modern .output-card-annual{
+  background:#f5f9fc;
+  border:1px solid #c7d8e5;
+  color:#17334a;
+  box-shadow:none;
+}
+body.ui-modern .output-card-annual .annual-kicker{ color:#39718f; }
+body.ui-modern .output-card-annual h3{ color:#17334a; }
+body.ui-modern .output-card-annual .annual-location{ color:#587082; }
+body.ui-modern .annual-summary-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+}
+body.ui-modern .annual-summary-item{
+  min-height:88px;
+  padding:13px 14px;
+  border:1px solid #d5e1e9;
+  background:#fff;
+  backdrop-filter:none;
+}
+body.ui-modern .annual-summary-item span{ color:#607384; }
+body.ui-modern .annual-summary-item strong{ color:#123c57; }
+body.ui-modern .annual-summary-item small{ color:#6a7a85; }
+body.ui-modern .output-card-annual .detail-toggle{
+  background:#123c57;
+  color:#fff;
+  border-color:#123c57;
+}
+body.ui-modern .output-card-annual .validation-link{ color:#185f85; }
+
+/* Chart choices behave like three clear views; detailed tables stay optional. */
+body.ui-modern #supplyChartsPanel{
+  margin-top:14px !important;
+  padding:16px !important;
+  border:1px solid #d4e0e8 !important;
+  border-radius:12px;
+  background:#fff;
+}
+body.ui-modern #supplyChartsPanel > h4{ margin:0; color:#17334a; }
+body.ui-modern .modern-chart-intro{
+  margin:6px 0 12px;
+  max-width:720px;
+  color:#627684;
+  font-size:12px;
+  line-height:1.45;
+}
+body.ui-modern #supplyChartsPanel .display-controls{
+  display:flex;
+  gap:7px;
+  flex-wrap:wrap;
+  margin-bottom:12px;
+}
+body.ui-modern #supplyChartsPanel .display-controls label{
+  position:relative;
+  padding:8px 13px;
+  border:1px solid #cbd9e3;
+  border-radius:999px;
+  background:#f7fafc;
+  color:#476172;
+  font-size:12px;
+  font-weight:700;
+  cursor:pointer;
+}
+body.ui-modern #supplyChartsPanel .display-controls input{
+  position:absolute;
+  width:1px;
+  height:1px;
+  opacity:0;
+  pointer-events:none;
+}
+body.ui-modern #supplyChartsPanel .display-controls label:has(input:checked){
+  border-color:#185f85;
+  background:#185f85;
+  color:#fff;
+}
+body.ui-modern .modern-data-details{
+  margin-top:12px;
+  border-top:1px solid #e1e8ed;
+}
+body.ui-modern .modern-data-details summary{
+  padding:10px 2px 4px;
+  color:#476172;
+  font-size:12px;
+  font-weight:700;
+  cursor:pointer;
+}
+body.ui-modern.modern-cooling-disabled #monthlySupplyBlock h5:has(+ .pv-comparison-chart),
+body.ui-modern.modern-cooling-disabled #monthlySupplyBlock .pv-comparison-chart{ display:none; }
+
+/* ---- Comfort tweaks -------------------------------------------------------- */
+body.ui-modern input, body.ui-modern select{ border-radius:8px; }
+body.ui-modern .btns button{ border-radius:9px; }
+body.ui-modern .output-card{ border-radius:12px; }
+
+@media (max-width:640px){
+  body.ui-modern .header-actions .brand-meta{
+    flex-basis:100%;
+    justify-content:flex-start;
+    margin-left:0;
+    text-align:left !important;
+  }
+  body.ui-modern .modern-results-anchor h2{ font-size:22px; }
+  body.ui-modern .insight-strip,
+  body.ui-modern .annual-summary-grid{ grid-template-columns:1fr; }
+  body.ui-modern .energy-flow-heading{ flex-direction:column; }
+  body.ui-modern .modern-flow-total{ text-align:left; }
+  body.ui-modern .energy-flow-cards{ grid-template-columns:1fr; }
+  body.ui-modern .modern-demand-details summary{ align-items:flex-start; flex-direction:column; }
+  body.ui-modern .modern-demand-details summary small{ text-align:left; }
+  body.ui-modern .modern-demand-assumption-grid{ grid-template-columns:1fr; }
+}

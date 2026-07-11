@@ -114,7 +114,7 @@ They do not embed the full 8,760-hour weather dataset. To reproduce a thesis fig
 
 ## Hosted Backend Deployment
 
-Local `pvt-tmy-api/server.py` emits `solarHour`. If the hosted Render API does not, redeploy the backend service.
+Local `pvt-tmy-api/server.py` implements weather contract 2.1. The frontend fails closed unless the hosted service reports `status=ready`, contract 2.1, PVGIS 5.3, the synthetic standard-time clock policy, and the frozen Model-B long-wave prohibition.
 
 Manual Render steps:
 
@@ -122,7 +122,8 @@ Manual Render steps:
 2. Open the Render dashboard.
 3. Select the `pvt-tmy-api` service.
 4. Trigger `Manual Deploy` / `Deploy latest commit`.
-5. Wait for the deploy to finish and for `/health` to return OK.
+5. Wait for the deploy to finish and for `/health` to return `ready` with contract 2.1.
+6. Run the strict ten-location post-deployment gate: `npm run test:live-backend-contract`.
 
 Verification commands from PowerShell:
 
@@ -133,16 +134,17 @@ Invoke-RestMethod -Uri "https://pvt-tmy-api.onrender.com/health" -TimeoutSec 30
 ```powershell
 $r = Invoke-RestMethod -Uri "https://pvt-tmy-api.onrender.com/tmy?lat=-33.869844&lon=151.208285" -TimeoutSec 90
 "records=$($r.records.Count); solarHour=$(( $r.records | Where-Object { $_.PSObject.Properties.Name -contains 'solarHour' } ).Count)"
-$r.records[0] | Select-Object dayN,hourN,solarHour,dni,dhi,ghi,ta,vwind
+$r.records[0] | Select-Object utcTimestamp,dayN,hourN,solarHour,dni,dhi,ghi,ta,vwind,relativeHumidityPct,infraredHorizontalWm2
 ```
 
 Expected result:
 
 ```text
-records=8760; solarHour=8760
+status=ready; apiContractVersion=2.1
+records=8760; solarHour=8760; RH=8760; IR(h)=8760
 ```
 
-If `solarHour=0`, the hosted service is still running old backend code.
+Any missing field, duplicate demand/UTC key, dataset-hash mismatch, or old health response blocks release. PVGIS `IR(h)` is retained for provenance/export only and must not enter frozen Model B.
 
 ## Public Frontend Deployment
 

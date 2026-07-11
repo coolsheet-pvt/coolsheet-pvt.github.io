@@ -6,10 +6,12 @@
   <title>Annual PVT Calculator</title>
   <meta name="description" content="Estimates annual energy output, savings and payback of photovoltaic-thermal (PVT) solar systems for Australian commercial sites." />
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
-  <link rel="stylesheet" href="css/styles.css?v=13.11" />
+  <link rel="stylesheet" href="css/styles.css?v=13.26" />
+  <!-- Modern UI (beta): presentation-only, active with ?ui=modern; classic stays default. -->
+  <link rel="stylesheet" href="css/ui-modern.css?v=13.26" />
   <!-- Chart.js v4.5.1 vendored locally (assets/vendor/) so charts work offline / on flaky wifi. -->
   <script src="assets/vendor/chart.umd.min.js"></script>
-  <script src="js/bc_aus_zone_constants.js"></script>
+  <script src="js/bc_aus_zone_constants.js?v=13.26"></script>
 </head>
 
 <body>
@@ -44,7 +46,7 @@
       </div>
     </div>
     <div class="brand-meta" style="position:absolute;bottom:10px;right:14px;text-align:right;">
-      <span id="appVersionLabel" style="font-size:11px;font-style:italic;color:rgba(255,255,255,0.35);">Version 13.11</span><br/>
+      <span id="appVersionLabel" style="font-size:11px;font-style:italic;color:rgba(255,255,255,0.35);">Version 13.26</span><br/>
       <label style="font-size:11px;color:rgba(255,255,255,0.35);cursor:pointer;display:inline-flex;align-items:center;gap:5px;margin-top:4px;">
         <input type="checkbox" id="chkHideMains" style="width:auto;margin:0;cursor:pointer;" onchange="onTestingModeChange();" />
         Testing
@@ -124,21 +126,31 @@
             <label for="etaPv">PV efficiency at STC (0&ndash;1):</label>
             <div class="eta-cell">
               <input id="etaPv" type="number" min="0" max="1" step="0.01" value="0.20" />
-              <span class="note eta-note">Lab-rated efficiency at 25&deg;C cell temperature.</span>
+              <span class="note eta-note">Lab-rated DC module efficiency at 25&deg;C cell temperature. The calculator reports gross DC and estimated net AC separately.</span>
             </div>
 
             <div class="full-row" style="margin:6px 0 2px;">
               <label class="tempcorr-toggle">
                 <input type="checkbox" id="pvTempCorrEnable" checked />
-                <span><b>Account for panel temperature</b> <span style="color:#6b6b6b;font-weight:400;">(PV-only vs cooled PVT)</span></span>
+                <span><b>Account for module temperature</b> <span style="color:#6b6b6b;font-weight:400;">(NOCT temperature derate)</span></span>
+              </label>
+            </div>
+            <div class="full-row" style="margin:2px 0 6px;">
+              <label class="tempcorr-toggle">
+                <input type="checkbox" id="pvtCoolingSensitivityEnable" />
+                <span><b>Exploratory PVT electrical cooling sensitivity</b> <span style="color:#8a5a00;font-weight:400;">(opt-in; not independently validated)</span></span>
               </label>
             </div>
             <label for="pvTempCoeff">PV temperature loss (%/&deg;C):</label>
             <input id="pvTempCoeff" type="number" step="0.01" value="-0.40" />
             <label for="pvNoct">NOCT &mdash; normal panel temperature (&deg;C):</label>
             <input id="pvNoct" type="number" min="20" max="80" step="0.1" value="45" />
+            <label for="pvSystemLossPct">Non-inverter system losses (% of DC):</label>
+            <input id="pvSystemLossPct" type="number" min="0" max="99" step="0.1" value="14" />
+            <label for="pvInverterEfficiencyPct">Inverter efficiency (%):</label>
+            <input id="pvInverterEfficiencyPct" type="number" min="1" max="100" step="0.1" value="96" />
             <div class="note full-row noct-explainer">
-              NOCT means <b>Nominal Operating Cell Temperature</b>: roughly how hot a normal PV panel gets outdoors in the sun. We use it because panels lose a little electrical output when they heat up. The PV-only case runs hotter, while PVT is cooled by water, so this makes the electricity comparison more realistic.
+              NOCT estimates module temperature and its DC power derate. Net AC then applies editable non-inverter losses and inverter efficiency. The optional PVT cooling benefit is a sensitivity only and is excluded by default from headline results.
             </div>
 
             <details class="formula-details full-row">
@@ -295,6 +307,45 @@
 
       <label for="throughputInput" id="throughputLabel" style="display:none;">Throughput (per year):</label>
       <input id="throughputInput" type="number" min="0" step="1000" value="5000000" style="display:none;" />
+      <div id="industryEvidenceNotice" class="note full-row" style="display:none;margin:4px 0 8px;padding:8px;border:1px solid #d8c88b;background:#fffbea;border-radius:5px;"></div>
+
+      <div id="dairyAssumptionsPanel" class="full-row" style="display:none;">
+        <div style="margin:8px 0;padding:10px;background:#f8fbf7;border-radius:6px;border:1px solid #cfe5c9;">
+          <div class="grid">
+            <label for="dairyElectricKWhPerKL"><b>Electricity intensity (kWh/kL milk):</b></label>
+            <input id="dairyElectricKWhPerKL" type="number" min="0" step="0.1" value="51.7" />
+            <label for="dairyFattyWater"><b>Fatty-film rinse water (L/L milk):</b></label>
+            <input id="dairyFattyWater" type="number" min="0" step="0.01" value="0.30" />
+            <label for="dairyCipWater"><b>CIP preheat water (L/L milk):</b></label>
+            <input id="dairyCipWater" type="number" min="0" step="0.01" value="0.57" />
+            <label for="dairyBoilerWater"><b>Boiler preheat water (L/L milk):</b></label>
+            <input id="dairyBoilerWater" type="number" min="0" step="0.01" value="0.50" />
+            <label for="dairyTargetTemp"><b>Preheat target (&deg;C):</b></label>
+            <input id="dairyTargetTemp" type="number" min="15" max="95" step="1" value="35" />
+            <div class="note full-row">The Australian audit electricity range is approximately 27&ndash;75 kWh/kL. Water rates, target and schedules are scenario assumptions: replace them with site meter/CIP data where available.</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="breweryAssumptionsPanel" class="full-row" style="display:none;">
+        <div style="margin:8px 0;padding:10px;background:#fff9f0;border-radius:6px;border:1px solid #ead7b8;">
+          <div class="grid">
+            <label for="breweryElectricKWhPerHL"><b>Electricity intensity (kWh/hL beer):</b></label>
+            <input id="breweryElectricKWhPerHL" type="number" min="0" step="0.1" value="11.5" />
+            <label for="breweryCipWater"><b>CIP pre-rinse water (L/L beer):</b></label>
+            <input id="breweryCipWater" type="number" min="0" step="0.01" value="0.80" />
+            <label for="breweryRinseWater"><b>Bottle/keg rinse water (L/L beer):</b></label>
+            <input id="breweryRinseWater" type="number" min="0" step="0.01" value="0.45" />
+            <label for="breweryBoilerWater"><b>Boiler preheat water (L/L beer):</b></label>
+            <input id="breweryBoilerWater" type="number" min="0" step="0.01" value="0.60" />
+            <label for="breweryCipTarget"><b>CIP/boiler preheat target (&deg;C):</b></label>
+            <input id="breweryCipTarget" type="number" min="15" max="95" step="1" value="45" />
+            <label for="breweryRinseTarget"><b>Bottle/keg rinse target (&deg;C):</b></label>
+            <input id="breweryRinseTarget" type="number" min="15" max="95" step="1" value="40" />
+            <div class="note full-row">These are editable literature-based scenarios, not a universal Australian brewery benchmark. Use facility production, CIP, packaging and refrigeration meter data where available.</div>
+          </div>
+        </div>
+      </div>
 
       <div id="hotelInputsPanel" class="full-row" style="display:none;">
         <div style="margin:8px 0;padding:10px;background:#f8f8f8;border-radius:6px;border:1px solid #ddd;">
@@ -307,6 +358,18 @@
 
             <label for="tankVolume"><b>Thermal storage tank volume (L):</b></label>
             <input id="tankVolume" type="number" min="0" step="100" value="5000" />
+
+            <label for="hotelDhwKWh"><b>DHW assumption (kWh/occupied room-night):</b></label>
+            <input id="hotelDhwKWh" type="number" min="0" step="0.1" value="4.5" />
+            <label for="hotelKitchenKWh"><b>Kitchen assumption (kWh/occupied room-night):</b></label>
+            <input id="hotelKitchenKWh" type="number" min="0" step="0.1" value="1.6" />
+            <label for="hotelLaundryKWh"><b>Laundry assumption (kWh/occupied room-night):</b></label>
+            <input id="hotelLaundryKWh" type="number" min="0" step="0.1" value="1.2" />
+            <label for="hotelPoolKWh"><b>Pool assumption (kWh/occupied room-night):</b></label>
+            <input id="hotelPoolKWh" type="number" min="0" step="0.1" value="0.8" />
+            <label for="hotelElectricKWh"><b>Whole-site electricity assumption (kWh/occupied room-night):</b></label>
+            <input id="hotelElectricKWh" type="number" min="0" step="0.5" value="15" />
+            <div class="note full-row">These are editable scenario assumptions. NABERS Hotels v4.3 defines a whole-building rating method; it does not validate this process-level decomposition.</div>
           </div>
         </div>
       </div>
@@ -344,8 +407,15 @@
               Use cover when pools are closed
             </label>
 
+            <label for="aquaticElectricKWhPerM2"><b>Electricity assumption (kWh/m&sup2; water area/year):</b></label>
+            <input id="aquaticElectricKWhPerM2" type="number" min="0" step="10" value="250" />
+            <label for="aquaticEvaporationScale"><b>Evaporation sensitivity multiplier:</b></label>
+            <input id="aquaticEvaporationScale" type="number" min="0" max="3" step="0.05" value="1" />
+            <label for="aquaticMakeupScale"><b>Makeup-water sensitivity multiplier:</b></label>
+            <input id="aquaticMakeupScale" type="number" min="0" max="3" step="0.05" value="1" />
+
             <div class="full-row note" style="margin-top:2px;">
-              Area-based aquatic demand uses hourly evaporation, makeup-water heating, and sensible heat loss from the loaded TMY weather.
+              Area-based aquatic demand uses hourly evaporation, makeup-water heating, and sensible heat loss. Electricity and the two multipliers are editable sensitivity assumptions; measured facility data should replace them where available.
             </div>
           </div>
         </div>
@@ -366,6 +436,16 @@
             <label for="laundryWaterUseLPerKg"><b>Total wash water (L/kg laundry):</b></label>
             <input id="laundryWaterUseLPerKg" type="number" min="0" step="0.1" value="10" />
 
+            <label for="laundryWaterScenario"><b>Water-use scenario:</b></label>
+            <select id="laundryWaterScenario" onchange="applyLaundryWaterScenario()">
+              <option value="custom">Measured/custom value</option>
+              <option value="reuse_10">High reuse sensitivity — 10 L/kg</option>
+              <option value="efficient_12">Efficient sensitivity — 12 L/kg</option>
+              <option value="mid_15">Mid sensitivity — 15 L/kg</option>
+              <option value="nonreuse_17">No-reuse sensitivity — 17 L/kg</option>
+              <option value="high_22">High-water sensitivity — 22 L/kg</option>
+            </select>
+
             <label for="laundryHotWaterFraction"><b>Hot-water fraction of wash water:</b></label>
             <input id="laundryHotWaterFraction" type="number" min="0" max="1" step="0.01" value="0.65" />
 
@@ -379,7 +459,7 @@
             <input id="laundrySystemLossFraction" type="number" min="0" max="1" step="0.01" value="0" />
 
             <div class="full-row note" style="margin-top:2px;">
-              Commercial laundry demand is a hot-water washing model: kg/day and operating days set throughput, mains water sets inlet temperature, and Q = m c_p &Delta;T sets heat demand.
+              Commercial laundry demand is a hot-water washing model. The scenario values are sensitivity cases, not Australian regulatory benchmarks; commercial clothes washers remain under WELS assessment rather than a current regulated category. Prefer a machine datasheet or metered L/kg value.
             </div>
           </div>
         </div>
@@ -546,7 +626,7 @@
   <p class="footer-note footer-fineprint">
     Weather: <a href="https://re.jrc.ec.europa.eu/pvg_tools/en/" target="_blank" rel="noopener">PVGIS</a> (&copy; European Union, Joint Research Centre) typical meteorological year<br/>
     Geocoding &amp; map: &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL)<br/>
-    Mains water temperature: BC-Aus &mdash; <a href="https://www.osti.gov/biblio/981988" target="_blank" rel="noopener">Burch &amp; Christensen (NREL)</a> refitted to AS/NZS 4234 Australian climate zones<br/>
+    Mains water temperature: BC-Aus &mdash; <a href="https://www.osti.gov/biblio/981988" target="_blank" rel="noopener">Burch &amp; Christensen (NREL)</a> fitted to legacy CER/SRES domestic reference decks and selected by the geographically closest SWH reference location (not AS/NZS 4234:2021 engineering data)<br/>
     Grid emission factors: DCCEEW <a href="https://www.dcceew.gov.au/climate-change/publications/national-greenhouse-accounts-factors-2025" target="_blank" rel="noopener">National Greenhouse Accounts Factors 2025</a> (defaults current as of 2025&ndash;2026)
   </p>
 
@@ -596,6 +676,7 @@
 
 </div>
 
-<script src="js/app.js?v=13.11"></script>
+<script src="js/app.js?v=13.26"></script>
+<script src="js/ui-modern.js?v=13.26"></script>
 </body>
 </html>

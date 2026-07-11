@@ -16,6 +16,10 @@ from __future__ import annotations
 
 import os
 import re
+import hashlib
+import json
+import importlib.metadata
+from datetime import datetime, timezone
 import smtplib
 import ssl
 import time
@@ -39,6 +43,13 @@ _tf = TimezoneFinder()
 _TMY_CACHE: Dict[str, Dict[str, Any]] = {}
 _TMY_CACHE_TTL_SEC = 24 * 3600
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+TMY_API_CONTRACT_VERSION = "2.1"
+PVGIS_API_VERSION = "5.3"
+PVGIS_TMY_URL = "https://re.jrc.ec.europa.eu/api/v5_3/"
+PVGIS_START_YEAR = 2005
+PVGIS_END_YEAR = 2023
+PVGIS_USE_HORIZON = True
+PVGIS_COERCE_YEAR = 1990
 
 
 def _load_env_file(path: str) -> None:
@@ -62,7 +73,7 @@ _load_env_file(os.path.join(_API_DIR, ".env"))
 
 
 def _cache_key(lat: float, lon: float, rotate_last_n_day1: int) -> str:
-    return f"{lat:.4f},{lon:.4f},rot={int(rotate_last_n_day1)}"
+    return f"v={TMY_API_CONTRACT_VERSION},{lat:.4f},{lon:.4f},rot={int(rotate_last_n_day1)}"
 
 
 # FastAPI app
@@ -86,6 +97,25 @@ def fnum(x: Any, default: float = 0.0) -> float:
         return float(x)
     except (TypeError, ValueError):
         return default
+
+
+def _standard_utc_offset_hours(tz_used: ZoneInfo) -> float:
+    """Return the non-DST UTC offset; never use historical TMY-year DST rules."""
+    offsets = []
+    for month in (1, 4, 7, 10):
+        local = datetime(2001, month, 15, 12, tzinfo=tz_used)
+        offset = local.utcoffset()
+        dst = local.dst()
+        if offset is not None:
+            offsets.append((offset - (dst or pd.Timedelta(0))).total_seconds() / 3600.0)
+    return offsets[0] if offsets else 0.0
+
+
+def _synthetic_demand_clock(index: int, standard_offset_hours: float) -> tuple[int, int, str]:
+    """Map record position to a unique 365x24 local-standard-time calendar."""
+    utc_ts = pd.Timestamp("2001-01-01T00:00:00Z") + pd.Timedelta(hours=index)
+    local_standard = utc_ts + pd.Timedelta(hours=standard_offset_hours)
+    return int(local_standard.dayofyear), int(local_standard.hour) + 1, utc_ts.isoformat().replace("+00:00", "Z")
 
 
 class EmailReportRequest(BaseModel):
@@ -134,7 +164,11 @@ def tmy(
 
     # 0) Fetch PVGIS TMY data
     try:
-        df, meta = pvlib.iotools.get_pvgis_tmy(lat, lon, map_variables=True)
+        df, meta = pvlib.iotools.get_pvgis_tmy(
+            lat, lon, outputformat="json", usehorizon=PVGIS_USE_HORIZON,
+            startyear=PVGIS_START_YEAR, endyear=PVGIS_END_YEAR,
+            map_variables=True, url=PVGIS_TMY_URL, coerce_year=PVGIS_COERCE_YEAR,
+        )
     except Exception as e:
         return {
             "error": f"TMY fetch failed: {str(e)}",
@@ -164,17 +198,12 @@ def tmy(
         tz_used = ZoneInfo("UTC")
         tz_used_name = "UTC"
 
-    # 4) Build records
-    # hourN comes straight from the local timestamp (1 = midnight-1am .. 24 = 11pm-midnight).
-    # A running per-day counter was used before, but after UTC->local conversion the first
-    # day starts mid-day, so the counter misaligned day 1's solar hours (e.g. full DNI
-    # reported at "midnight"). Timestamp-based hour numbering is always aligned.
-    #
+    # 4) Build records. dayN/hourN are a synthetic local-standard-time demand
+    # calendar: unique 365x24 and deliberately free of historical DST rules.
     # solarHour is the TRUE solar time (0..24, 12 = solar noon), derived from the UTC
     # instant + longitude + equation of time. It is DST-free and meridian-corrected, so
     # the front-end solar-geometry formulas (which assume hour 12 = solar noon) get the
-    # correct sun position. Local-clock hourN, which carries DST + meridian offset, is
-    # kept for demand-side scheduling (hot-water / pool loads happen at clock hours).
+    # correct sun position. utcTimestamp preserves the synthetic TMY UTC sequence.
     # Validated against pvlib: collapses zenith error from RMS ~3-10deg to ~0.4deg.
     utc_index = df.index.tz_convert("UTC")
     eot_min = pvlib.solarposition.equation_of_time_spencer71(utc_index.dayofyear)
@@ -183,19 +212,30 @@ def tmy(
     ) % 24.0
 
     records = []
+    standard_offset_hours = _standard_utc_offset_hours(tz_used)
 
     for i, (ts, row) in enumerate(df.iterrows()):
-        dayN = int(ts.dayofyear)
-        hourN = int(ts.hour) + 1
+        dayN, hourN, utc_timestamp = _synthetic_demand_clock(i, standard_offset_hours)
         dni = fnum(row.get("dni"))
         dhi = fnum(row.get("dhi"))
         ghi = fnum(row.get("ghi"))
         ta = fnum(row.get("t2m", row.get("temp_air")))
         vwind = fnum(row.get("ws10m", row.get("wind_speed")))
+        relative_humidity_pct = fnum(row.get("relative_humidity", row.get("RH")), float("nan"))
+        infrared_horizontal = fnum(row.get("IR(h)", row.get("infrared_horizontal")), float("nan"))
+
+        if not (np.isfinite(relative_humidity_pct) and 0 <= relative_humidity_pct <= 100):
+            raise ValueError(f"PVGIS relative humidity missing/out of range at record {i}")
+        # PVGIS IR(h) is net thermal-infrared radiation and can legitimately be
+        # negative (particularly at night).  Its sign must therefore be retained.
+        if not np.isfinite(infrared_horizontal):
+            raise ValueError(f"PVGIS IR(h) missing/non-finite at record {i}")
 
         records.append(
-            {"dayN": dayN, "hourN": hourN, "solarHour": float(solar_hours[i]),
-             "dni": dni, "dhi": dhi, "ghi": ghi, "ta": ta, "vwind": vwind}
+            {"dayN": dayN, "hourN": hourN, "solarHour": float(solar_hours[i]), "utcTimestamp": utc_timestamp,
+             "dni": dni, "dhi": dhi, "ghi": ghi, "ta": ta, "vwind": vwind,
+             "relativeHumidityPct": relative_humidity_pct,
+             "infraredHorizontalWm2": infrared_horizontal}
         )
 
     # Rotate logic: move last N records of day1 to the beginning
@@ -214,8 +254,33 @@ def tmy(
             records = lastN + firstPart + records[m:]
             # hourN is timestamp-based now, so no re-numbering after rotation.
 
+    encoded_meta = jsonable_encoder(meta)
+    canonical_records = json.dumps(records, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+    dataset_sha256 = hashlib.sha256(canonical_records).hexdigest()
+    meteo = encoded_meta.get("inputs", {}).get("meteo_data", {}) if isinstance(encoded_meta, dict) else {}
+    provenance = {
+        "apiContractVersion": TMY_API_CONTRACT_VERSION,
+        "provider": "European Commission Joint Research Centre PVGIS",
+        "pvgisApiVersion": PVGIS_API_VERSION,
+        "pvgisUrl": PVGIS_TMY_URL,
+        "request": {"lat": lat, "lon": lon, "startyear": PVGIS_START_YEAR, "endyear": PVGIS_END_YEAR,
+                    "usehorizon": PVGIS_USE_HORIZON, "coerceYear": PVGIS_COERCE_YEAR, "mapVariables": True},
+        "database": meteo,
+        "monthsSelected": encoded_meta.get("months_selected") if isinstance(encoded_meta, dict) else None,
+        "libraries": {name: importlib.metadata.version(name) for name in ("pvlib", "pandas", "numpy", "timezonefinder", "tzdata")},
+        "datasetSha256": dataset_sha256,
+        "hashCanonicalization": "UTF-8 JSON records; keys sorted; separators comma/colon; no NaN",
+        "recordCount": len(records),
+        "clockPolicy": "synthetic 365x24 local standard time; DST disabled; solar geometry remains UTC-derived",
+        "standardUtcOffsetHours": standard_offset_hours,
+        "weatherFields": {
+            "relativeHumidityPct": "PVGIS RH; percent; validated 0..100; available to aquatic demand only",
+            "infraredHorizontalWm2": "PVGIS IR(h); W/m2; retained for provenance/export; prohibited from frozen Model B",
+        },
+    }
     result = {
-        "meta": jsonable_encoder(meta),
+        "meta": encoded_meta,
+        "provenance": provenance,
         "tz": str(tz_used_name),
         "records": records,
     }
@@ -230,7 +295,14 @@ def tmy(
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
-    return {"status": "ok", "message": "TMY API is running"}
+    return {
+        "status": "ready", "message": "TMY API contract is ready",
+        "apiContractVersion": TMY_API_CONTRACT_VERSION, "pvgisApiVersion": PVGIS_API_VERSION,
+        "requiredRecordFields": ["dayN", "hourN", "solarHour", "utcTimestamp", "dni", "dhi", "ghi", "ta",
+                                 "vwind", "relativeHumidityPct", "infraredHorizontalWm2"],
+        "clockPolicy": "synthetic-standard-time-no-dst",
+        "modelBLongwavePolicy": "frozen-prohibited",
+    }
 
 
 def _validate_coords(lat: float, lon: float) -> None:

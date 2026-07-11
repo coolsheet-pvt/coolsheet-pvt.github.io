@@ -129,17 +129,17 @@ def mean(values) -> float:
     return sum(values) / len(values)
 
 
-# Zone 1 - Alice Springs
+# Zone 1 - Rockhampton
 # Latitude:    from zone1_NW_Domestic.inc, const 8 block
-# Air temp:    monthly means computed from alicesprings2.tmy (8760 hourly
+# Air temp:    monthly means computed from rockhampton2.tmy (8760 hourly
 #              records, format 1X,3I2,5I3,I2,I1, ambient at chars 14-16 in
 #              DEG.C * 10)
 # Mains ref:   from zone1_NW_Domestic.inc, UNIT 17 TYPE 14
 #              "Monthly cold water temperature" block
 #
-# Zone 2 - Rockhampton
+# Zone 2 - Alice Springs
 # Latitude:    from zone2_NW_Domestic.inc, const 8 block
-# Air temp:    monthly means computed from rockhampton2.tmy (8760 hourly
+# Air temp:    monthly means computed from alicesprings2.tmy (8760 hourly
 #              records, format 1X,3I2,5I3,I2,I1, ambient at chars 14-16 in
 #              DEG.C * 10)
 # Mains ref:   from zone2_NW_Domestic.inc, UNIT 17 TYPE 14
@@ -166,14 +166,14 @@ def mean(values) -> float:
 # Mains ref:   from ZONEHP5_Au_Domestic.inc, UNIT 17 TYPE 14
 #              "Monthly cold water temperature" block
 ZONES = {
-    "Alice Springs": {
+    "Rockhampton": {
         "lat": -23.4,
-        "ta": [27.91, 26.49, 23.55, 20.61, 16.39, 13.07, 9.65, 13.13, 16.65, 23.95, 24.80, 27.88],
+        "ta": [26.74, 25.48, 25.83, 23.07, 19.73, 16.56, 16.14, 18.02, 19.01, 21.56, 23.79, 25.88],
         "cer": [28.0, 28.0, 27.0, 25.0, 23.0, 20.0, 20.0, 21.0, 24.0, 26.0, 28.0, 28.0],
     },
-    "Rockhampton": {
+    "Alice Springs": {
         "lat": -23.5,
-        "ta": [26.74, 25.48, 25.83, 23.07, 19.73, 16.56, 16.14, 18.02, 19.01, 21.56, 23.79, 25.88],
+        "ta": [27.91, 26.49, 23.55, 20.61, 16.39, 13.07, 9.65, 13.13, 16.65, 23.95, 24.80, 27.88],
         "cer": [29.0, 27.0, 24.0, 20.0, 14.0, 11.0, 9.0, 12.0, 18.0, 23.0, 26.0, 28.0],
     },
     "Sydney": {

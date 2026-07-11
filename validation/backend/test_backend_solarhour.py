@@ -10,10 +10,12 @@ from __future__ import annotations
 
 import sys
 import unittest
+import asyncio
 from pathlib import Path
 from unittest import mock
 
 import pandas as pd
+from zoneinfo import ZoneInfo
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -28,7 +30,7 @@ class FakeTimezoneFinder:
         return "Australia/Sydney"
 
 
-def fake_pvgis_tmy(_lat: float, _lon: float, map_variables: bool = True):
+def fake_pvgis_tmy(_lat: float, _lon: float, **kwargs):
     idx = pd.date_range("2022-01-01 00:00", periods=48, freq="h", tz="UTC")
     df = pd.DataFrame(
         {
@@ -37,10 +39,13 @@ def fake_pvgis_tmy(_lat: float, _lon: float, map_variables: bool = True):
             "ghi": [0.0] * 6 + [620.0] * 8 + [0.0] * 34,
             "t2m": [20.0 + (i % 24) * 0.1 for i in range(48)],
             "ws10m": [3.0] * 48,
+            "relative_humidity": [55.0] * 48,
+            # PVGIS net infrared can be negative at night; retain its sign.
+            "IR(h)": [320.0] * 11 + [-10.0] + [320.0] * 36,
         },
         index=idx,
     )
-    return df, {"source": "mock-pvgis", "map_variables": map_variables}
+    return df, {"source": "mock-pvgis", "inputs": {"meteo_data": {"radiation_db": "PVGIS-ERA5"}}, "months_selected": []}
 
 
 class BackendSolarHourTests(unittest.TestCase):
@@ -58,6 +63,13 @@ class BackendSolarHourTests(unittest.TestCase):
         self.assertTrue(all("solarHour" in rec for rec in records))
         self.assertTrue(all(isinstance(rec["solarHour"], float) for rec in records))
         self.assertTrue(all(0.0 <= rec["solarHour"] < 24.0 for rec in records))
+        self.assertEqual(result["provenance"]["apiContractVersion"], "2.1")
+        self.assertEqual(len(result["provenance"]["datasetSha256"]), 64)
+        self.assertTrue(all(rec["relativeHumidityPct"] == 55.0 for rec in records))
+        self.assertEqual(records[11]["infraredHorizontalWm2"], -10.0)
+        self.assertEqual(records[12]["infraredHorizontalWm2"], 320.0)
+        self.assertEqual(result["provenance"]["weatherFields"]["infraredHorizontalWm2"].split(";")[-1].strip(),
+                         "prohibited from frozen Model B")
 
     def test_rotation_keeps_solar_hour_and_timestamp_hour(self):
         with mock.patch.object(server.pvlib.iotools, "get_pvgis_tmy", side_effect=fake_pvgis_tmy):
@@ -69,6 +81,32 @@ class BackendSolarHourTests(unittest.TestCase):
         self.assertTrue(all("solarHour" in rec for rec in records))
         self.assertTrue(all(1 <= rec["hourN"] <= 24 for rec in records))
         self.assertTrue(all(0.0 <= rec["solarHour"] < 24.0 for rec in records))
+
+    def test_synthetic_standard_clock_is_unique_for_all_australian_zones(self):
+        for zone_name in (
+            "Australia/Sydney", "Australia/Melbourne", "Australia/Brisbane",
+            "Australia/Adelaide", "Australia/Darwin", "Australia/Perth", "Australia/Hobart",
+        ):
+            offset = server._standard_utc_offset_hours(ZoneInfo(zone_name))
+            clocks = [server._synthetic_demand_clock(i, offset) for i in range(8760)]
+            keys = {(day, hour) for day, hour, _utc in clocks}
+            utc_values = {_utc for _day, _hour, _utc in clocks}
+            self.assertEqual(len(keys), 8760, zone_name)
+            self.assertEqual(len(utc_values), 8760, zone_name)
+            self.assertTrue(all(1 <= day <= 365 and 1 <= hour <= 24 for day, hour in keys), zone_name)
+
+    def test_standard_offset_ignores_dst(self):
+        self.assertEqual(server._standard_utc_offset_hours(ZoneInfo("Australia/Sydney")), 10.0)
+        self.assertEqual(server._standard_utc_offset_hours(ZoneInfo("Australia/Adelaide")), 9.5)
+        self.assertEqual(server._standard_utc_offset_hours(ZoneInfo("Australia/Brisbane")), 10.0)
+
+    def test_health_is_a_strict_release_gate(self):
+        health = asyncio.run(server.health_check())
+        self.assertEqual(health["status"], "ready")
+        self.assertEqual(health["apiContractVersion"], "2.1")
+        self.assertEqual(health["modelBLongwavePolicy"], "frozen-prohibited")
+        self.assertIn("relativeHumidityPct", health["requiredRecordFields"])
+        self.assertIn("infraredHorizontalWm2", health["requiredRecordFields"])
 
 
 if __name__ == "__main__":
