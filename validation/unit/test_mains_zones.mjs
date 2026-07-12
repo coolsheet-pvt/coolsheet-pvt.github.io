@@ -33,6 +33,17 @@ assert.deepEqual([...new Set(context.registry.swh.map(r=>r[2]))].sort(), [1,2,3,
 const generated = fs.readFileSync(path.join(root, "js/bc_aus_zone_constants.js"), "utf8");
 assert.match(generated, /zone1:[\s\S]*city: "Rockhampton"[\s\S]*sourceWeather: "rockhampton2\.tmy"/);
 assert.match(generated, /zone2:[\s\S]*city: "Alice Springs"[\s\S]*sourceWeather: "alicesprings2\.tmy"/);
+const constantsContext = {};
+vm.createContext(constantsContext);
+vm.runInContext(generated + "\nthis.constants=BC_AUS_ZONE_CONSTANTS;", constantsContext);
+for (const [zoneKey, zone] of Object.entries(constantsContext.constants)) {
+  assert.equal(zone.ratioC1, 0, `${zoneKey} must use one identifiable amplitude`);
+  assert.equal(zone.lagC1, 0, `${zoneKey} must use one identifiable lag`);
+  assert.ok(zone.ratioC0 > 0.5 && zone.ratioC0 < 1.5, `${zoneKey} amplitude must remain physically legible`);
+  assert.ok(Math.abs(zone.lagC0) < 60, `${zoneKey} lag must remain physically legible`);
+  assert.ok(Math.abs(zone.offsetF) < 10, `${zoneKey} offset must remain physically legible`);
+  assert.ok(zone.rmseC < 1.1, `${zoneKey} fit RMSE must remain below 1.1 C`);
+}
 const app = fs.readFileSync(path.join(root, "js/app.js"), "utf8");
 assert.doesNotMatch(app, /findNearestCERZone|CER_ZONE_CENTRES/);
 assert.match(app, /function findClosestBcAusSwhReference/);

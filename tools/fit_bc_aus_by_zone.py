@@ -28,17 +28,10 @@ import math
 import re
 from pathlib import Path
 
-try:
-    import numpy as np
-    from scipy.optimize import least_squares
-except ImportError as exc:  # pragma: no cover
-    raise SystemExit("numpy and scipy are required to regenerate BC-Aus constants") from exc
-
 
 TOOLS_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = TOOLS_DIR.parent
 CER_FIXTURE_DIR = PROJECT_ROOT / "validation" / "fixtures" / "cer"
-NATIONAL_CONSTANTS_PATH = PROJECT_ROOT / "data" / "bc_aus_constants.js"
 OUTPUT_PATH = PROJECT_ROOT / "js" / "bc_aus_zone_constants.js"
 
 CER_POSTCODE_SOURCE = (
@@ -151,21 +144,11 @@ def mean(values) -> float:
     return sum(values) / len(values)
 
 
-def load_national_constants(path: Path) -> tuple[float, float, float, float, float]:
-    if not path.exists():
-        return (0.0, 0.4, 0.01, 35.0, -1.0)
-    text = path.read_text(encoding="utf-8")
-    values = dict(re.findall(
-        r"const\s+(BC_AUS_[A-Z0-9_]+)\s*=\s*([-+]?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?)",
-        text,
-    ))
-    required = (
-        "BC_AUS_OFFSET_F", "BC_AUS_RATIO_C0", "BC_AUS_RATIO_C1",
-        "BC_AUS_LAG_C0", "BC_AUS_LAG_C1",
-    )
-    if not all(key in values for key in required):
-        return (0.0, 0.4, 0.01, 35.0, -1.0)
-    return tuple(float(values[key]) for key in required)
+def format_fixed(value: float, places: int) -> str:
+    """Format generated values without platform-dependent negative zero."""
+    if abs(value) < 0.5 * (10.0 ** -places):
+        value = 0.0
+    return f"{value:.{places}f}"
 
 
 def compute_bc_monthly(ta_monthly, lat: float, params) -> list[float]:
@@ -185,31 +168,81 @@ def compute_bc_monthly(ta_monthly, lat: float, params) -> list[float]:
     return [mean(bucket) for bucket in month_buckets]
 
 
-def residuals_zone(params, zone) -> np.ndarray:
+def solve_3x3(matrix: list[list[float]], vector: list[float]) -> tuple[float, float, float]:
+    """Solve a small full-rank system with deterministic partial pivoting."""
+    augmented = [list(row) + [rhs] for row, rhs in zip(matrix, vector)]
+    for column in range(3):
+        pivot = max(range(column, 3), key=lambda row: abs(augmented[row][column]))
+        if abs(augmented[pivot][column]) < 1e-14:
+            raise RuntimeError("BC-Aus canonical fit is singular")
+        augmented[column], augmented[pivot] = augmented[pivot], augmented[column]
+        pivot_value = augmented[column][column]
+        augmented[column] = [value / pivot_value for value in augmented[column]]
+        for row in range(3):
+            if row == column:
+                continue
+            factor = augmented[row][column]
+            augmented[row] = [
+                value - factor * pivot_entry
+                for value, pivot_entry in zip(augmented[row], augmented[column])
+            ]
+    return tuple(row[3] for row in augmented)
+
+
+def fit_zone(zone) -> dict:
+    """Fit the three identifiable per-zone BC-Aus terms deterministically.
+
+    For one fixed ambient series, ``ratioC0``/``ratioC1`` collapse to one
+    effective amplitude and ``lagC0``/``lagC1`` collapse to one effective lag.
+    Fitting all five terms is therefore rank-deficient and produced different
+    but model-equivalent constants on Windows and Linux.  Expanding the sine
+    into sine/cosine coefficients makes this an ordinary three-term linear fit.
+    """
+    month_components = [[] for _ in range(12)]
+    for day in range(1, 366):
+        model_day = day if zone["lat"] >= 0 else (((day + 182 - 1) % 365) + 1)
+        base_angle = math.radians(0.986 * (model_day - 15.0) - 90.0)
+        month_idx = min(11, math.floor((day - 1) / 30.44))
+        month_components[month_idx].append((math.sin(base_angle), math.cos(base_angle)))
+
+    rows = [
+        (
+            1.0,
+            math.fsum(value[0] for value in values) / len(values),
+            math.fsum(value[1] for value in values) / len(values),
+        )
+        for values in month_components
+    ]
+    annual_avg_f = c_to_f(mean(zone["ta"]))
+    targets = [c_to_f(target) - annual_avg_f for target in zone["cer"]]
+    normal_matrix = [
+        [math.fsum(row[i] * row[j] for row in rows) for j in range(3)]
+        for i in range(3)
+    ]
+    normal_vector = [
+        math.fsum(row[i] * target for row, target in zip(rows, targets))
+        for i in range(3)
+    ]
+    offset_f, sine_coefficient, cosine_coefficient = solve_3x3(normal_matrix, normal_vector)
+
+    delta_month_f = (max(zone["ta"]) - min(zone["ta"])) * 9.0 / 5.0
+    if delta_month_f <= 0:
+        raise RuntimeError(f"Ambient monthly range is zero for {zone['key']}")
+    effective_ratio = 2.0 * math.hypot(sine_coefficient, cosine_coefficient) / delta_month_f
+    effective_lag = math.degrees(math.atan2(-cosine_coefficient, sine_coefficient)) / 0.986
+    # The browser consumes eight-decimal constants.  Calculate validation
+    # metrics from those exact shipped values rather than hidden extra digits.
+    params = (round(offset_f, 8), round(effective_ratio, 8), 0.0, round(effective_lag, 8), 0.0)
     pred = compute_bc_monthly(zone["ta"], zone["lat"], params)
-    return np.asarray([p - target for p, target in zip(pred, zone["cer"])], dtype=float)
-
-
-def fit_zone(zone, initial_guesses) -> dict:
-    best = None
-    for guess in initial_guesses:
-        result = least_squares(residuals_zone, guess, args=(zone,), method="lm", max_nfev=10000)
-        pred = compute_bc_monthly(zone["ta"], zone["lat"], result.x)
-        errors = np.asarray(pred) - np.asarray(zone["cer"])
-        fit = {
-            "params": tuple(float(v) for v in result.x),
-            "pred": pred,
-            "rmseC": float(np.sqrt(np.mean(errors ** 2))),
-            "maeC": float(np.mean(np.abs(errors))),
-            "biasC": float(np.mean(errors)),
-            "maxAbsC": float(np.max(np.abs(errors))),
-            "success": bool(result.success),
-        }
-        if best is None or fit["rmseC"] < best["rmseC"]:
-            best = fit
-    if best is None or not best["success"]:
-        raise RuntimeError(f"Fit failed for {zone['key']}")
-    return best
+    errors = [value - target for value, target in zip(pred, zone["cer"])]
+    return {
+        "params": params,
+        "pred": pred,
+        "rmseC": math.sqrt(math.fsum(error ** 2 for error in errors) / len(errors)),
+        "maeC": math.fsum(abs(error) for error in errors) / len(errors),
+        "biasC": math.fsum(errors) / len(errors),
+        "maxAbsC": max(abs(error) for error in errors),
+    }
 
 
 def render_js(zone_results: dict[str, dict]) -> str:
@@ -225,7 +258,7 @@ def render_js(zone_results: dict[str, dict]) -> str:
         "//",
         "// Identity authority: raw CER DomDecks .inc ASSIGN/zone/LAT/UNIT 17 fields.",
         "// Scope: legacy CER/SRES domestic reference; not AS/NZS 4234:2021 data.",
-        f"// Overall in-sample RMSE across all 5 legacy deck zones: {overall_rmse:.6f} degC",
+        f"// Overall in-sample RMSE across all 5 legacy deck zones: {format_fixed(overall_rmse, 6)} degC",
         "const BC_AUS_ZONE_CONSTANTS = {",
     ]
 
@@ -244,22 +277,22 @@ def render_js(zone_results: dict[str, dict]) -> str:
             f"    sourceRevision: {json.dumps(zone['sourceRevision'])},",
             f"    fixtureSha256: {json.dumps(zone['fixtureSha256'])},",
             f"    referenceMonthlyC: {json.dumps(zone['cer'])},",
-            f"    offsetF: {offset_f:.8f},",
-            f"    ratioC0: {ratio_c0:.8f},",
-            f"    ratioC1: {ratio_c1:.8f},",
-            f"    lagC0: {lag_c0:.8f},",
-            f"    lagC1: {lag_c1:.8f},",
-            f"    maeC: {result['maeC']:.6f},",
-            f"    rmseC: {result['rmseC']:.6f},",
-            f"    biasC: {result['biasC']:.6f},",
-            f"    maxAbsC: {result['maxAbsC']:.6f},",
+            f"    offsetF: {format_fixed(offset_f, 8)},",
+            f"    ratioC0: {format_fixed(ratio_c0, 8)},",
+            f"    ratioC1: {format_fixed(ratio_c1, 8)},",
+            f"    lagC0: {format_fixed(lag_c0, 8)},",
+            f"    lagC1: {format_fixed(lag_c1, 8)},",
+            f"    maeC: {format_fixed(result['maeC'], 6)},",
+            f"    rmseC: {format_fixed(result['rmseC'], 6)},",
+            f"    biasC: {format_fixed(result['biasC'], 6)},",
+            f"    maxAbsC: {format_fixed(result['maxAbsC'], 6)},",
             "  },",
         ])
 
     lines.extend([
         "};",
         "",
-        f"const BC_AUS_ZONE_OVERALL_RMSE_C = {overall_rmse:.6f};",
+        f"const BC_AUS_ZONE_OVERALL_RMSE_C = {format_fixed(overall_rmse, 6)};",
         "const BC_AUS_ZONE_SOURCE = Object.freeze({",
         "  authority: \"raw CER DomDecks fixture identity\",",
         "  scope: \"legacy CER/SRES domestic reference\",",
@@ -274,9 +307,7 @@ def render_js(zone_results: dict[str, dict]) -> str:
 
 
 def build_results() -> dict[str, dict]:
-    national_guess = load_national_constants(NATIONAL_CONSTANTS_PATH)
-    guesses = [national_guess, (0.0, 0.4, 0.01, 35.0, -1.0), (6.0, 0.4, 0.01, 35.0, -1.0)]
-    return {key: fit_zone(zone, guesses) for key, zone in ZONES.items()}
+    return {key: fit_zone(zone) for key, zone in ZONES.items()}
 
 
 def main() -> None:
