@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import vm from "node:vm";
@@ -37,6 +38,10 @@ const constantsContext = {};
 vm.createContext(constantsContext);
 vm.runInContext(generated + "\nthis.constants=BC_AUS_ZONE_CONSTANTS;", constantsContext);
 for (const [zoneKey, zone] of Object.entries(constantsContext.constants)) {
+  const fixtureText = fs.readFileSync(path.join(root, "validation/fixtures/cer", zone.sourceFixture), "utf8");
+  const canonicalFixtureText = fixtureText.replace(/\r\n?/g, "\n");
+  const canonicalFixtureSha256 = crypto.createHash("sha256").update(canonicalFixtureText, "utf8").digest("hex");
+  assert.equal(zone.fixtureSha256, canonicalFixtureSha256, `${zoneKey} fixture hash must use canonical LF text`);
   assert.equal(zone.ratioC1, 0, `${zoneKey} must use one identifiable amplitude`);
   assert.equal(zone.lagC1, 0, `${zoneKey} must use one identifiable lag`);
   assert.ok(zone.ratioC0 > 0.5 && zone.ratioC0 < 1.5, `${zoneKey} amplitude must remain physically legible`);

@@ -74,6 +74,7 @@ DISPLAY_CITY_BY_WEATHER = {
 def parse_cer_fixture(path: Path) -> dict:
     raw = path.read_bytes()
     text = raw.decode("utf-8")
+    canonical_fixture_bytes = text.replace("\r\n", "\n").replace("\r", "\n").encode("utf-8")
 
     weather_match = re.search(r"^ASSIGN\s+(\S+)\s+3\s*$", text, re.MULTILINE | re.IGNORECASE)
     zone_match = re.search(r"^zone\s*=\s*(\d+)\s*$", text, re.MULTILINE | re.IGNORECASE)
@@ -115,7 +116,7 @@ def parse_cer_fixture(path: Path) -> dict:
         "sourceFixture": path.name,
         "sourceWeather": weather_file,
         "sourceRevision": revision_match.group(1),
-        "fixtureSha256": hashlib.sha256(raw).hexdigest(),
+        "fixtureSha256": hashlib.sha256(canonical_fixture_bytes).hexdigest(),
         "families": ["ashp"] if zone_number == 5 else ["swh", "ashp"],
     }
 
@@ -260,6 +261,7 @@ def render_js(zone_results: dict[str, dict]) -> str:
         "// Run `python tools/fit_bc_aus_by_zone.py --check` to verify determinism.",
         "//",
         "// Identity authority: raw CER DomDecks .inc ASSIGN/zone/LAT/UNIT 17 fields.",
+        "// Fixture SHA-256: UTF-8 text after canonical LF newline normalization.",
         "// Scope: legacy CER/SRES domestic reference; not AS/NZS 4234:2021 data.",
         f"// Overall in-sample RMSE across all 5 legacy deck zones: {format_fixed(overall_rmse, 6)} degC",
         "const BC_AUS_ZONE_CONSTANTS = {",

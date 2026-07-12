@@ -1,2 +1,6 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# CER deck fixtures are text authorities. Keep their repository/worktree line
+# endings stable so provenance never depends on the developer operating system.
+validation/fixtures/cer/*.inc text eol=lf

@@ -116,12 +116,21 @@ They do not embed the full 8,760-hour weather dataset. To reproduce a thesis fig
 
 Local `pvt-tmy-api/server.py` implements weather contract 2.1. The frontend fails closed unless the hosted service reports `status=ready`, contract 2.1, PVGIS 5.3, the synthetic standard-time clock policy, and the frozen Model-B long-wave prohibition.
 
-Manual Render steps:
+The repository root contains `render.yaml`, which defines the `pvt-tmy-api`
+service, pins its Python runtime, uses `pvt-tmy-api/` as the service root,
+checks `/health`, and deploys `main` after its GitHub checks pass. Connect or
+sync this Blueprint once in Render so future backend commits deploy
+automatically.
+
+Manual recovery steps for an existing stale service:
 
 1. Commit and push the repository changes.
 2. Open the Render dashboard.
-3. Select the `pvt-tmy-api` service.
-4. Trigger `Manual Deploy` / `Deploy latest commit`.
+3. Sync the repository Blueprint, or select the existing `pvt-tmy-api` service
+   and confirm that its repository, `main` branch, and root directory match
+   `render.yaml`.
+4. Trigger `Manual Deploy` / `Deploy latest commit` if a Blueprint sync does
+   not immediately start a deploy.
 5. Wait for the deploy to finish and for `/health` to return `ready` with contract 2.1.
 6. Run the strict ten-location post-deployment gate: `npm run test:live-backend-contract`.
 

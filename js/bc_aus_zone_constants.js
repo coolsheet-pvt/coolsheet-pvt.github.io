@@ -2,6 +2,7 @@
 // Run `python tools/fit_bc_aus_by_zone.py --check` to verify determinism.
 //
 // Identity authority: raw CER DomDecks .inc ASSIGN/zone/LAT/UNIT 17 fields.
+// Fixture SHA-256: UTF-8 text after canonical LF newline normalization.
 // Scope: legacy CER/SRES domestic reference; not AS/NZS 4234:2021 data.
 // Overall in-sample RMSE across all 5 legacy deck zones: 0.704899 degC
 const BC_AUS_ZONE_CONSTANTS = {
@@ -14,7 +15,7 @@ const BC_AUS_ZONE_CONSTANTS = {
     sourceWeather: "rockhampton2.tmy",
     sourceLatitude: -23.400000,
     sourceRevision: "20/07/15",
-    fixtureSha256: "360d3f845c19c61fa6056046e4bec20e0fddd7299d152c7e0bc1270bfeda3a3d",
+    fixtureSha256: "b288f9470d7279496391088789eda19b3e71da970ef616c33f226954888d4de9",
     referenceMonthlyC: [28.0, 28.0, 27.0, 25.0, 23.0, 20.0, 20.0, 21.0, 24.0, 26.0, 28.0, 28.0],
     offsetF: 5.42424694,
     ratioC0: 0.80166852,
@@ -35,7 +36,7 @@ const BC_AUS_ZONE_CONSTANTS = {
     sourceWeather: "alicesprings2.tmy",
     sourceLatitude: -23.500000,
     sourceRevision: "20/07/15",
-    fixtureSha256: "81069644523ffce664e333f49ada4f1504e76fea7074d277713dfd032cf196cc",
+    fixtureSha256: "11ef728f239a43d6540533df8d3c33f6f502c8653f98af25a8c97a3848604ad9",
     referenceMonthlyC: [29.0, 27.0, 24.0, 20.0, 14.0, 11.0, 9.0, 12.0, 18.0, 23.0, 26.0, 28.0],
     offsetF: -0.47282367,
     ratioC0: 1.06097391,
@@ -56,7 +57,7 @@ const BC_AUS_ZONE_CONSTANTS = {
     sourceWeather: "sydney2.tmy",
     sourceLatitude: -33.400000,
     sourceRevision: "20/07/15",
-    fixtureSha256: "37a9883b20e9ebb06067ccec1ccb9ea00c1809c30c1066333cef9774e99a8eca",
+    fixtureSha256: "45f318845a17aaf2b60347cdb1ec88975bc761c70784d6f780682f48a8868a0b",
     referenceMonthlyC: [23.0, 23.0, 21.0, 18.0, 15.0, 12.0, 11.0, 12.0, 15.0, 19.0, 21.0, 22.0],
     offsetF: -0.37705119,
     ratioC0: 1.03430251,
@@ -77,7 +78,7 @@ const BC_AUS_ZONE_CONSTANTS = {
     sourceWeather: "melbourne2.tmy",
     sourceLatitude: -37.800000,
     sourceRevision: "20/07/15",
-    fixtureSha256: "423bd800060332e4cb1e5de7ddc9197d9bfa902cf1c485acbbb7c00ec07aed15",
+    fixtureSha256: "90f79fc5b1689fd713e353b13b02ffea77bae3f7821a47adb57ab0080fa58241",
     referenceMonthlyC: [20.0, 20.0, 18.0, 15.0, 11.0, 9.0, 8.0, 10.0, 12.0, 15.0, 17.0, 19.0],
     offsetF: -0.82216746,
     ratioC0: 0.97322005,
@@ -98,7 +99,7 @@ const BC_AUS_ZONE_CONSTANTS = {
     sourceWeather: "canberra2.tmy",
     sourceLatitude: -35.300000,
     sourceRevision: "20/07/15",
-    fixtureSha256: "37ff54e32923425a3347f846075dc4b96ca852607708f6dc752fff6f8ddb4675",
+    fixtureSha256: "8fa59c2e6c40467e384d09685a546c4aded82898f6a3830529361529cc935e5e",
     referenceMonthlyC: [18.0, 18.0, 19.0, 15.0, 13.0, 9.0, 5.0, 5.0, 7.0, 8.0, 12.0, 16.0],
     offsetF: 0.04457657,
     ratioC0: 1.03108910,
