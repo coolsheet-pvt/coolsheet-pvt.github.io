@@ -66,4 +66,4 @@ assert.notEqual(selectorContext.closest(-35.281,149.130).zoneKey,"zone5","ASHP-o
 
 const regen = spawnSync("python", ["tools/fit_bc_aus_by_zone.py", "--check"], {cwd:root, encoding:"utf8"});
 assert.equal(regen.status, 0, regen.stderr || regen.stdout);
-console.log("Mains reference identity, nearest-location runtime, postcode registry, and deterministic generator tests passed.");
+console.log("Mains reference identity, nearest-location runtime, postcode registry, and cross-platform generator-equivalence tests passed.");

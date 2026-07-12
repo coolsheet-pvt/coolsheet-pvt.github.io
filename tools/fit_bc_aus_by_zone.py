@@ -15,13 +15,16 @@ Usage from the project root::
     python tools/fit_bc_aus_by_zone.py
     python tools/fit_bc_aus_by_zone.py --check
 
-The output path is canonical and deterministic: ``js/bc_aus_zone_constants.js``.
-``--check`` fails when regenerating would change the committed runtime file.
+The output path is canonical: ``js/bc_aus_zone_constants.js``. ``--check``
+requires exact metadata/structure and numerical equivalence within 0.000002,
+which permits only the final displayed-digit variation seen between libm
+implementations on Windows and Linux.
 """
 
 from __future__ import annotations
 
 import argparse
+import difflib
 import hashlib
 import json
 import math
@@ -306,6 +309,53 @@ def render_js(zone_results: dict[str, dict]) -> str:
     return "\n".join(lines)
 
 
+NUMERIC_RUNTIME_LINE_PATTERNS = (
+    re.compile(
+        r"^(\s*(?:offsetF|ratioC0|ratioC1|lagC0|lagC1|maeC|rmseC|biasC|maxAbsC):\s*)"
+        r"([-+]?\d+(?:\.\d+)?)(,\s*)$"
+    ),
+    re.compile(
+        r"^(// Overall in-sample RMSE across all 5 legacy deck zones:\s*)"
+        r"([-+]?\d+(?:\.\d+)?)(\s+degC)$"
+    ),
+    re.compile(
+        r"^(const BC_AUS_ZONE_OVERALL_RMSE_C\s*=\s*)"
+        r"([-+]?\d+(?:\.\d+)?)(;\s*)$"
+    ),
+)
+
+
+def runtime_is_semantically_current(current: str, rendered: str, tolerance: float = 0.000002) -> bool:
+    """Require exact provenance text and physically immaterial numeric drift only."""
+    current_lines = current.splitlines()
+    rendered_lines = rendered.splitlines()
+    if len(current_lines) != len(rendered_lines):
+        return False
+    for current_line, rendered_line in zip(current_lines, rendered_lines):
+        if current_line == rendered_line:
+            continue
+        equivalent = False
+        for pattern in NUMERIC_RUNTIME_LINE_PATTERNS:
+            current_match = pattern.fullmatch(current_line)
+            rendered_match = pattern.fullmatch(rendered_line)
+            if not current_match or not rendered_match:
+                continue
+            same_surrounding_text = (
+                current_match.group(1) == rendered_match.group(1)
+                and current_match.group(3) == rendered_match.group(3)
+            )
+            equivalent = same_surrounding_text and math.isclose(
+                float(current_match.group(2)),
+                float(rendered_match.group(2)),
+                rel_tol=0.0,
+                abs_tol=tolerance,
+            )
+            break
+        if not equivalent:
+            return False
+    return True
+
+
 def build_results() -> dict[str, dict]:
     return {key: fit_zone(zone) for key, zone in ZONES.items()}
 
@@ -319,9 +369,21 @@ def main() -> None:
     rendered = render_js(results)
     if args.check:
         current = OUTPUT_PATH.read_text(encoding="utf-8") if OUTPUT_PATH.exists() else None
-        if current != rendered:
-            raise SystemExit(f"{OUTPUT_PATH.relative_to(PROJECT_ROOT)} is stale; regenerate it")
-        print(f"OK: {OUTPUT_PATH.relative_to(PROJECT_ROOT)} is byte-identical to regeneration")
+        if current is None or not runtime_is_semantically_current(current, rendered):
+            diff = "" if current is None else "".join(difflib.unified_diff(
+                current.splitlines(keepends=True),
+                rendered.splitlines(keepends=True),
+                fromfile=str(OUTPUT_PATH.relative_to(PROJECT_ROOT)),
+                tofile="regenerated",
+            ))
+            raise SystemExit(
+                f"{OUTPUT_PATH.relative_to(PROJECT_ROOT)} is stale; regenerate it"
+                + (f"\n{diff}" if diff else "")
+            )
+        print(
+            f"OK: {OUTPUT_PATH.relative_to(PROJECT_ROOT)} metadata is exact and generated values "
+            "match within 0.000002"
+        )
         return
 
     OUTPUT_PATH.write_text(rendered, encoding="utf-8", newline="\n")
