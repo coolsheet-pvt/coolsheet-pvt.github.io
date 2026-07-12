@@ -1,7 +1,7 @@
 services:
   - type: web
     runtime: python
-    name: pvt-tmy-api
+    name: coolsheet-pvt-tmy-api
     branch: main
     rootDir: pvt-tmy-api
     buildCommand: pip install -r requirements.txt

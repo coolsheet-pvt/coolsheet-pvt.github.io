@@ -9,7 +9,7 @@ import os
 import urllib.parse
 import urllib.request
 
-BASE = os.getenv("TMY_API_BASE", "https://pvt-tmy-api.onrender.com").rstrip("/")
+BASE = os.getenv("TMY_API_BASE", "https://coolsheet-pvt-tmy-api.onrender.com").rstrip("/")
 CONTRACT = "2.1"
 SITES = {
     "rockhampton-zone1": (-23.379, 150.510), "alice-springs-zone2": (-23.698, 133.881),

@@ -15,9 +15,8 @@ LOCAL DEV: static server on port 8091 -> http://127.0.0.1:8091/index.html
    Live:    https://coolsheet-pvt.github.io/
    Auto-deploys on every push to main.
 2. Weather backend (pvt-tmy-api/server.py) -> Render
-   API:     https://pvt-tmy-api.onrender.com  (can take ~1 min to wake)
-   Redeploys only from the Render dashboard. NOTE: confirm Render is connected to
-   the NEW repo above (not the old m-lorusso one), or backend changes won't go live.
+   API:     https://coolsheet-pvt-tmy-api.onrender.com  (can take ~1 min to wake)
+   Linked to the new GitHub repository and configured to redeploy from `main`.
 
 --- PUSHING (remote already set to the new repo) ---
    cd "C:\Users\MIKE-PC\Desktop\PVT-Calculator"

@@ -156,8 +156,8 @@ Note: the BC-Aus mains-water model already has its own validation pages (`valida
 
 ## 7. Open / possible next steps
 
-- [ ] Redeploy `pvt-tmy-api` so the hosted API emits `solarHour` (then live results match
-      the validated numbers above; until then the front-end uses the safe fallback).
+- [x] Deploy `coolsheet-pvt-tmy-api` with contract 2.1 so the hosted API emits
+      `solarHour`, provenance, humidity, and horizontal infrared data.
 - [ ] (Optional) Replace Cooper declination with Spencer for ~0.3° more zenith accuracy.
 - [ ] (Optional) Offer a Perez transposition toggle if matching PVGIS/PVWatts exactly is
       desired — but re-check Model A/B coefficient calibration first.

@@ -3,7 +3,7 @@
 
 // Single source of truth for the app version shown in the header + PDF/report.
 // Keep in sync with the ?v= cache-bust query on css/js in index.html.
-const APP_VERSION = "13.26";
+const APP_VERSION = "13.27";
 
 // ================================================================
 //  DETAILS ANIMATION — replay slideDown every time a panel opens
@@ -983,7 +983,7 @@ function getTimezoneDisplay(tzInfo){
 }
 
 const LOCAL_TMY_ENDPOINT = "http://127.0.0.1:8000/tmy";
-const REMOTE_TMY_ENDPOINT = "https://pvt-tmy-api.onrender.com/tmy";
+const REMOTE_TMY_ENDPOINT = "https://coolsheet-pvt-tmy-api.onrender.com/tmy";
 const REQUIRED_TMY_CONTRACT = "2.1";
 const TMY_HEALTH_CACHE = new Map();
 

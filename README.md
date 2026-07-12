@@ -41,7 +41,7 @@ python3 -m http.server 8080
 ```
 
 If the local API is not running, the frontend automatically falls back to the
-hosted API at pvt-tmy-api.onrender.com (first request may take ~1 minute while
+hosted API at coolsheet-pvt-tmy-api.onrender.com (first request may take ~1 minute while
 it wakes up).
 
 ## Validation commands
