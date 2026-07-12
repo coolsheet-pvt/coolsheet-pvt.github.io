@@ -35,12 +35,24 @@ function extract(name, kind){
 
 const code = [
   ["MONTH_DAYS","const"],
+  ["MONTH_NAMES","const"],
+  ["isFiniteNumber","func"],
   ["monthFromDayN","func"],
   ["monthDayFromDayN","func"],
+  ["aggregateMonthly","func"],
+  ["calculateThermalStorage","func"],
+  ["calculateHourlyEnergyBalance","func"],
+  ["calculateHourlyElectricityBalance","func"],
+  ["calculateStorageMonthlyEnergyBalance","func"],
+  ["niceMonthlyBalanceAxisMax","func"],
+  ["formatMonthlyBalanceMWh","func"],
+  ["formatMonthlyBalanceKWh","func"],
+  ["buildMonthlyBalancePreviewPanel","func"],
+  ["buildMonthlyEnergyBalancePreview","func"],
   ["aggregateMonthlyAll","func"],
   ["aggregateDailyAll","func"]
 ].map(([n,k]) => extract(n,k)).join("\n");
-const mod = new Function(code + "\nreturn {MONTH_DAYS, monthFromDayN, monthDayFromDayN, aggregateMonthlyAll, aggregateDailyAll};")();
+const mod = new Function(code + "\nreturn {MONTH_DAYS, monthFromDayN, monthDayFromDayN, aggregateMonthly, calculateThermalStorage, calculateHourlyEnergyBalance, calculateHourlyElectricityBalance, calculateStorageMonthlyEnergyBalance, buildMonthlyEnergyBalancePreview, aggregateMonthlyAll, aggregateDailyAll};")();
 
 let pass=0, fail=0;
 const ok=(n,c,d="")=>{ c?pass++:fail++; console.log(`  ${c?"PASS":"FAIL"}  ${n}${c?"":"  "+d}`); };
@@ -122,10 +134,103 @@ console.log("\n# legacy rows without month/dayOfMonth fall back to dayN");
   near("dayN 32 lands on Feb 1 in the daily view", days[0].pv_kWh, 7, 1e-9);
 }
 
+console.log("\n# hourly monthly energy balance reconciliation");
+{
+  const met = [
+    {dayN:1, hourN:0}, {dayN:1, hourN:1},
+    {dayN:32, hourN:0}, {dayN:32, hourN:1}
+  ];
+  const balance = mod.calculateHourlyEnergyBalance([8,2,0,10], [5,4,3,6], met);
+  near("January matched energy", balance.matchedMonthly[0], 7, 1e-9);
+  near("January backup energy", balance.unmetMonthly[0], 2, 1e-9);
+  near("January excess energy", balance.excessMonthly[0], 3, 1e-9);
+  near("February matched energy", balance.matchedMonthly[1], 6, 1e-9);
+  near("February backup energy", balance.unmetMonthly[1], 3, 1e-9);
+  near("February excess energy", balance.excessMonthly[1], 4, 1e-9);
+  near("annual monthly matched sum equals headline", balance.matchedMonthly.reduce((s,v)=>s+v,0), balance.metBySupply, 1e-9);
+  near("annual monthly backup sum equals headline", balance.unmetMonthly.reduce((s,v)=>s+v,0), balance.unmet, 1e-9);
+  near("annual monthly excess sum equals headline", balance.excessMonthly.reduce((s,v)=>s+v,0), balance.excess, 1e-9);
+  for (const monthIndex of [0,1]){
+    near(`month ${monthIndex+1} demand = matched + backup`,
+      balance.demandMonthly[monthIndex], balance.matchedMonthly[monthIndex] + balance.unmetMonthly[monthIndex], 1e-9);
+    near(`month ${monthIndex+1} supply = matched + excess`,
+      balance.supplyMonthly[monthIndex], balance.matchedMonthly[monthIndex] + balance.excessMonthly[monthIndex], 1e-9);
+  }
+  const electricity = mod.calculateHourlyElectricityBalance([8,2,0,10], [5,4,3,6], met);
+  near("electric wrapper preserves matched months", electricity.matchedMonthly[1], 6, 1e-9);
+  near("electric wrapper preserves grid-import months", electricity.unmetMonthly[1], 3, 1e-9);
+
+  const aligned = mod.calculateHourlyEnergyBalance([1,1,99], [1,1,99], met.slice(0,2));
+  near("unmapped trailing rows are excluded from headline totals", aligned.metBySupply, 2, 1e-9);
+  near("mapped monthly sum still equals headline total", aligned.matchedMonthly.reduce((s,v)=>s+v,0), 2, 1e-9);
+  const unequalInputs = mod.calculateHourlyEnergyBalance([2], [1,1], met.slice(0,2));
+  near("unequal input lengths use only aligned rows", unequalInputs.demandMonthly.reduce((s,v)=>s+v,0), 1, 1e-9);
+  near("unequal aligned demand still reconciles", unequalInputs.demandMonthly[0], unequalInputs.matchedMonthly[0] + unequalInputs.unmetMonthly[0], 1e-9);
+}
+
+console.log("\n# hotel storage monthly balance carries energy across months honestly");
+{
+  const met = [
+    {dayN:1, hourN:0}, {dayN:1, hourN:1},
+    {dayN:32, hourN:0}, {dayN:32, hourN:1}
+  ];
+  const supply = [10,0,0,0];
+  const demand = [0,0,5,0];
+  const storage = mod.calculateThermalStorage({
+    tank_volume_litres:1000,
+    pvt_supply_array:supply,
+    hotel_demand_array:demand,
+    mains_temp:14
+  });
+  const monthly = mod.calculateStorageMonthlyEnergyBalance(storage, demand, met);
+  near("January generation remains in tank", storage.tank_soc_kwh[1], 10, 1e-9);
+  near("February demand is served by carried tank energy", monthly.matchedMonthly[1], 5, 1e-9);
+  near("February backup remains zero", monthly.unmetMonthly[1], 0, 1e-9);
+  near("monthly served + backup equals February demand", monthly.matchedMonthly[1] + monthly.unmetMonthly[1], 5, 1e-9);
+  near("January storage conservation", supply[0] + supply[1], storage.tank_soc_kwh[1] + storage.excess_pvt_kwh[0] + storage.excess_pvt_kwh[1], 1e-9);
+  near("February storage conservation with opening SOC", storage.tank_soc_kwh[1], monthly.matchedMonthly[1] + storage.tank_soc_kwh[3] + storage.excess_pvt_kwh[2] + storage.excess_pvt_kwh[3], 1e-9);
+}
+
+console.log("\n# alternative graph markup coexists with the original charts");
+{
+  const balance = {
+    matchedMonthly:[7000,6000,...new Array(10).fill(5000)],
+    unmetMonthly:[2000,3000,...new Array(10).fill(4000)],
+    excessMonthly:[1000,500,...new Array(10).fill(250)]
+  };
+  const html = mod.buildMonthlyEnergyBalancePreview(balance, balance);
+  ok("new graph is clearly labelled as an alternative preview", html.includes("Alternative view — Monthly energy balance"));
+  ok("comparison explicitly says original graphs remain", html.includes("The original graphs are unchanged below for comparison."));
+  ok("both heat and electricity panels render", html.includes("Heat demand balance") && html.includes("Electricity demand balance"));
+  ok("all 24 monthly bar groups render", (html.match(/class=\"balance-preview-month\"/g) || []).length === 24);
+  ok("monthly kWh values are available in collapsible tables", (html.match(/View monthly values/g) || []).length === 2 && html.includes("monthly values (kWh)"));
+  ok("monthly table headers declare column scope", html.includes('<th scope="col">Month</th>'));
+
+  const emptyElectric = mod.buildMonthlyEnergyBalancePreview(balance, {
+    matchedMonthly:new Array(12).fill(0), unmetMonthly:new Array(12).fill(0), excessMonthly:new Array(12).fill(0), demandModelled:false
+  });
+  ok("unmodelled laundry electricity gets an honest empty state", emptyElectric.includes("Electrical demand is not modelled for this industry."));
+  const zeroDemandScenario = mod.buildMonthlyEnergyBalancePreview(balance, {
+    matchedMonthly:new Array(12).fill(0), unmetMonthly:new Array(12).fill(0), excessMonthly:new Array(12).fill(0)
+  });
+  ok("modelled zero-demand scenarios are not mislabeled as unmodelled", zeroDemandScenario.includes("This scenario has zero modelled electrical demand."));
+
+  const hotel = mod.buildMonthlyEnergyBalancePreview({
+    ...balance,
+    previewTitle:"Heat demand balance (with selected tank)",
+    solarLabel:"PVT/tank heat used",
+    surplusLabel:"Excess PVT heat",
+    previewBasisNote:"Stored energy is counted in the month when it serves demand."
+  }, balance);
+  ok("hotel storage terminology is carried into the preview", hotel.includes("PVT/tank heat used") && hotel.includes("Stored energy is counted in the month when it serves demand."));
+}
+
 console.log("\n# source lock: no Date round-trip in chart aggregation");
 ok("timeSeries no longer built with toISOString()", !/toISOString\(\)\.slice\(0,10\)/.test(SRC));
 ok("aggregateDailyAll no longer sizes months from the display year",
   !SRC.includes("new Date(year, month, 0).getDate()"));
+ok("legacy industry chart groups remain in the chart set",
+  SRC.includes("return balancePreview + buildIndustryChartGroups"));
 
 console.log(`\n=== ${pass} passed, ${fail} failed ===`);
 process.exit(fail===0?0:1);

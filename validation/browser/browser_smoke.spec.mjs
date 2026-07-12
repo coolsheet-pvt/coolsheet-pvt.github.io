@@ -26,6 +26,57 @@ test("commercial laundry controls are exposed", async ({ page }) => {
   await expect(page.locator("#laundryWaterUseLPerKg")).toHaveValue("10");
 });
 
+test("alternative monthly balance graph coexists with every legacy industry graph", async ({ page }) => {
+  await page.goto(modernPageUrl);
+  await page.evaluate(() => {
+    const supply = [9000,8000,7000,6000,5000,4500,5000,6000,7000,8000,9000,10000];
+    const demand = [11000,10500,10000,9500,9000,8500,8500,9000,9500,10000,10500,11000];
+    const matched = supply.map((value,index) => Math.min(value,demand[index]));
+    const unmet = demand.map((value,index) => Math.max(0,value-supply[index]));
+    const excess = supply.map((value,index) => Math.max(0,value-demand[index]));
+    const balance = {matchedMonthly:matched, unmetMonthly:unmet, excessMonthly:excess};
+    const host = document.getElementById("industryOutput");
+    host.style.display = "block";
+    host.innerHTML = `<div class="industry-chart-group">${buildIndustryChartSet({
+      thermalDatasets:[{label:"Process heat",color:"#d97706",monthly:demand}],
+      pvtMonthly:supply,
+      thermMonthly:demand,
+      pvMonthly:supply,
+      elecMonthly:demand,
+      thermalBalance:balance,
+      electricalBalance:balance,
+      thermalTitle:"Legacy monthly heat demand",
+      elecTitle:"Legacy monthly electricity demand",
+      sharedScale:true
+    })}</div>`;
+  });
+
+  await expect(page.locator(".industry-balance-preview")).toHaveCount(1);
+  await expect(page.locator(".industry-balance-preview-head h4")).toHaveText("Alternative view — Monthly energy balance");
+  await expect(page.locator(".balance-preview-panel")).toHaveCount(2);
+  await expect(page.locator(".balance-preview-data")).toHaveCount(2);
+  await expect(page.locator(".industry-chart-section")).toHaveCount(2);
+  await expect(page.locator(".industry-chart-section svg")).toHaveCount(5);
+  await expect(page.locator(".balance-preview-compare-note")).toContainText("original graphs are unchanged below");
+
+  await page.setViewportSize({width:390,height:844});
+  const mobile = await page.evaluate(() => {
+    const preview = document.querySelector(".industry-balance-preview");
+    const panels = [...document.querySelectorAll(".balance-preview-panel")].map(el => el.getBoundingClientRect());
+    const labels = [...document.querySelectorAll(".balance-preview-panel:first-of-type .balance-preview-month-row span")];
+    return {
+      noPreviewOverflow: preview.scrollWidth <= preview.clientWidth + 1,
+      panelsStacked: panels.length === 2 && panels[1].top > panels[0].bottom,
+      labelVisibility: labels.map(el => getComputedStyle(el).visibility),
+      visibleLabelX: labels.filter(el => getComputedStyle(el).visibility === "visible").map(el => el.getBoundingClientRect().left)
+    };
+  });
+  expect(mobile.noPreviewOverflow).toBe(true);
+  expect(mobile.panelsStacked).toBe(true);
+  expect(mobile.labelVisibility.map((value,index) => value === "visible" ? index : -1).filter(index => index >= 0)).toEqual([0,3,6,9]);
+  expect(mobile.visibleLabelX).toEqual([...mobile.visibleLabelX].sort((a,b) => a-b));
+});
+
 test("modern results prioritise matched decisions without changing values", async ({ page }) => {
   const errors = [];
   page.on("console", msg => {

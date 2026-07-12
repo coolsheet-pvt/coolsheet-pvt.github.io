@@ -3,7 +3,7 @@
 
 // Single source of truth for the app version shown in the header + PDF/report.
 // Keep in sync with the ?v= cache-bust query on css/js in index.html.
-const APP_VERSION = "13.27";
+const APP_VERSION = "13.28";
 
 // ================================================================
 //  DETAILS ANIMATION — replay slideDown every time a panel opens
@@ -3230,19 +3230,42 @@ function calculateMonthlyEnergyBalance(supplyHourly, demandHourly, met){
 // Monthly matching (above) implicitly assumes a month of free heat storage, so it
 // is kept only as the "with ideal storage" upper bound shown in the storage note.
 function calculateHourlyEnergyBalance(supplyHourly, demandHourly, met){
-  const n = Math.min(supplyHourly.length, demandHourly.length);
+  // All headline and monthly values must describe the same weather rows. Limiting
+  // the loop to the shortest aligned input prevents an annual total from silently
+  // including hours that cannot be assigned to a month.
+  const n = Math.min(supplyHourly.length, demandHourly.length, met?.length || 0);
   let metBySupply = 0, unmet = 0, excess = 0, totalDemand = 0;
+  const matchedMonthly = new Array(12).fill(0);
+  const unmetMonthly = new Array(12).fill(0);
+  const excessMonthly = new Array(12).fill(0);
+  const supplyMonthly = new Array(12).fill(0);
+  const demandMonthly = new Array(12).fill(0);
   for (let i = 0; i < n; i++){
     const s = Math.max(0, supplyHourly[i] || 0);
     const d = Math.max(0, demandHourly[i] || 0);
-    metBySupply += Math.min(s, d);
-    unmet += Math.max(0, d - s);
-    excess += Math.max(0, s - d);
+    const matchedThisHour = Math.min(s, d);
+    const unmetThisHour = Math.max(0, d - s);
+    const excessThisHour = Math.max(0, s - d);
+    metBySupply += matchedThisHour;
+    unmet += unmetThisHour;
+    excess += excessThisHour;
     totalDemand += d;
+    const dayN = Number(met?.[i]?.dayN);
+    const monthIndex = Number.isFinite(dayN) ? monthFromDayN(dayN) - 1 : -1;
+    if (monthIndex >= 0 && monthIndex < 12){
+      supplyMonthly[monthIndex] += s;
+      demandMonthly[monthIndex] += d;
+      matchedMonthly[monthIndex] += matchedThisHour;
+      unmetMonthly[monthIndex] += unmetThisHour;
+      excessMonthly[monthIndex] += excessThisHour;
+    }
   }
   return {
-    supplyMonthly: aggregateMonthly(supplyHourly, met),
-    demandMonthly: aggregateMonthly(demandHourly, met),
+    supplyMonthly,
+    demandMonthly,
+    matchedMonthly,
+    unmetMonthly,
+    excessMonthly,
     metBySupply,
     unmet,
     excess,
@@ -3255,10 +3278,32 @@ function calculateHourlyElectricityBalance(pvHourly, demandHourly, met){
   return {
     pvMonthly: balance.supplyMonthly,
     demandMonthly: balance.demandMonthly,
+    matchedMonthly: balance.matchedMonthly,
+    unmetMonthly: balance.unmetMonthly,
+    excessMonthly: balance.excessMonthly,
     metByPv: balance.metBySupply,
     unmet: balance.unmet,
     excess: balance.excess,
     solarFraction: balance.solarFraction
+  };
+}
+
+function calculateStorageMonthlyEnergyBalance(storageResult, demandHourly, met){
+  const n = Math.min(demandHourly.length, met?.length || 0);
+  const matchedHourly = new Array(n).fill(0);
+  const unmetHourly = new Array(n).fill(0);
+  const excessHourly = new Array(n).fill(0);
+  for (let i = 0; i < n; i++){
+    const demandKWh = Math.max(0, Number(demandHourly[i]) || 0);
+    const unmetKWh = Math.min(demandKWh, Math.max(0, Number(storageResult?.unmet_demand_kwh?.[i]) || 0));
+    matchedHourly[i] = demandKWh - unmetKWh;
+    unmetHourly[i] = unmetKWh;
+    excessHourly[i] = Math.max(0, Number(storageResult?.excess_pvt_kwh?.[i]) || 0);
+  }
+  return {
+    matchedMonthly: aggregateMonthly(matchedHourly, met),
+    unmetMonthly: aggregateMonthly(unmetHourly, met),
+    excessMonthly: aggregateMonthly(excessHourly, met)
   };
 }
 
@@ -3432,6 +3477,118 @@ function buildMonthlyCoverageStrip(supplyMonthly, demandMonthly, title="Monthly 
       ${xTicks}
       <text x="18" y="${m.top+ch/2}" text-anchor="middle" font-size="11" fill="#1565c0" transform="rotate(-90 18 ${m.top+ch/2})">PV / demand</text>
     </svg></div>`;
+}
+
+function niceMonthlyBalanceAxisMax(valueMWh){
+  const value = Math.max(0, Number(valueMWh) || 0);
+  if (value <= 0) return 1;
+  const power = 10 ** Math.floor(Math.log10(value));
+  const fraction = value / power;
+  const niceFraction = fraction <= 1 ? 1 : fraction <= 2 ? 2 : fraction <= 5 ? 5 : 10;
+  return niceFraction * power;
+}
+
+function formatMonthlyBalanceMWh(value){
+  const number = Math.max(0, Number(value) || 0);
+  const decimals = number >= 100 ? 0 : number >= 10 ? 1 : number >= 1 ? 2 : 3;
+  return number.toLocaleString(undefined, {maximumFractionDigits:decimals});
+}
+
+function formatMonthlyBalanceKWh(value){
+  const number = Math.max(0, Number(value) || 0);
+  return number.toLocaleString(undefined, {minimumFractionDigits:1, maximumFractionDigits:1});
+}
+
+function buildMonthlyBalancePreviewPanel(opts){
+  const used = Array.from({length:12}, (_,i) => Math.max(0, Number(opts.usedMonthly?.[i]) || 0) / 1000);
+  const backup = Array.from({length:12}, (_,i) => Math.max(0, Number(opts.backupMonthly?.[i]) || 0) / 1000);
+  const surplus = Array.from({length:12}, (_,i) => Math.max(0, Number(opts.surplusMonthly?.[i]) || 0) / 1000);
+  const demand = used.map((value,i) => value + backup[i]);
+  const axisMax = niceMonthlyBalanceAxisMax(Math.max(...demand, ...surplus, 0));
+  const usedTotal = used.reduce((sum,value) => sum + value, 0);
+  const backupTotal = backup.reduce((sum,value) => sum + value, 0);
+  const coverage = usedTotal + backupTotal > 0 ? (usedTotal / (usedTotal + backupTotal)) * 100 : 0;
+  const peakBackup = Math.max(...backup, 0);
+  const peakBackupIndex = backup.indexOf(peakBackup);
+  const safeId = String(opts.id || "balance").replace(/[^a-z0-9_-]/gi, "-");
+
+  const monthBars = MONTH_NAMES.map((month,i) => {
+    const usedPct = axisMax > 0 ? (used[i] / axisMax) * 100 : 0;
+    const backupPct = axisMax > 0 ? (backup[i] / axisMax) * 100 : 0;
+    const surplusPct = axisMax > 0 ? (surplus[i] / axisMax) * 100 : 0;
+    return `<div class="balance-preview-month" aria-hidden="true">
+      <div class="balance-preview-bars">
+        <div class="balance-preview-demand-bar">
+          <span class="balance-preview-solar" style="height:${usedPct.toFixed(4)}%;"></span>
+          <span class="balance-preview-backup" style="bottom:${usedPct.toFixed(4)}%;height:${backupPct.toFixed(4)}%;"></span>
+        </div>
+        <span class="balance-preview-surplus" style="height:${surplusPct.toFixed(4)}%;"></span>
+      </div>
+    </div>`;
+  }).join("");
+  const monthLabels = MONTH_NAMES.map(month => `<span>${month}</span>`).join("");
+  const tickRatios = [1,0.75,0.5,0.25,0];
+  const yTicks = tickRatios.map(ratio => `<span style="bottom:${(ratio*100).toFixed(0)}%;">${formatMonthlyBalanceMWh(axisMax*ratio)}</span>`).join("");
+  const gridLines = tickRatios.map(ratio => `<i style="bottom:${(ratio*100).toFixed(0)}%;"></i>`).join("");
+  const tableRows = MONTH_NAMES.map((month,i) => `<tr><th scope="row">${month}</th><td>${formatMonthlyBalanceKWh(used[i]*1000)}</td><td>${formatMonthlyBalanceKWh(backup[i]*1000)}</td><td>${formatMonthlyBalanceKWh(surplus[i]*1000)}</td></tr>`).join("");
+  const takeaway = peakBackup > 0
+    ? `${opts.solarLabel} covers ${coverage.toFixed(1)}% annually. Highest ${opts.backupLabel.toLowerCase()}: ${MONTH_NAMES[peakBackupIndex]}.`
+    : `${opts.solarLabel} covers ${coverage.toFixed(1)}% annually.`;
+
+  return `<figure class="balance-preview-panel" aria-labelledby="${safeId}-balance-title">
+    <figcaption>
+      <h5 id="${safeId}-balance-title">${opts.title}</h5>
+      <p>${takeaway}</p>
+    </figcaption>
+    <div class="balance-preview-legend" aria-hidden="true">
+      <span><i class="balance-preview-key solar"></i>${opts.solarLabel}</span>
+      <span><i class="balance-preview-key backup"></i>${opts.backupLabel}</span>
+      <span><i class="balance-preview-key surplus"></i>${opts.surplusLabel}</span>
+    </div>
+    <div class="balance-preview-chart" aria-hidden="true">
+      <div class="balance-preview-y-axis"><div class="balance-preview-y-scale">${yTicks}</div><b>MWh<br>/month</b></div>
+      <div class="balance-preview-plot">
+        <div class="balance-preview-bar-area"><div class="balance-preview-gridlines">${gridLines}</div><div class="balance-preview-columns">${monthBars}</div></div>
+        <div class="balance-preview-month-row">${monthLabels}</div>
+      </div>
+    </div>
+    <details class="balance-preview-data">
+      <summary>View monthly values</summary>
+      <div><table><caption>${opts.title} monthly values (kWh)</caption><thead><tr><th scope="col">Month</th><th scope="col">${opts.solarLabel}</th><th scope="col">${opts.backupLabel}</th><th scope="col">${opts.surplusLabel}</th></tr></thead><tbody>${tableRows}</tbody></table></div>
+    </details>
+  </figure>`;
+}
+
+function buildMonthlyEnergyBalancePreview(thermalBalance, electricalBalance){
+  if (!thermalBalance?.matchedMonthly || !thermalBalance?.unmetMonthly || !thermalBalance?.excessMonthly) return "";
+  const thermalPanel = buildMonthlyBalancePreviewPanel({
+    id:"thermal", title:thermalBalance.previewTitle || "Heat demand balance",
+    usedMonthly:thermalBalance.matchedMonthly,
+    backupMonthly:thermalBalance.unmetMonthly,
+    surplusMonthly:thermalBalance.excessMonthly,
+    solarLabel:thermalBalance.solarLabel || "Solar heat used",
+    backupLabel:thermalBalance.backupLabel || "Backup heat",
+    surplusLabel:thermalBalance.surplusLabel || "Unused solar heat"
+  });
+  const electricalDemand = (electricalBalance?.matchedMonthly || []).reduce((sum,value) => sum + Math.max(0,Number(value)||0),0)
+    + (electricalBalance?.unmetMonthly || []).reduce((sum,value) => sum + Math.max(0,Number(value)||0),0);
+  const electricalPanel = electricalDemand > 1e-6
+    ? buildMonthlyBalancePreviewPanel({
+        id:"electrical", title:"Electricity demand balance",
+        usedMonthly:electricalBalance.matchedMonthly,
+        backupMonthly:electricalBalance.unmetMonthly,
+        surplusMonthly:electricalBalance.excessMonthly,
+        solarLabel:"PV used onsite", backupLabel:"Grid import", surplusLabel:"PV export"
+      })
+    : `<div class="balance-preview-panel balance-preview-empty"><h5>Electricity demand balance</h5><p>${electricalBalance?.demandModelled === false
+        ? "Electrical demand is not modelled for this industry."
+        : "This scenario has zero modelled electrical demand."}</p></div>`;
+  const basisNote = thermalBalance.previewBasisNote || "Hourly direct-use matching is used (no storage).";
+  return `<section class="industry-balance-preview" aria-labelledby="industry-balance-preview-title">
+    <div class="industry-balance-preview-head"><div><h4 id="industry-balance-preview-title">Alternative view — Monthly energy balance</h4><p>Preview using the same calculated results. ${basisNote} Demand bars stack solar used with backup or grid energy; narrow teal bars show unused or exported solar energy separately.</p></div><span>Preview</span></div>
+    <div class="balance-preview-grid">${thermalPanel}${electricalPanel}</div>
+    <p class="balance-preview-compare-note">The original graphs are unchanged below for comparison.</p>
+  </section>`;
 }
 
 function buildIndustryChartGroups(chartThermalDemand, chartThermalSupply, chartElectricalDemand, chartElectricalSupply){
@@ -4817,7 +4974,8 @@ function buildIndustryChartSet(opts){
       leftAxisLabel:"PV kWh", rightAxisLabel:"Demand kWh",
       sameScale:false
     }) + coverageStrip;
-  return buildIndustryChartGroups(chartThermal, chartSupply, chartElec, chartElecSupply);
+  const balancePreview = buildMonthlyEnergyBalancePreview(opts.thermalBalance, opts.electricalBalance);
+  return balancePreview + buildIndustryChartGroups(chartThermal, chartSupply, chartElec, chartElecSupply);
 }
 
 // ================================================================
@@ -5491,6 +5649,7 @@ async function calcAnnualPVT(){
       }));
       const chartSet = buildIndustryChartSet({
         thermalDatasets, pvtMonthly, thermMonthly, pvMonthly, elecMonthly,
+        thermalBalance, electricalBalance:elecBalance,
         thermalTitle: `Monthly Thermal Demand \u2014 ${profileLabels[dairyProfileType]}`,
         elecTitle: `Monthly Electrical Demand (scenario: ${dairyAssumptions.electricalKWhPerKL.toFixed(1)} kWh/kL)`,
         sharedScale: true
@@ -5641,6 +5800,7 @@ async function calcAnnualPVT(){
       }));
       const chartSet = buildIndustryChartSet({
         thermalDatasets, pvtMonthly, thermMonthly, pvMonthly, elecMonthly,
+        thermalBalance, electricalBalance:elecBalance,
         thermalTitle: `Monthly Thermal Demand \u2014 ${profileLabels[breweryProfileType]}`,
         elecTitle: `Monthly Electrical Demand (scenario: ${breweryAssumptions.electricalKWhPerHL.toFixed(2)} kWh/hL)`,
         sharedScale: true
@@ -5838,6 +5998,15 @@ async function calcAnnualPVT(){
       const pvMonthly    = elecBalance.pvMonthly;
       const thermMonthly = aggregateMonthly(thermalHourly, met);
       const elecMonthly  = elecBalance.demandMonthly;
+      const hotelThermalBalance = {
+        ...calculateStorageMonthlyEnergyBalance(storageResult, thermalHourly, met),
+        previewTitle: tankVolumeLitres > 0 ? "Heat demand balance (with selected tank)" : "Heat demand balance (no storage)",
+        solarLabel: tankVolumeLitres > 0 ? "PVT/tank heat used" : "Solar heat used",
+        surplusLabel: tankVolumeLitres > 0 ? "Excess PVT heat" : "Unused solar heat",
+        previewBasisNote: tankVolumeLitres > 0
+          ? "Hotel heat includes the selected storage tank; stored energy is counted in the month when it serves demand."
+          : "Hourly direct-use matching is used (no storage)."
+      };
 
       const thermalDatasets = selectedKeys.map(k => ({
         label: HOTEL_PROCESS_SHORT_LABELS[k]||k, color: HOTEL_PROCESS_COLORS[k]||"#888",
@@ -5845,6 +6014,7 @@ async function calcAnnualPVT(){
       }));
       const chartSet = buildIndustryChartSet({
         thermalDatasets, pvtMonthly, thermMonthly, pvMonthly, elecMonthly,
+        thermalBalance:hotelThermalBalance, electricalBalance:elecBalance,
         thermalTitle: `Monthly Thermal Demand \u2014 ${hotelProfileLabel}`,
         elecTitle: `Monthly Electrical Demand (${hotelElectricalIntensity} kWh/room-night scenario)`,
         sharedScale: true
@@ -6019,6 +6189,7 @@ async function calcAnnualPVT(){
       }));
       const chartSet = buildIndustryChartSet({
         thermalDatasets, pvtMonthly, thermMonthly, pvMonthly, elecMonthly,
+        thermalBalance, electricalBalance:aquaticElecBalance,
         thermalTitle: `Monthly Aquatic Thermal Demand \u2014 ${aquaticProfileLabel}`,
         elecTitle: `Monthly Electrical Demand (scenario: ${aquaticElectricIntensity} kWh/m\u00b2 water area/yr)`,
         supplyTitle: "Monthly PVT Thermal Supply vs Aquatic Thermal Demand",
@@ -6185,6 +6356,7 @@ async function calcAnnualPVT(){
       }));
       const chartSet = buildIndustryChartSet({
         thermalDatasets, pvtMonthly, thermMonthly, pvMonthly, elecMonthly,
+        thermalBalance, electricalBalance:{...elecBalance, demandModelled:false},
         thermalTitle: "Monthly Commercial Laundry Hot-Water Demand",
         elecTitle: "Monthly Electrical Demand (not modeled for laundry)",
         supplyTitle: "Monthly PVT Thermal Supply vs Laundry Hot-Water Demand",
