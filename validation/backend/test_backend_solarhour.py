@@ -11,6 +11,7 @@ from __future__ import annotations
 import sys
 import unittest
 import asyncio
+import inspect
 from pathlib import Path
 from unittest import mock
 
@@ -107,6 +108,12 @@ class BackendSolarHourTests(unittest.TestCase):
         self.assertEqual(health["modelBLongwavePolicy"], "frozen-prohibited")
         self.assertIn("relativeHumidityPct", health["requiredRecordFields"])
         self.assertIn("infraredHorizontalWm2", health["requiredRecordFields"])
+
+    def test_blocking_tmy_routes_use_fastapi_thread_pool(self):
+        self.assertFalse(inspect.iscoroutinefunction(server.get_tmy))
+        self.assertFalse(inspect.iscoroutinefunction(server.post_tmy))
+        self.assertFalse(inspect.iscoroutinefunction(server.email_report))
+        self.assertTrue(inspect.iscoroutinefunction(server.health_check))
 
 
 if __name__ == "__main__":

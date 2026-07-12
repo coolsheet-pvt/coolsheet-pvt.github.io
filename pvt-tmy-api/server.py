@@ -314,14 +314,20 @@ def _validate_coords(lat: float, lon: float) -> None:
 
 
 @app.get("/tmy")
-async def get_tmy(
+def get_tmy(
     lat: float,
     lon: float,
     tz: Optional[str] = None,
     gmtOffset: Optional[float] = None,
     rotate_last_n_day1: int = 0,
 ):
-    """GET TMY data by lat/lon coordinates."""
+    """GET TMY data without blocking the ASGI event loop.
+
+    This route intentionally uses a synchronous path-operation function because
+    pvlib's PVGIS client performs blocking network and dataframe work. FastAPI
+    therefore runs it in its thread pool, leaving /health responsive while a
+    weather dataset is being fetched.
+    """
     _validate_coords(lat, lon)
     result = tmy(lat, lon, tz, gmtOffset, rotate_last_n_day1)
     if "error" in result:
@@ -330,14 +336,14 @@ async def get_tmy(
 
 
 @app.post("/tmy")
-async def post_tmy(
+def post_tmy(
     lat: float,
     lon: float,
     tz: Optional[str] = None,
     gmtOffset: Optional[float] = None,
     rotate_last_n_day1: int = 0,
 ):
-    """POST TMY data by lat/lon coordinates."""
+    """POST TMY data in FastAPI's thread pool; see the GET route above."""
     _validate_coords(lat, lon)
     result = tmy(lat, lon, tz, gmtOffset, rotate_last_n_day1)
     if "error" in result:
@@ -346,8 +352,8 @@ async def post_tmy(
 
 
 @app.post("/email-report")
-async def email_report(payload: EmailReportRequest):
-    """Send a generated report HTML file by email when SMTP is configured."""
+def email_report(payload: EmailReportRequest):
+    """Send report email in FastAPI's thread pool because smtplib is blocking."""
     smtp_host = os.getenv("SMTP_HOST", "").strip()
     smtp_from = os.getenv("SMTP_FROM", "").strip()
     if not smtp_host or not smtp_from:
