@@ -17,6 +17,8 @@ photovoltaic-thermal (PVT) solar systems for Australian commercial sites.
 |---|---|
 | `index.html` | Main calculator |
 | `pages/cer_comparison.html` | BC-Aus model validation tool |
+| `pages/soac-field-validation.html` | SOAC measured-field validation and model gap analysis |
+| `pages/pv-external-validation.html` | PV-only comparison with PVGIS and PVWatts across Australian climates |
 | `js/bc_aus_zone_constants.js` | Regional BC-Aus constants (5 climate zones) |
 | `tools/fit_bc_aus_by_zone.py` | Script that generates the zone constants |
 | `pvt-tmy-api/` | Local FastAPI server for PVGIS weather fetching |

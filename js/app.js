@@ -3,7 +3,7 @@
 
 // Single source of truth for the app version shown in the header + PDF/report.
 // Keep in sync with the ?v= cache-bust query on css/js in index.html.
-const APP_VERSION = "13.28";
+const APP_VERSION = "13.29";
 
 // ================================================================
 //  DETAILS ANIMATION — replay slideDown every time a panel opens
@@ -58,6 +58,8 @@ function resetExportActions(){
     pdfBtn.disabled = true;
     pdfBtn.textContent = "Generate PDF report";
   }
+  const pvCheckBtn = document.getElementById("btnCheckPvScenario");
+  if (pvCheckBtn) pvCheckBtn.disabled = true;
 }
 
 function escapeHtml(value){
@@ -100,15 +102,17 @@ function normalizeSignedAngle(deg){
   return Math.abs(angle + 180) < 1e-9 ? -180 : angle;
 }
 
-function buildPvgisValidationLink({ latitude, longitude, areaM2, etaPv, tiltAngle, surfaceAzimuth }){
+function buildPvgisValidationLink({ latitude, longitude, areaM2, etaPv, tiltAngle, surfaceAzimuth, systemLossPct = 14, inverterEfficiencyPct = 96 }){
   const peakPowerKw = Math.max(0, areaM2 * etaPv);
   const pvgisAspect = normalizeSignedAngle(surfaceAzimuth - 180);
-  const lossPct = 14;
+  const nonInverterLoss = Math.min(99,Math.max(0,Number(systemLossPct))) / 100;
+  const inverterEfficiency = Math.min(100,Math.max(1,Number(inverterEfficiencyPct))) / 100;
+  const lossPct = (1 - (1 - nonInverterLoss) * inverterEfficiency) * 100;
   const params = new URLSearchParams({
     lat: latitude.toFixed(6),
     lon: longitude.toFixed(6),
     peakpower: peakPowerKw.toFixed(3),
-    loss: String(lossPct),
+    loss: lossPct.toFixed(2),
     angle: Number(tiltAngle).toFixed(2),
     aspect: pvgisAspect.toFixed(2),
     mountingplace: "free",
@@ -124,6 +128,43 @@ function buildPvgisValidationLink({ latitude, longitude, areaM2, etaPv, tiltAngl
     lossPct,
     pvgisAspect
   };
+}
+
+function buildCurrentPvValidationUrl(){
+  const annual = CURRENT_CALC_RESULT?.annualRaw;
+  if (!annual || !CURRENT_LOC) return null;
+  const areaM2 = getInputNumber("area", null);
+  const moduleEfficiency = getInputNumber("etaPv", null);
+  const tiltDeg = getInputNumber("tiltAngle", null);
+  const azimuthDeg = getInputNumber("azimuthAngle", null);
+  const albedo = getInputNumber("albedo", 0.2);
+  if (![areaM2,moduleEfficiency,tiltDeg,azimuthDeg,annual.pvOnlyNetAcKWh].every(isFiniteNumber)) return null;
+  const params = new URLSearchParams({
+    mode: "scenario",
+    name: CURRENT_LOC.name || "Current CoolSheet location",
+    lat: CURRENT_LOC.lat.toFixed(6),
+    lon: CURRENT_LOC.lon.toFixed(6),
+    area: areaM2.toFixed(3),
+    efficiency: moduleEfficiency.toFixed(5),
+    capacity: (areaM2 * moduleEfficiency).toFixed(3),
+    tilt: tiltDeg.toFixed(2),
+    azimuth: azimuthDeg.toFixed(2),
+    albedo: Number(albedo).toFixed(3),
+    systemLoss: Number(annual.pvSystemLossPct).toFixed(2),
+    inverterEfficiency: Number(annual.pvInverterEfficiencyPct).toFixed(2),
+    coolsheetAc: Number(annual.pvOnlyNetAcKWh).toFixed(3)
+  });
+  return `pages/pv-external-validation.html?${params.toString()}`;
+}
+
+function openCurrentPvValidation(){
+  const url = buildCurrentPvValidationUrl();
+  if (!url){
+    setOutput("Run the CoolSheet calculation first, then choose Check this PV result.", true);
+    return;
+  }
+  const opened = window.open(url, "_blank");
+  if (opened) opened.opener = null;
 }
 
 function getInstalledCostBasis(){
@@ -5400,9 +5441,11 @@ async function calcAnnualPVT(){
       areaM2: A,
       etaPv,
       tiltAngle,
-      surfaceAzimuth: azimuthAngle
+      surfaceAzimuth: azimuthAngle,
+      systemLossPct: pvSystemLossPct,
+      inverterEfficiencyPct: pvInverterEfficiencyPct
     });
-    const pvgisSummary = `PVGIS ERA5, ${pvgisValidation.peakPowerKw.toFixed(1)} kWp, ${tiltAngle.toFixed(0)}&deg; tilt, PVGIS azimuth ${pvgisValidation.pvgisAspect.toFixed(0)}&deg;, ${pvgisValidation.lossPct}% loss`;
+    const pvgisSummary = `PVGIS ERA5, ${pvgisValidation.peakPowerKw.toFixed(1)} kW DC at STC, ${tiltAngle.toFixed(0)}&deg; tilt, PVGIS azimuth ${pvgisValidation.pvgisAspect.toFixed(0)}&deg;, ${pvgisValidation.lossPct.toFixed(2)}% combined AC-delivery loss`;
     const pvtElectricityNote = pvtCoolingSensitivityEnable
       ? "Temperature-corrected cooled yield"
       : "Temperature-corrected uncooled yield";
@@ -6478,6 +6521,9 @@ async function calcAnnualPVT(){
       }
     };
 
+    const pvCheckBtn = document.getElementById("btnCheckPvScenario");
+    if (pvCheckBtn) pvCheckBtn.disabled = false;
+
     setOutput(html);
     setIndustryOutput(industryHtml);
 
@@ -6812,6 +6858,7 @@ onTestingModeChange();
   if (versionLabel) versionLabel.textContent = `Version ${APP_VERSION}`;
 }
 document.getElementById("btnShareLink")?.addEventListener("click", copyShareLink);
+document.getElementById("btnCheckPvScenario")?.addEventListener("click", openCurrentPvValidation);
 document.querySelectorAll('input[name="thermalModel"]').forEach(radio => {
   radio.addEventListener('change', function(){
     const isA = this.value === 'A';

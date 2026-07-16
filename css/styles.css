@@ -181,6 +181,7 @@ body.testing-mode .kwater-label{display:inline;}
 .address-actions .btns{margin:0;flex:0 0 auto;}
 .address-actions .btns button{white-space:nowrap;}
 #locConfirm{min-height:0;flex:1 1 0;min-width:0;font-size:11px;line-height:1.35;margin-top:0;}
+.privacy-note{margin-top:7px;max-width:760px;line-height:1.4;}
 .chart-container{position:relative;height:400px;margin:16px 0;}
 .pv-comparison-chart{height:320px;}
 .data-table-container{margin-top:20px;}

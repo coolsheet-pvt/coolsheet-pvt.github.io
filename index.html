@@ -6,12 +6,12 @@
   <title>Annual PVT Calculator</title>
   <meta name="description" content="Estimates annual energy output, savings and payback of photovoltaic-thermal (PVT) solar systems for Australian commercial sites." />
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
-  <link rel="stylesheet" href="css/styles.css?v=13.28" />
+  <link rel="stylesheet" href="css/styles.css?v=13.29" />
   <!-- Modern UI (beta): presentation-only, active with ?ui=modern; classic stays default. -->
-  <link rel="stylesheet" href="css/ui-modern.css?v=13.28" />
+  <link rel="stylesheet" href="css/ui-modern.css?v=13.29" />
   <!-- Chart.js v4.5.1 vendored locally (assets/vendor/) so charts work offline / on flaky wifi. -->
   <script src="assets/vendor/chart.umd.min.js"></script>
-  <script src="js/bc_aus_zone_constants.js?v=13.28"></script>
+  <script src="js/bc_aus_zone_constants.js?v=13.29"></script>
 </head>
 
 <body>
@@ -31,22 +31,25 @@
     <h1 class="brand-title">Annual PVT Calculator</h1>
     <div class="header-actions">
       <button id="btnHowItWorks" type="button" class="how-it-works-btn">How this calculator works</button>
-      <a href="pages/soac-field-comparison.html" target="_blank" rel="noopener" class="how-it-works-btn" title="Real-world field data vs the calculator (Sydney Olympic Aquatic Centre)">Field vs model</a>
+      <a href="pages/validation-hub.html" class="how-it-works-btn" title="See what has been validated, what the evidence shows, and what remains uncertain">Validation centre</a>
       <div class="validation-orb-wrap" id="validationOrbWrap" hidden>
         <button id="btnValidationMenu" type="button" class="validation-orb" title="Validation &amp; reference pages" aria-haspopup="true" aria-expanded="false" aria-label="Validation and reference pages">&#10003;</button>
         <div id="validationPopover" class="validation-popover" role="menu" hidden>
           <div class="validation-popover-title">Validation &amp; references</div>
+          <a role="menuitem" href="pages/validation-hub.html" title="Plain-language summary of all validation evidence and limits">Validation centre &mdash; start here</a>
           <a role="menuitem" href="pages/validation.html" target="_blank" rel="noopener" title="BC-Aus vs CER reference, standard +6&deg;F offset">Validation 1 &mdash; CER +6&deg;F</a>
           <a role="menuitem" href="pages/validation2.html" target="_blank" rel="noopener" title="BC-Aus vs CER reference, no-offset variant">Validation 2 &mdash; CER 0&deg;F</a>
           <a role="menuitem" href="pages/validation3.html" target="_blank" rel="noopener" title="BC-Aus vs EnergyPlus 0.5 m ground temperatures">Validation 3 &mdash; ground 0.5 m</a>
           <a role="menuitem" href="pages/validation4.html" target="_blank" rel="noopener" title="BC-Aus vs EnergyPlus 2.0 m ground temperatures">Validation 4 &mdash; ground 2.0 m</a>
           <a role="menuitem" href="pages/validation5.html" target="_blank" rel="noopener" title="The BC-Aus mains-water formula explained step by step">Validation 5 &mdash; formula</a>
           <a role="menuitem" href="pages/cer_comparison.html" target="_blank" rel="noopener" title="Interactive CER DomDecks comparison tool">CER comparison tool</a>
+          <a role="menuitem" href="pages/soac-field-validation.html" target="_blank" rel="noopener" title="Measured CoolSheet PVT performance at Sydney Olympic Aquatic Centre">SOAC field validation</a>
+          <a role="menuitem" href="pages/pv-external-validation.html" target="_blank" rel="noopener" title="PV-only comparison with official PVGIS and PVWatts calculators">PV external validation</a>
         </div>
       </div>
     </div>
     <div class="brand-meta" style="position:absolute;bottom:10px;right:14px;text-align:right;">
-      <span id="appVersionLabel" style="font-size:11px;font-style:italic;color:rgba(255,255,255,0.35);">Version 13.28</span><br/>
+      <span id="appVersionLabel" style="font-size:11px;font-style:italic;color:rgba(255,255,255,0.35);">Version 13.29</span><br/>
       <label style="font-size:11px;color:rgba(255,255,255,0.35);cursor:pointer;display:inline-flex;align-items:center;gap:5px;margin-top:4px;">
         <input type="checkbox" id="chkHideMains" style="width:auto;margin:0;cursor:pointer;" onchange="onTestingModeChange();" />
         Testing
@@ -67,6 +70,7 @@
           </div>
           <div id="locConfirm" class="note"></div>
         </div>
+        <div class="note privacy-note">Privacy: loading weather sends the address to OpenStreetMap for geocoding, then sends the resulting coordinates to the CoolSheet weather service and PVGIS. Do not enter confidential site details.</div>
         <div id="locationMap" style="display:none;margin-top:10px;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,0.15);"></div>
         <div id="cerZoneDisplay" style="display:none;margin-top:6px;font-size:12px;"></div>
       </div>
@@ -528,7 +532,7 @@
                 <label for="calculatedCapexPerM2" class="setting-label">Calculated CAPEX (AUD/m&sup2;):<span class="setting-tags"><span class="setting-chip annual">Annual PVT</span></span></label>
                 <input id="calculatedCapexPerM2" type="text" value="" readonly />
 
-                <label for="installedCostPerFt2" class="setting-label">Installed cost (AUD/ft&sup2;):<span class="setting-tags"><span class="setting-chip annual">Annual PVT</span></span></label>
+                <label for="installedCostPerFt2" class="setting-label">Reference installed cost conversion (AUD/ft&sup2;; non-SI):<span class="setting-tags"><span class="setting-chip annual">Annual PVT</span></span></label>
                 <input id="installedCostPerFt2" type="text" value="" readonly />
 
                 <label for="autoCapexFromWatts" class="auto-cost-toggle">
@@ -537,7 +541,7 @@
                 </label>
               </div>
               <div class="note">
-                Uses installed $/W to fill AUD/m&sup2; and AUD/ft&sup2;.
+                Uses installed $/W to fill primary Australian AUD/m&sup2; and a secondary non-SI AUD/ft&sup2; reference conversion.
               </div>
             </div>
 
@@ -563,6 +567,7 @@
         <a id="downloadLink" href="#" target="_blank" rel="noopener">Download hourly details CSV</a>
         <button id="btnGeneratePdf" type="button" class="secondary-action" disabled>Generate PDF report</button>
         <button id="btnShareLink" type="button" class="secondary-action" style="display:inline-block;">Copy share link</button>
+        <button id="btnCheckPvScenario" type="button" class="secondary-action" disabled>Check this PV result</button>
       </div>
 
     </div>
@@ -617,9 +622,12 @@
   <div id="industryOutput" class="panel" style="display:none;margin-top:10px;"></div>
 
   <details class="footer-details">
-    <summary>For disclaimer</summary>
+    <summary>Important disclaimer and privacy</summary>
     <div class="footer-details-body">
-      <p><b>About.</b> CoolSheet is an academic research prototype created for a University of New South Wales (UNSW) student thesis, provided free of charge for educational and illustrative purposes. <b>Need to add disclaimer later?</b></p>
+      <p><b>Purpose.</b> CoolSheet is an academic research prototype created for a University of New South Wales (UNSW) student thesis. It provides indicative feasibility estimates for education, research and early-stage comparison only.</p>
+      <p><b>Limitations.</b> Results depend on typical weather data, model assumptions and user-entered information. They are not a site measurement, performance guarantee, engineering design, electrical or hydraulic certification, financial quote, investment recommendation, or substitute for advice from a suitably qualified professional.</p>
+      <p><b>Responsibility.</b> Accuracy and fitness for any particular purpose are not guaranteed. Users remain responsible for independently verifying all inputs, equipment data, tariffs, costs, operating schedules, site constraints and conclusions before relying on a result.</p>
+      <p><b>Privacy.</b> When weather is loaded, the entered address is sent to OpenStreetMap's Nominatim service for geocoding. The resulting coordinates are sent to the CoolSheet weather service and PVGIS. Calculator inputs are also stored in this browser so they survive a page refresh. Do not enter confidential or personal site information.</p>
     </div>
   </details>
 
@@ -676,7 +684,7 @@
 
 </div>
 
-<script src="js/app.js?v=13.28"></script>
-<script src="js/ui-modern.js?v=13.28"></script>
+<script src="js/app.js?v=13.29"></script>
+<script src="js/ui-modern.js?v=13.29"></script>
 </body>
 </html>

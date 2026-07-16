@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="A plain-language guide to the evidence supporting the CoolSheet PVT calculator and the results that still require validation." />
+  <title>Validation Centre | CoolSheet</title>
+  <style>
+    :root{--ink:#173042;--muted:#5f7180;--line:#d7e2e8;--navy:#083d5b;--blue:#287fbd;--green:#16724d;--orange:#bd5625;--paper:#fff;--wash:#f3f7f9;--green-soft:#eaf7f0;--orange-soft:#fff3ec}
+    *{box-sizing:border-box}
+    body{margin:0;background:#edf3f6;color:var(--ink);font-family:Arial,Helvetica,sans-serif;line-height:1.5}
+    a{color:#126aa4}.shell{max-width:1040px;min-height:100vh;margin:0 auto;background:var(--paper)}
+    nav{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 26px;border-bottom:1px solid var(--line)}
+    nav a{font-size:13px;font-weight:700;text-decoration:none}.nav-links{display:flex;gap:14px;flex-wrap:wrap;justify-content:flex-end}
+    header{padding:38px 30px;background:var(--navy);color:#fff}
+    .eyebrow{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;opacity:.78}
+    h1{max-width:790px;margin:7px 0 10px;font-size:clamp(30px,5vw,47px);line-height:1.1}
+    header p{max-width:800px;margin:0;color:#dceef5;font-size:17px}
+    main{padding:28px 30px 46px}.answer{padding:19px 21px;border-left:6px solid var(--green);background:var(--green-soft)}
+    .answer h2{margin:0 0 5px;color:#0c5639;font-size:22px}.answer p{margin:0}
+    section{margin-top:34px}section>h2{margin:0 0 7px;color:var(--navy);font-size:24px}.intro{max-width:800px;margin:0 0 16px;color:var(--muted)}
+    .checks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+    .check{display:flex;min-width:0;flex-direction:column;padding:18px;border:1px solid var(--line);border-top:5px solid var(--blue);background:#fff}
+    .check.strong{border-top-color:var(--green)}.check.preliminary{border-top-color:var(--orange)}
+    .status{align-self:flex-start;margin-bottom:9px;padding:3px 8px;border-radius:999px;background:var(--wash);color:var(--navy);font-size:12px;font-weight:700}
+    .strong .status{background:var(--green-soft);color:#0c5639}.preliminary .status{background:var(--orange-soft);color:#7b310f}
+    .check h3{margin:0 0 7px;color:var(--navy);font-size:18px}.check p{margin:0 0 12px;color:var(--muted);font-size:14px}.check ul{margin:0 0 17px;padding-left:19px;font-size:14px}.check li{margin:5px 0}
+    .check a{margin-top:auto;font-weight:700}
+    .limits{display:grid;grid-template-columns:1fr 1fr;gap:14px}.limit{padding:17px;background:var(--wash)}.limit h3{margin:0 0 7px;font-size:17px}.limit ul{margin:0;padding-left:19px}.limit li{margin:6px 0;font-size:14px}
+    details{margin-top:12px;padding:0 16px;border:1px solid var(--line);background:#fff}summary{padding:13px 0;cursor:pointer;color:var(--navy);font-weight:700}
+    .details-body{padding:0 0 15px;color:var(--muted);font-size:14px}.reference-links{display:grid;grid-template-columns:1fr 1fr;gap:8px 18px}.reference-links a{font-weight:700}
+    footer{padding:20px 30px;border-top:1px solid var(--line);background:var(--wash);color:var(--muted);font-size:12px}
+    @media(max-width:760px){.checks{grid-template-columns:1fr}.limits{grid-template-columns:1fr}.reference-links{grid-template-columns:1fr}}
+    @media(max-width:480px){nav{padding:12px 17px;align-items:flex-start}header{padding:30px 19px}main{padding:22px 18px 38px}footer{padding:18px}}
+  </style>
+</head>
+<body>
+<div class="shell">
+  <nav aria-label="Page navigation">
+    <a href="../index.html">&larr; Calculator</a>
+    <div class="nav-links"><a href="pv-external-validation.html">PV check</a><a href="soac-field-validation.html">SOAC field check</a></div>
+  </nav>
+
+  <header>
+    <div class="eyebrow">CoolSheet evidence guide</div>
+    <h1>What has been validated—and what has not?</h1>
+    <p>Start here to understand which CoolSheet results have strong independent support, which have early field evidence, and which should be treated as scenarios.</p>
+  </header>
+
+  <main>
+    <div class="answer">
+      <h2>Overall: suitable for early feasibility work.</h2>
+      <p>The solar and PV supply calculations compare well with independent tools. Thermal field evidence is promising but limited to one monitored site and period. Industry demand, economics and PVT electrical cooling remain assumption-sensitive.</p>
+    </div>
+
+    <section aria-labelledby="checksTitle">
+      <h2 id="checksTitle">Choose the result you want to check</h2>
+      <p class="intro">Each page explains the evidence in plain language and keeps the technical details optional.</p>
+      <div class="checks">
+        <article class="check strong">
+          <span class="status">Strong benchmark agreement</span>
+          <h3>PV electricity</h3>
+          <p>CoolSheet PV-only yearly electricity was compared with PVGIS and PVWatts using matched inputs.</p>
+          <ul><li>2.22% average absolute difference</li><li>4.53% largest difference</li><li>Sydney, Melbourne and Perth</li></ul>
+          <a href="pv-external-validation.html">View the PV check &rarr;</a>
+        </article>
+        <article class="check preliminary">
+          <span class="status">Preliminary field evidence</span>
+          <h3>PVT thermal output</h3>
+          <p>Measured CoolSheet data from Sydney Olympic Aquatic Centre was compared with the thermal models.</p>
+          <ul><li>Model A was about 6.2% low with matched field inputs</li><li>19 monitored days</li><li>One site and one season only</li></ul>
+          <a href="soac-field-validation.html">View the SOAC field check &rarr;</a>
+        </article>
+        <article class="check">
+          <span class="status">Cross-checked reference model</span>
+          <h3>Mains-water temperature</h3>
+          <p>The Australian BC-Aus inlet-water model is compared with CER reference decks and EnergyPlus ground-temperature data.</p>
+          <ul><li>Five Australian climate zones</li><li>Monthly comparison</li><li>Formula and source data are visible</li></ul>
+          <a href="cer_comparison.html">View the mains-water check &rarr;</a>
+        </article>
+      </div>
+    </section>
+
+    <section aria-labelledby="limitsTitle">
+      <h2 id="limitsTitle">Important limits</h2>
+      <div class="limits">
+        <article class="limit"><h3>Not yet field validated</h3><ul><li>Extra PV electricity attributed to PVT water cooling</li><li>Full-year PVT performance and degradation</li><li>Other PVT installations, climates and collector types</li></ul></article>
+        <article class="limit"><h3>Scenario results—not certified forecasts</h3><ul><li>Industry demand and operating schedules</li><li>Costs, tariffs, savings, payback and NPV</li><li>Site shading, outages, controls and plant availability</li></ul></article>
+      </div>
+    </section>
+
+    <section aria-labelledby="technicalTitle">
+      <h2 id="technicalTitle">Technical mains-water references</h2>
+      <p class="intro">These pages are retained for reviewers who want to inspect the underlying comparisons.</p>
+      <details>
+        <summary>Open the detailed reference pages</summary>
+        <div class="details-body reference-links">
+          <a href="validation.html">CER comparison: standard offset</a>
+          <a href="validation2.html">CER comparison: zero-offset sensitivity</a>
+          <a href="validation3.html">EnergyPlus comparison: 0.5 m ground</a>
+          <a href="validation4.html">EnergyPlus comparison: 2.0 m ground</a>
+          <a href="validation5.html">BC-Aus formula explained</a>
+          <a href="../docs/validation-report.md">Validation report</a>
+        </div>
+      </details>
+    </section>
+  </main>
+
+  <footer>Validation describes the stated datasets, locations, periods and model boundaries. It is not certification of a particular installation or a performance guarantee.</footer>
+</div>
+</body>
+</html>

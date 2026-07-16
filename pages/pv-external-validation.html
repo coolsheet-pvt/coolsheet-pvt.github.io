@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="A simple comparison of the CoolSheet PV-only result with PVGIS and PVWatts." />
+  <title>Simple PV Check | CoolSheet</title>
+  <script src="../assets/vendor/chart.umd.min.js"></script>
+  <style>
+    :root{--ink:#173042;--muted:#60717e;--line:#d8e3e9;--navy:#083d5b;--green:#16724d;--green-soft:#eaf7f0;--blue:#287fbd;--orange:#d56228;--paper:#fff;--wash:#f4f8fa}
+    *{box-sizing:border-box}
+    body{margin:0;background:#edf3f6;color:var(--ink);font-family:Arial,Helvetica,sans-serif;line-height:1.5}
+    a{color:#126aa4}.shell{max-width:980px;margin:0 auto;background:var(--paper);min-height:100vh}
+    nav{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:14px 24px;border-bottom:1px solid var(--line)}
+    nav a{font-size:13px;font-weight:700;text-decoration:none}.nav-links{display:flex;gap:14px;flex-wrap:wrap;justify-content:flex-end}
+    header{padding:34px 28px;background:var(--navy);color:#fff}
+    .eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.1em;opacity:.75;font-weight:700}
+    h1{font-size:clamp(30px,5vw,46px);line-height:1.1;margin:7px 0 10px;max-width:760px}
+    header p{max-width:760px;margin:0;color:#dceef5;font-size:17px}
+    main{padding:28px}.answer{padding:20px 22px;background:var(--green-soft);border-left:6px solid var(--green)}
+    .answer h2{margin:0 0 5px;color:#0c5639;font-size:22px}.answer p{margin:0}.answer strong{font-size:1.15em}
+    section{margin-top:32px}section>h2{font-size:24px;color:var(--navy);margin:0 0 7px}.intro{color:var(--muted);margin:0 0 16px;max-width:780px}
+    .steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;list-style:none;padding:0;margin:16px 0 0;counter-reset:step}
+    .steps li{counter-increment:step;padding:16px;background:var(--wash);border-top:4px solid var(--blue)}
+    .steps li::before{content:counter(step);display:grid;place-items:center;width:28px;height:28px;margin-bottom:8px;border-radius:50%;background:var(--navy);color:#fff;font-weight:700}
+    .steps b{display:block;margin-bottom:3px}.steps span{font-size:13px;color:var(--muted)}
+    .control{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:16px 0}.control select{padding:9px 34px 9px 10px;border:1px solid #9aafbd;border-radius:5px;background:#fff;color:var(--ink);font-size:15px}
+    .scenario{font-size:13px;color:var(--muted);padding:11px 13px;background:var(--wash);border:1px solid var(--line)}
+    .results{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0}
+    .result{padding:17px;border:1px solid var(--line);border-top:5px solid var(--green);min-width:0}.result.external{border-top-color:var(--blue)}.result:last-child{border-top-color:var(--orange)}
+    .result span{display:block;font-size:12px;color:var(--muted)}.result strong{display:block;font-size:27px;color:var(--navy);line-height:1.2;margin:4px 0}.result small{display:block;color:var(--muted)}
+    .chart-wrap{height:270px;position:relative;min-width:0;width:100%;margin-top:10px}.chart-wrap canvas{max-width:100%}
+    .plain-result{padding:15px 17px;margin-top:14px;background:#f0f6fb;border-left:5px solid var(--blue);font-size:15px}
+    .plain-result b{color:var(--navy)}.source-actions{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:13px;font-weight:700}
+    .external-input{width:100%;min-width:0;padding:8px 9px;border:1px solid #9aafbd;border-radius:5px;color:var(--navy);font:700 21px Arial,Helvetica,sans-serif}
+    .entry-help{display:block;margin-top:5px;color:var(--muted);font-size:12px;font-weight:400}.loading-text{color:var(--blue)}
+    .meaning{display:grid;grid-template-columns:1fr 1fr;gap:14px}.meaning article{padding:17px;background:var(--wash)}.meaning article:first-child{border-top:4px solid var(--green)}.meaning article:last-child{border-top:4px solid var(--orange)}.meaning h3{margin:0 0 8px;font-size:17px}.meaning ul{margin:0;padding-left:19px}.meaning li{margin:6px 0;font-size:14px}
+    details{margin-top:12px;border:1px solid var(--line);padding:0 16px;background:#fff}summary{padding:13px 0;cursor:pointer;font-weight:700;color:var(--navy)}
+    .details-body{padding:0 0 16px;color:var(--muted);font-size:13px}.details-body p{margin:6px 0 10px}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:var(--wash);color:var(--navy)}
+    footer{padding:20px 28px;border-top:1px solid var(--line);background:var(--wash);font-size:12px;color:var(--muted);margin-top:36px}
+    @media(max-width:700px){.steps,.results{grid-template-columns:1fr}.meaning{grid-template-columns:1fr}.result strong{font-size:24px}}
+    @media(max-width:480px){nav{padding:12px 17px;align-items:flex-start}header{padding:28px 19px}main{padding:22px 18px}.chart-wrap{height:240px}.source-actions{flex-direction:column;gap:7px}footer{padding:18px}}
+  </style>
+</head>
+<body>
+<div class="shell">
+  <nav aria-label="Page navigation">
+    <a href="../index.html">&larr; Calculator</a>
+    <div class="nav-links"><a href="validation-hub.html">Validation centre</a><a href="soac-field-validation.html">Thermal field check</a></div>
+  </nav>
+
+  <header>
+    <div class="eyebrow">PV result check</div>
+    <h1 id="pageTitle">Is the CoolSheet PV result reasonable?</h1>
+    <p id="pageLead">We entered the same solar-panel system into CoolSheet, PVGIS and PVWatts, then compared the yearly electricity results.</p>
+  </header>
+
+  <main>
+    <div class="answer" data-benchmark-only>
+      <h2>Short answer: yes.</h2>
+      <p>Across Sydney, Melbourne and Perth, CoolSheet stayed within <strong>4.53%</strong> of both external calculators. The average difference was <strong>2.22%</strong>.</p>
+    </div>
+
+    <section id="scenarioValidation" aria-labelledby="scenarioTitle" hidden>
+      <h2 id="scenarioTitle">Check your current CoolSheet setup</h2>
+      <p class="intro">The calculator has transferred the same location, system size, tilt, direction and loss assumptions. Follow these three steps.</p>
+      <ol class="steps">
+        <li><b>Confirm the transferred inputs</b><span id="scenarioInputSummary">Your CoolSheet settings appear below.</span></li>
+        <li><b>Collect the external results</b><span>PVWatts loads automatically. Open PVGIS and copy its yearly E_y value.</span></li>
+        <li><b>Read the conclusion</b><span>The page calculates each difference from the CoolSheet PV-only result.</span></li>
+      </ol>
+
+      <div class="scenario" id="scenarioSystemSummary"></div>
+      <div class="results" aria-live="polite">
+        <article class="result"><span>CoolSheet PV-only</span><strong id="scenarioCoolSheetValue">&mdash;</strong><small>yearly net AC; excludes PVT cooling gain</small></article>
+        <article class="result external"><label for="scenarioPvgisInput"><span>PVGIS yearly E_y</span></label><input class="external-input" id="scenarioPvgisInput" type="number" min="0" step="0.1" inputmode="decimal" placeholder="Enter kWh" /><small id="scenarioPvgisDifference" class="entry-help">Open PVGIS, search for E_y, then enter the value.</small></article>
+        <article class="result external"><label for="scenarioPvwattsInput"><span>PVWatts yearly AC</span></label><input class="external-input" id="scenarioPvwattsInput" type="number" min="0" step="0.1" inputmode="decimal" placeholder="Loading&hellip;" /><small id="scenarioPvwattsDifference" class="entry-help loading-text">Loading the matched PVWatts result&hellip;</small></article>
+      </div>
+      <div class="source-actions"><a id="scenarioPvgisLink" target="_blank" rel="noopener">1. Open matched PVGIS result</a><a id="scenarioPvwattsLink" target="_blank" rel="noopener">Open matched PVWatts result</a></div>
+      <div class="chart-wrap"><canvas id="scenarioChart" role="img" aria-label="Yearly net AC electricity for the current CoolSheet scenario compared with external results"></canvas></div>
+      <div id="scenarioPlainResult" class="plain-result" aria-live="polite"><b>Next:</b> wait for PVWatts, then enter the PVGIS E_y value.</div>
+      <p class="intro" style="margin-top:12px">PVGIS cannot be read automatically by this browser page, so its yearly value is entered manually. No result is invented or estimated when an external service is unavailable.</p>
+    </section>
+
+    <section aria-labelledby="procedureTitle" data-benchmark-only>
+      <h2 id="procedureTitle">Easy procedure</h2>
+      <p class="intro">Follow these three steps. You do not need to understand the equations.</p>
+      <ol class="steps">
+        <li><b>Choose a city</b><span>This changes the weather used for the comparison.</span></li>
+        <li><b>Compare the three numbers</b><span>Each number is yearly electricity delivered as AC.</span></li>
+        <li><b>Read the conclusion</b><span>A small difference means the models broadly agree.</span></li>
+      </ol>
+    </section>
+
+    <section aria-labelledby="checkTitle" data-benchmark-only>
+      <h2 id="checkTitle">Check a location</h2>
+      <div class="control"><label for="citySelect"><b>1. Choose a city:</b></label><select id="citySelect"><option>Sydney</option><option>Melbourne</option><option>Perth</option></select><span id="stationNote" class="intro" style="margin:0"></span></div>
+      <div class="scenario"><b>Same system in every calculator:</b> 4.0 kW DC &middot; 20 m&sup2; at 20% efficiency &middot; 30&deg; north-facing &middot; fixed open rack &middot; 14% system losses &middot; 96% inverter efficiency</div>
+
+      <div class="results" aria-live="polite">
+        <article class="result"><span>CoolSheet</span><strong id="coolSheetValue">5,656.9 kWh</strong><small>yearly net AC electricity</small></article>
+        <article class="result external"><span>PVGIS</span><strong id="pvgisValue">5,913.2 kWh</strong><small id="pvgisDifference">4.53% higher than CoolSheet</small></article>
+        <article class="result external"><span>PVWatts</span><strong id="pvwattsValue">5,657.3 kWh</strong><small id="pvwattsDifference">0.01% higher than CoolSheet</small></article>
+      </div>
+
+      <div class="chart-wrap"><canvas id="resultChart" role="img" aria-label="Yearly PV electricity comparison for the selected city"></canvas></div>
+      <div id="plainResult" class="plain-result"><b>Result:</b> all three Sydney estimates are close. The largest difference is 4.53%, so the CoolSheet yearly PV-only estimate is reasonable for early-stage planning.</div>
+      <div class="source-actions"><a id="pvgisResultLink" target="_blank" rel="noopener">Open this PVGIS result</a><a id="pvwattsResultLink" target="_blank" rel="noopener">Open this PVWatts result</a></div>
+    </section>
+
+    <section aria-labelledby="meaningTitle">
+      <h2 id="meaningTitle">What does this result mean?</h2>
+      <div class="meaning">
+        <article><h3>It supports</h3><ul><li>Yearly PV-only electricity estimates</li><li>Use in early feasibility comparisons</li><li>Results across different Australian climates</li></ul></article>
+        <article><h3>It does not prove</h3><ul><li>Output from a particular real building</li><li>Shading, faults, downtime or panel ageing</li><li>The extra electricity claimed from PVT water cooling</li></ul></article>
+      </div>
+    </section>
+
+    <section aria-labelledby="detailsTitle" data-benchmark-only>
+      <h2 id="detailsTitle">Optional technical details</h2>
+      <p class="intro">Open these only if you want to check how the comparison was made.</p>
+      <details>
+        <summary>How the inputs were matched</summary>
+        <div class="details-body table-wrap"><table><thead><tr><th>Input</th><th>CoolSheet</th><th>PVGIS</th><th>PVWatts</th></tr></thead><tbody>
+          <tr><td>Capacity</td><td>4.0 kW DC</td><td>4.0 kW peak</td><td>4.0 kW DC</td></tr>
+          <tr><td>North-facing</td><td>0&deg;</td><td>&minus;180&deg;</td><td>0&deg;</td></tr>
+          <tr><td>Loss boundary</td><td>14% &times; 96% inverter</td><td>17.44% combined</td><td>14% + 96% inverter</td></tr>
+          <tr><td>Output compared</td><td>Net AC kWh</td><td>Net AC kWh</td><td>Net AC kWh</td></tr>
+        </tbody></table></div>
+      </details>
+      <details>
+        <summary>Why the answers are not exactly identical</summary>
+        <div class="details-body"><p>Each calculator uses its own weather processing, solar-on-panel calculation and panel-temperature model. PVWatts also uses a nearby international weather station rather than the exact city coordinate. Differences of a few percent are therefore expected.</p></div>
+      </details>
+      <details>
+        <summary>Sources and saved evidence</summary>
+        <div class="details-body"><p><a href="../validation/reference/pv_external_validation.json">Saved input and result file</a> &middot; <a href="https://joint-research-centre.ec.europa.eu/photovoltaic-geographical-information-system-pvgis/using-pvgis-5/pvgis-5-tools/grid-connected-pv_en" target="_blank" rel="noopener">PVGIS method</a> &middot; <a href="https://developer.nlr.gov/docs/solar/pvwatts/v8/" target="_blank" rel="noopener">PVWatts 8</a> &middot; <a href="https://www.industry.gov.au/national-measurement-institute/australias-measurement-system" target="_blank" rel="noopener">Australian measurement system</a></p></div>
+      </details>
+    </section>
+  </main>
+
+  <footer>This is a comparison between modelling tools, not measured electrical field validation or an electrical-system design certificate.</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  const DATA={
+    Sydney:{values:[5656.9282,5913.19,5657.2907],station:"PVWatts station: 6.9 km away",pvgisUrl:"https://re.jrc.ec.europa.eu/api/v5_3/PVcalc?lat=-33.8698&lon=151.2083&peakpower=4&loss=17.44&angle=30&aspect=-180&mountingplace=free&pvtechchoice=crystSi&raddatabase=PVGIS-ERA5&outputformat=json",pvwattsUrl:"https://developer.nlr.gov/api/pvwatts/v8.json?api_key=DEMO_KEY&system_capacity=4&module_type=0&losses=14&array_type=0&tilt=30&azimuth=0&lat=-33.8698&lon=151.2083&dataset=intl&radius=0&dc_ac_ratio=1.2&inv_eff=96&albedo=0.2"},
+    Melbourne:{values:[5727.0243,5594.47,5490.6621],station:"PVWatts station: 20.2 km away",pvgisUrl:"https://re.jrc.ec.europa.eu/api/v5_3/PVcalc?lat=-37.8136&lon=144.9631&peakpower=4&loss=17.44&angle=30&aspect=-180&mountingplace=free&pvtechchoice=crystSi&raddatabase=PVGIS-ERA5&outputformat=json",pvwattsUrl:"https://developer.nlr.gov/api/pvwatts/v8.json?api_key=DEMO_KEY&system_capacity=4&module_type=0&losses=14&array_type=0&tilt=30&azimuth=0&lat=-37.8136&lon=144.9631&dataset=intl&radius=0&dc_ac_ratio=1.2&inv_eff=96&albedo=0.2"},
+    Perth:{values:[6466.0119,6494.4,6587.1360],station:"PVWatts station: 14.1 km away",pvgisUrl:"https://re.jrc.ec.europa.eu/api/v5_3/PVcalc?lat=-31.9505&lon=115.8605&peakpower=4&loss=17.44&angle=30&aspect=-180&mountingplace=free&pvtechchoice=crystSi&raddatabase=PVGIS-ERA5&outputformat=json",pvwattsUrl:"https://developer.nlr.gov/api/pvwatts/v8.json?api_key=DEMO_KEY&system_capacity=4&module_type=0&losses=14&array_type=0&tilt=30&azimuth=0&lat=-31.9505&lon=115.8605&dataset=intl&radius=0&dc_ac_ratio=1.2&inv_eff=96&albedo=0.2"}
+  };
+  const format=value=>value.toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1})+" kWh";
+  const escapeHtml=value=>String(value).replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"})[char]);
+  const difference=(external,ours)=>(external/ours-1)*100;
+  const describe=value=>Math.abs(value)<.005?"the same as":Math.abs(value).toFixed(2)+"% "+(value>0?"higher than":"lower than");
+  const chart=new Chart(document.getElementById("resultChart"),{type:"bar",data:{labels:["CoolSheet","PVGIS","PVWatts"],datasets:[{data:DATA.Sydney.values,backgroundColor:["#16724d","#287fbd","#d56228"],maxBarThickness:90}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>format(ctx.parsed.y)+" per year"}}},scales:{x:{grid:{display:false}},y:{beginAtZero:true,title:{display:true,text:"Yearly net AC electricity (kWh)"},grid:{color:"#d8e3e9"}}}}});
+  function update(){
+    const city=document.getElementById("citySelect").value,d=DATA[city],pvgisDiff=difference(d.values[1],d.values[0]),pvwattsDiff=difference(d.values[2],d.values[0]),largest=Math.max(Math.abs(pvgisDiff),Math.abs(pvwattsDiff));
+    document.getElementById("coolSheetValue").textContent=format(d.values[0]);
+    document.getElementById("pvgisValue").textContent=format(d.values[1]);
+    document.getElementById("pvwattsValue").textContent=format(d.values[2]);
+    document.getElementById("pvgisDifference").textContent=describe(pvgisDiff)+" CoolSheet";
+    document.getElementById("pvwattsDifference").textContent=describe(pvwattsDiff)+" CoolSheet";
+    document.getElementById("stationNote").textContent=d.station;
+    document.getElementById("plainResult").innerHTML="<b>Result:</b> all three "+city+" estimates are close. The largest difference is "+largest.toFixed(2)+"%, so the CoolSheet yearly PV-only estimate is reasonable for early-stage planning.";
+    document.getElementById("pvgisResultLink").href=d.pvgisUrl;document.getElementById("pvwattsResultLink").href=d.pvwattsUrl;
+    chart.data.datasets[0].data=d.values;chart.update();
+  }
+  document.getElementById("citySelect").addEventListener("change",update);update();
+
+  function readScenario(){
+    const params=new URLSearchParams(location.search);
+    if(params.get("mode")!=="scenario")return null;
+    const scenario={
+      name:params.get("name")||"Current CoolSheet location",
+      lat:Number(params.get("lat")),lon:Number(params.get("lon")),area:Number(params.get("area")),
+      efficiency:Number(params.get("efficiency")),capacity:Number(params.get("capacity")),tilt:Number(params.get("tilt")),
+      azimuth:Number(params.get("azimuth")),albedo:Number(params.get("albedo")),systemLoss:Number(params.get("systemLoss")),
+      inverterEfficiency:Number(params.get("inverterEfficiency")),coolsheetAc:Number(params.get("coolsheetAc"))
+    };
+    return Object.values(scenario).slice(1).every(Number.isFinite)&&scenario.capacity>0&&scenario.coolsheetAc>0?scenario:null;
+  }
+
+  function startScenario(s){
+    document.querySelectorAll("[data-benchmark-only]").forEach(element=>element.hidden=true);
+    document.getElementById("scenarioValidation").hidden=false;
+    document.getElementById("pageTitle").textContent="Check this CoolSheet PV result";
+    document.getElementById("pageLead").textContent="The current CoolSheet PV-only result is ready to compare with matched external calculators.";
+    document.getElementById("scenarioInputSummary").textContent=`${s.capacity.toFixed(2)} kW DC at ${s.name}.`;
+    document.getElementById("scenarioSystemSummary").innerHTML=`<b>Transferred from CoolSheet:</b> ${escapeHtml(s.name)} (${s.lat.toFixed(4)}, ${s.lon.toFixed(4)}) &middot; ${s.capacity.toFixed(2)} kW DC &middot; ${s.area.toFixed(1)} m&sup2; at ${(s.efficiency*100).toFixed(1)}% &middot; ${s.tilt.toFixed(1)}&deg; tilt &middot; ${s.azimuth.toFixed(1)}&deg; azimuth (0&deg; north) &middot; ${s.systemLoss.toFixed(1)}% system losses &middot; ${s.inverterEfficiency.toFixed(1)}% inverter`;
+    document.getElementById("scenarioCoolSheetValue").textContent=format(s.coolsheetAc);
+
+    const combinedLoss=(1-(1-s.systemLoss/100)*(s.inverterEfficiency/100))*100;
+    const pvgisAspect=((s.azimuth-180+180)%360+360)%360-180;
+    const pvwattsAzimuth=((s.azimuth%360)+360)%360;
+    const pvgisParams=new URLSearchParams({lat:s.lat.toFixed(6),lon:s.lon.toFixed(6),peakpower:s.capacity.toFixed(3),loss:combinedLoss.toFixed(2),angle:s.tilt.toFixed(2),aspect:pvgisAspect.toFixed(2),mountingplace:"free",pvtechchoice:"crystSi",raddatabase:"PVGIS-ERA5",outputformat:"json"});
+    const pvwattsParams=new URLSearchParams({api_key:"DEMO_KEY",system_capacity:s.capacity.toFixed(3),module_type:"0",losses:s.systemLoss.toFixed(2),array_type:"0",tilt:s.tilt.toFixed(2),azimuth:pvwattsAzimuth.toFixed(2),lat:s.lat.toFixed(6),lon:s.lon.toFixed(6),dataset:"intl",radius:"0",dc_ac_ratio:"1.2",inv_eff:s.inverterEfficiency.toFixed(2),albedo:s.albedo.toFixed(3)});
+    const pvgisUrl=`https://re.jrc.ec.europa.eu/api/v5_3/PVcalc?${pvgisParams.toString()}`;
+    const pvwattsUrl=`https://developer.nlr.gov/api/pvwatts/v8.json?${pvwattsParams.toString()}`;
+    document.getElementById("scenarioPvgisLink").href=pvgisUrl;
+    document.getElementById("scenarioPvwattsLink").href=pvwattsUrl;
+
+    const pvgisInput=document.getElementById("scenarioPvgisInput"),pvwattsInput=document.getElementById("scenarioPvwattsInput");
+    const scenarioChart=new Chart(document.getElementById("scenarioChart"),{type:"bar",data:{labels:["CoolSheet","PVGIS","PVWatts"],datasets:[{data:[s.coolsheetAc,null,null],backgroundColor:["#16724d","#287fbd","#d56228"],maxBarThickness:90}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.raw==null?"Result not entered":format(ctx.raw)+" per year"}}},scales:{x:{grid:{display:false}},y:{beginAtZero:true,title:{display:true,text:"Yearly net AC electricity (kWh)"},grid:{color:"#d8e3e9"}}}}});
+    function scenarioValue(input){const value=Number(input.value);return Number.isFinite(value)&&value>0?value:null;}
+    function refreshScenario(){
+      const pvgis=scenarioValue(pvgisInput),pvwatts=scenarioValue(pvwattsInput),available=[pvgis,pvwatts].filter(value=>value!=null);
+      const pvgisDiff=pvgis==null?null:difference(pvgis,s.coolsheetAc),pvwattsDiff=pvwatts==null?null:difference(pvwatts,s.coolsheetAc);
+      document.getElementById("scenarioPvgisDifference").textContent=pvgisDiff==null?"Open PVGIS, search for E_y, then enter the value.":describe(pvgisDiff)+" CoolSheet";
+      if(pvwattsDiff!=null)document.getElementById("scenarioPvwattsDifference").textContent=describe(pvwattsDiff)+" CoolSheet";
+      scenarioChart.data.datasets[0].data=[s.coolsheetAc,pvgis,pvwatts];scenarioChart.update();
+      const result=document.getElementById("scenarioPlainResult");
+      if(!available.length){result.innerHTML="<b>Next:</b> wait for PVWatts, then enter the PVGIS E_y value.";return;}
+      const largest=Math.max(...available.map(value=>Math.abs(difference(value,s.coolsheetAc))));
+      const sources=available.length===2?"both external results":"the available external result";
+      if(largest<=5)result.innerHTML=`<b>Close agreement:</b> CoolSheet is within ${largest.toFixed(2)}% of ${sources}. This supports the yearly PV-only estimate for early feasibility work.`;
+      else if(largest<=10)result.innerHTML=`<b>Moderate difference:</b> the largest gap is ${largest.toFixed(2)}%. Check the weather station, mounting and loss assumptions before relying on the result.`;
+      else result.innerHTML=`<b>Large discrepancy:</b> the largest gap is ${largest.toFixed(2)}%. Recheck capacity, tilt, direction, losses and the external weather source before using this scenario.`;
+    }
+    pvgisInput.addEventListener("input",refreshScenario);pvwattsInput.addEventListener("input",refreshScenario);refreshScenario();
+
+    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),25000);
+    fetch(pvwattsUrl,{headers:{Accept:"application/json"},signal:controller.signal}).then(response=>{if(!response.ok)throw new Error(`HTTP ${response.status}`);return response.json();}).then(data=>{
+      const value=Number(data?.outputs?.ac_annual);if(!Number.isFinite(value)||value<=0)throw new Error((data?.errors||[]).join("; ")||"annual result missing");
+      pvwattsInput.value=value.toFixed(1);pvwattsInput.placeholder="Enter kWh";refreshScenario();
+    }).catch(()=>{
+      pvwattsInput.placeholder="Enter kWh";document.getElementById("scenarioPvwattsDifference").textContent="Automatic loading was unavailable. Open PVWatts and enter ac_annual.";document.getElementById("scenarioPvwattsDifference").classList.remove("loading-text");
+    }).finally(()=>clearTimeout(timer));
+  }
+
+  const scenario=readScenario();if(scenario)startScenario(scenario);
+})();
+</script>
+</body>
+</html>

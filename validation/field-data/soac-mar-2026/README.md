@@ -50,6 +50,7 @@ dashboard). Both values are recorded verbatim in `soac_meta.json`.
 | `soac_scatter.csv` | Operating scatter cloud `G, eta, P_kW, delta_T, T_in` (5,511 rows) | **verbatim** from `DATA.scatter` |
 | `analysis_report.md` | Analysis, caveats, and the fair-comparison assessment | derived |
 | `SOAC_field_validation_proposal.md` | Proposed "SOAC March 2026 Field Validation" report/page | derived |
+| `../../../pages/soac-field-validation.html` | Field-validation case-study page | derived from the preserved CSV data |
 
 No values in the CSV/JSON files were rounded, rescaled, or recomputed. Nulls in
 the source (e.g. efficiency at night when there is no irradiance) are written as

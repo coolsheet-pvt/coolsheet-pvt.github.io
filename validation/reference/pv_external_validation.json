@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 1,
+  "retrievedAt": "2026-07-16",
+  "scenario": {
+    "dcCapacityKw": 4,
+    "areaM2": 20,
+    "moduleEfficiencyStc": 0.2,
+    "tiltDeg": 30,
+    "coolsheetAzimuthDeg": 0,
+    "coolsheetAzimuthMeaning": "north",
+    "albedo": 0.2,
+    "moduleTemperatureCoefficientPctPerC": -0.4,
+    "noctC": 45,
+    "nonInverterLossPct": 14,
+    "inverterEfficiencyPct": 96,
+    "combinedAcDeliveryLossPct": 17.44,
+    "mounting": "fixed open rack",
+    "moduleType": "standard crystalline silicon"
+  },
+  "providers": {
+    "coolsheet": {
+      "label": "CoolSheet PV-only model",
+      "weather": "Locked PVGIS ERA5 TMY fixtures, 8,760 hourly records",
+      "transposition": "isotropic sky",
+      "temperature": "NOCT 45 C and -0.40%/C coefficient",
+      "outputBoundary": "net AC after 14% non-inverter loss and 96% inverter efficiency"
+    },
+    "pvgis": {
+      "label": "European Commission PVGIS 5.3",
+      "calculatorUrl": "https://re.jrc.ec.europa.eu/pvg_tools/en/tools.html",
+      "documentationUrl": "https://joint-research-centre.ec.europa.eu/photovoltaic-geographical-information-system-pvgis/using-pvgis-5/pvgis-5-tools/grid-connected-pv_en",
+      "weather": "PVGIS-ERA5, 2005-2023",
+      "azimuthDeg": -180,
+      "lossPct": 17.44
+    },
+    "pvwatts": {
+      "label": "NLR PVWatts 8",
+      "calculatorUrl": "https://pvwatts.nlr.gov/",
+      "documentationUrl": "https://developer.nlr.gov/docs/solar/pvwatts/v8/",
+      "weather": "PVWatts International station data",
+      "azimuthDeg": 0,
+      "lossPct": 14,
+      "inverterEfficiencyPct": 96,
+      "arrayType": "fixed open rack",
+      "moduleType": "standard"
+    }
+  },
+  "locations": [
+    {
+      "city": "Sydney",
+      "latitude": -33.8698,
+      "longitude": 151.2083,
+      "coolsheet": {
+        "annualPoaKWhM2": 1821.7199538240027,
+        "annualDcKWh": 6851.899499485472,
+        "annualAcKWh": 5656.928226775205,
+        "monthlyAcKWh": [581.6623250428801, 435.8384692994625, 468.5990388184196, 405.6218752281109, 365.6597730804861, 314.3011320325442, 390.94587584195017, 398.8576763288648, 542.0065890320736, 514.0008969087554, 575.984943641784, 663.4496315198734]
+      },
+      "pvgis": {
+        "annualAcKWh": 5913.19,
+        "monthlyAcKWh": [549.71, 481.67, 497.16, 451.07, 437.54, 343.25, 420.66, 499.08, 548.86, 570.36, 546.39, 567.44],
+        "differenceVsCoolSheetPct": 4.53,
+        "requestUrl": "https://re.jrc.ec.europa.eu/api/v5_3/PVcalc?lat=-33.8698&lon=151.2083&peakpower=4&loss=17.44&angle=30&aspect=-180&mountingplace=free&pvtechchoice=crystSi&raddatabase=PVGIS-ERA5&outputformat=json"
+      },
+      "pvwatts": {
+        "annualAcKWh": 5657.290697002835,
+        "monthlyAcKWh": [576.2813531118776, 471.539941056947, 508.9909991655438, 428.8238547418813, 353.5564135140348, 309.36005150799986, 374.1147852405418, 474.045818589831, 509.4805527403135, 570.1601760483441, 529.3315833956763, 551.6051678898523],
+        "differenceVsCoolSheetPct": 0.01,
+        "station": "Sydney",
+        "stationDistanceM": 6863,
+        "requestUrl": "https://developer.nlr.gov/api/pvwatts/v8.json?api_key=DEMO_KEY&system_capacity=4&module_type=0&losses=14&array_type=0&tilt=30&azimuth=0&lat=-33.8698&lon=151.2083&dataset=intl&radius=0&dc_ac_ratio=1.2&inv_eff=96&albedo=0.2"
+      }
+    },
+    {
+      "city": "Melbourne",
+      "latitude": -37.8136,
+      "longitude": 144.9631,
+      "coolsheet": {
+        "annualPoaKWhM2": 1839.2260790382363,
+        "annualDcKWh": 6936.80270951576,
+        "annualAcKWh": 5727.0243169762125,
+        "monthlyAcKWh": [663.4754669434413, 527.0908278439094, 567.4462765106739, 402.5027370013162, 317.12234155395413, 290.1441262885549, 281.9427497721003, 364.90946654181107, 508.63647251611957, 597.8578099357181, 594.4317684387005, 611.4642736299124]
+      },
+      "pvgis": {
+        "annualAcKWh": 5594.47,
+        "monthlyAcKWh": [610.95, 533.22, 520.88, 410.09, 336.34, 287, 321, 390.92, 471.98, 552.8, 554.26, 605.03],
+        "differenceVsCoolSheetPct": -2.31,
+        "requestUrl": "https://re.jrc.ec.europa.eu/api/v5_3/PVcalc?lat=-37.8136&lon=144.9631&peakpower=4&loss=17.44&angle=30&aspect=-180&mountingplace=free&pvtechchoice=crystSi&raddatabase=PVGIS-ERA5&outputformat=json"
+      },
+      "pvwatts": {
+        "annualAcKWh": 5490.662071364399,
+        "monthlyAcKWh": [621.7124588072335, 549.1671082641344, 550.8370853212276, 435.0109316969538, 291.2258487566002, 284.6533467864538, 298.6004291878064, 378.9922251008255, 422.200454980605, 558.535208992088, 535.2650240211051, 564.4619494493619],
+        "differenceVsCoolSheetPct": -4.13,
+        "station": "Tullamarine-Melbourne",
+        "stationDistanceM": 20166,
+        "requestUrl": "https://developer.nlr.gov/api/pvwatts/v8.json?api_key=DEMO_KEY&system_capacity=4&module_type=0&losses=14&array_type=0&tilt=30&azimuth=0&lat=-37.8136&lon=144.9631&dataset=intl&radius=0&dc_ac_ratio=1.2&inv_eff=96&albedo=0.2"
+      }
+    },
+    {
+      "city": "Perth",
+      "latitude": -31.9505,
+      "longitude": 115.8605,
+      "coolsheet": {
+        "annualPoaKWhM2": 2124.9850175652,
+        "annualDcKWh": 7831.894283145995,
+        "annualAcKWh": 6466.011920165335,
+        "monthlyAcKWh": [686.4149145412097, 603.924302973492, 595.5058964966565, 497.7829520755352, 445.52116742916746, 350.9972441916023, 376.25034323612624, 477.3533379310992, 451.0955704344151, 621.3856419855989, 671.8093252199232, 687.9712236505085]
+      },
+      "pvgis": {
+        "annualAcKWh": 6494.4,
+        "monthlyAcKWh": [659.31, 594.44, 607.13, 511.13, 460.33, 384.33, 386.91, 463.09, 520.17, 615.48, 631.72, 660.36],
+        "differenceVsCoolSheetPct": 0.44,
+        "requestUrl": "https://re.jrc.ec.europa.eu/api/v5_3/PVcalc?lat=-31.9505&lon=115.8605&peakpower=4&loss=17.44&angle=30&aspect=-180&mountingplace=free&pvtechchoice=crystSi&raddatabase=PVGIS-ERA5&outputformat=json"
+      },
+      "pvwatts": {
+        "annualAcKWh": 6587.13596315935,
+        "monthlyAcKWh": [725.7535395138007, 616.2012773319099, 613.1273255582668, 498.1879945014662, 427.5507092487599, 356.2506803754161, 395.1155146008876, 460.6737797589903, 564.9061607835223, 609.8092309893975, 637.7961743691609, 681.7635761277835],
+        "differenceVsCoolSheetPct": 1.87,
+        "station": "Perth",
+        "stationDistanceM": 14098,
+        "requestUrl": "https://developer.nlr.gov/api/pvwatts/v8.json?api_key=DEMO_KEY&system_capacity=4&module_type=0&losses=14&array_type=0&tilt=30&azimuth=0&lat=-31.9505&lon=115.8605&dataset=intl&radius=0&dc_ac_ratio=1.2&inv_eff=96&albedo=0.2"
+      }
+    }
+  ],
+  "summary": {
+    "comparisonCount": 6,
+    "meanAbsoluteDifferencePct": 2.22,
+    "maximumAbsoluteDifferencePct": 4.53,
+    "interpretation": "Close annual agreement across two independent PV tools and three climates supports the CoolSheet PV-only annual yield boundary; it does not validate site-specific shading, degradation, curtailment, downtime or PVT cooling gain."
+  }
+}

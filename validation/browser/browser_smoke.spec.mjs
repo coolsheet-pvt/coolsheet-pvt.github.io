@@ -4,6 +4,9 @@ import { pathToFileURL } from "node:url";
 
 const pageUrl = pathToFileURL(path.resolve("index.html")).href;
 const modernPageUrl = `${pageUrl}?ui=modern`;
+const soacValidationUrl = pathToFileURL(path.resolve("pages/soac-field-validation.html")).href;
+const pvValidationUrl = pathToFileURL(path.resolve("pages/pv-external-validation.html")).href;
+const validationHubUrl = pathToFileURL(path.resolve("pages/validation-hub.html")).href;
 
 test("calculator UI loads without console errors", async ({ page }) => {
   const errors = [];
@@ -14,7 +17,92 @@ test("calculator UI loads without console errors", async ({ page }) => {
   await expect(page.locator("#btnAnnual")).toBeVisible();
   await expect(page.locator("#industrySelect")).toBeVisible();
   await expect(page.locator("#downloadLink")).toBeHidden();
+  await expect(page.locator("#btnCheckPvScenario")).toBeDisabled();
+  await expect(page.getByRole("link", { name: "Validation centre" })).toBeVisible();
+  await expect(page.getByText(/loading weather sends the address to OpenStreetMap/i)).toBeVisible();
   expect(errors).toEqual([]);
+});
+
+test("SOAC field-validation page is linked, interactive, and works offline", async ({ page }) => {
+  const errors = [];
+  page.on("console", msg => {
+    if (msg.type() === "error") errors.push(msg.text());
+  });
+
+  await page.goto(validationHubUrl);
+  const validationLink = page.locator('a[href="soac-field-validation.html"]').first();
+  await expect(validationLink).toBeVisible();
+
+  await page.goto(soacValidationUrl);
+  await expect(page.locator("h1")).toContainText("What happened at SOAC");
+  await expect(page.locator("#headlineMatchedError")).toHaveText("−6.2%");
+  await expect(page.locator("#dataStatus")).toHaveAttribute("data-status", "fallback");
+  await expect(page.locator("canvas")).toHaveCount(5);
+
+  await page.locator("#fieldFactor").evaluate(input => {
+    input.value = "0.70";
+    input.dispatchEvent(new Event("input", { bubbles:true }));
+  });
+  await expect(page.locator("#fieldFactorValue")).toHaveText("0.70");
+  await expect(page.locator("#adjustedModelB")).toHaveText("6,646 kWh");
+
+  await page.setViewportSize({width:390,height:844});
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1)).toBe(true);
+  expect(errors).toEqual([]);
+});
+
+test("PV external-validation page presents clear external comparisons", async ({ page }) => {
+  const errors = [];
+  page.on("console", msg => {
+    if (msg.type() === "error") errors.push(msg.text());
+  });
+
+  await page.goto(validationHubUrl);
+  await expect(page.locator("h1")).toContainText("What has been validated");
+  await expect(page.getByText("Strong benchmark agreement", { exact:true })).toBeVisible();
+  await expect(page.getByText("Preliminary field evidence", { exact:true })).toBeVisible();
+  const validationLink = page.locator('a[href="pv-external-validation.html"]').first();
+  await expect(validationLink).toBeVisible();
+
+  await page.goto(pvValidationUrl);
+  await expect(page.locator("h1")).toContainText("Is the CoolSheet PV result reasonable?");
+  await expect(page.getByText("2.22%", { exact:true })).toHaveCount(1);
+  await expect(page.locator("canvas:visible")).toHaveCount(1);
+  await expect(page.locator(".steps:visible li")).toHaveCount(3);
+  await expect(page.locator("#coolSheetValue")).toHaveText("5,656.9 kWh");
+  await expect(page.locator("#stationNote")).toContainText("6.9 km");
+  await page.selectOption("#citySelect", "Perth");
+  await expect(page.locator("#stationNote")).toContainText("14.1 km");
+  await expect(page.locator("#coolSheetValue")).toHaveText("6,466.0 kWh");
+  await expect(page.locator("#plainResult")).toContainText("largest difference is 1.87%");
+  await expect(page.locator("#pvgisResultLink")).toHaveAttribute("href", /lat=-31\.9505/);
+  await expect(page.getByRole("heading", { name: "Australian units" })).toHaveCount(0);
+
+  await page.setViewportSize({width:390,height:844});
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1)).toBe(true);
+  expect(errors).toEqual([]);
+});
+
+test("current CoolSheet PV scenario transfers into the external check", async ({ page }) => {
+  await page.route("https://developer.nlr.gov/api/pvwatts/v8.json?*", route => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify({ outputs:{ ac_annual:5850.5 }, errors:[], warnings:[] })
+  }));
+  const query = new URLSearchParams({
+    mode:"scenario",name:"Test site",lat:"-33.869800",lon:"151.208300",area:"20",efficiency:"0.20",
+    capacity:"4",tilt:"30",azimuth:"0",albedo:"0.2",systemLoss:"14",inverterEfficiency:"96",coolsheetAc:"5656.9"
+  });
+  await page.goto(`${pvValidationUrl}?${query.toString()}`);
+  await expect(page.locator("h1")).toHaveText("Check this CoolSheet PV result");
+  await expect(page.locator("#scenarioValidation")).toBeVisible();
+  await expect(page.locator("#scenarioCoolSheetValue")).toHaveText("5,656.9 kWh");
+  await expect(page.locator("#scenarioPvwattsInput")).toHaveValue("5850.5");
+  await expect(page.locator("#scenarioPlainResult")).toContainText("Close agreement");
+  await expect(page.locator("#scenarioPvgisLink")).toHaveAttribute("href", /peakpower=4\.000/);
+  await page.locator("#scenarioPvgisInput").fill("5913.2");
+  await expect(page.locator("#scenarioPvgisDifference")).toContainText("4.53% higher");
+  await expect(page.locator("#scenarioPlainResult")).toContainText("both external results");
 });
 
 test("commercial laundry controls are exposed", async ({ page }) => {
