@@ -65,8 +65,8 @@ function modelB(opts){
 }
 
 console.log("\n# PVT MODEL EQUATION LOCKS");
-ok("Model A source equation is present", APP.includes("etaTh = a0 + a1 * ((Tin - r.ta) / G) + a2 * r.vwind"));
-ok("Model B source keeps ISO 9806 Eq.12 Newton branch", APP.includes("Model B: ISO 9806 Eq.12 with Newton iteration"));
+ok("Model A production path uses the shared thermal helper", APP.includes("calculatePvtThermalSample(r, calculator") && APP.includes("etaTh = clamp(a0 + a1 * ((Tin - ta) / G) + a2 * vwind"));
+ok("Model B source keeps the ISO 9806 Newton branch", APP.includes("const Q_model = areaM2 * (isoEta0 * G") && APP.includes("const denominator = mdot_cp - dQm_dTout"));
 ok("Model B source keeps Swinbank long-wave constant", APP.includes("5.31e-13 * Math.pow(Ta_K, 6)"));
 
 console.log("\n# MODEL A NUMERIC CASE");
