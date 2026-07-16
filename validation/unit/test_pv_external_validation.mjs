@@ -58,6 +58,6 @@ assert.match(validationPage, /Shading, faults, downtime or panel ageing/i);
 assert.match(validationPage, /extra electricity claimed from PVT water cooling/i);
 assert.match(validationHub, /Strong benchmark agreement/);
 assert.match(validationHub, /Preliminary field evidence/);
-assert.match(validationHub, /Not yet field validated/);
+assert.match(validationHub, /Not yet fully validated/);
 
 console.log("PV external comparison and page wiring passed.");

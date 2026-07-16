@@ -8,6 +8,7 @@ const modernPageUrl = `${pageUrl}?ui=modern`;
 const soacValidationUrl = pathToFileURL(path.resolve("pages/soac-field-validation.html")).href;
 const pvValidationUrl = pathToFileURL(path.resolve("pages/pv-external-validation.html")).href;
 const validationHubUrl = pathToFileURL(path.resolve("pages/validation-hub.html")).href;
+const mainsValidationUrl = pathToFileURL(path.resolve("pages/cer_comparison.html")).href;
 const sydneyWeatherFixture = JSON.parse(fs.readFileSync(path.resolve("validation/fixtures/backend/backend_sydney.json"), "utf8"));
 
 test("calculator UI loads without console errors", async ({ page }) => {
@@ -20,16 +21,26 @@ test("calculator UI loads without console errors", async ({ page }) => {
   await expect(page.locator("#btnAnnual")).toHaveText("Calculate results");
   await expect(page.locator("#industrySelect")).toBeVisible();
   await expect(page.locator("#industryEvidenceNotice")).toHaveCount(0);
-  const processSelectorComesFirst = await page.evaluate(() => {
+  const industryInputsComeBeforeProcessSelector = await page.evaluate(() => {
+    const profilePanel = document.getElementById("profilePanel");
     const processPanel = document.getElementById("processPanel");
     const throughputLabel = document.getElementById("throughputLabel");
     const dairyPanel = document.getElementById("dairyAssumptionsPanel");
+    const breweryPanel = document.getElementById("breweryAssumptionsPanel");
+    const hotelPanel = document.getElementById("hotelInputsPanel");
+    const aquaticPanel = document.getElementById("aquaticInputsPanel");
+    const laundryPanel = document.getElementById("laundryInputsPanel");
     return Boolean(
-      processPanel.compareDocumentPosition(throughputLabel) & Node.DOCUMENT_POSITION_FOLLOWING
-      && processPanel.compareDocumentPosition(dairyPanel) & Node.DOCUMENT_POSITION_FOLLOWING
+      profilePanel.compareDocumentPosition(throughputLabel) & Node.DOCUMENT_POSITION_FOLLOWING
+      && throughputLabel.compareDocumentPosition(processPanel) & Node.DOCUMENT_POSITION_FOLLOWING
+      && dairyPanel.compareDocumentPosition(processPanel) & Node.DOCUMENT_POSITION_FOLLOWING
+      && breweryPanel.compareDocumentPosition(processPanel) & Node.DOCUMENT_POSITION_FOLLOWING
+      && hotelPanel.compareDocumentPosition(processPanel) & Node.DOCUMENT_POSITION_FOLLOWING
+      && aquaticPanel.compareDocumentPosition(processPanel) & Node.DOCUMENT_POSITION_FOLLOWING
+      && laundryPanel.compareDocumentPosition(processPanel) & Node.DOCUMENT_POSITION_FOLLOWING
     );
   });
-  expect(processSelectorComesFirst).toBe(true);
+  expect(industryInputsComeBeforeProcessSelector).toBe(true);
   await expect(page.locator("#downloadLink")).toBeHidden();
   await expect(page.locator("#btnGeneratePdf")).toBeHidden();
   await expect(page.locator("#btnShareLink")).toBeHidden();
@@ -151,7 +162,7 @@ test("calculator UI loads without console errors", async ({ page }) => {
 });
 
 test("calculator and validation pages fit common phone, tablet and desktop widths", async ({ page }) => {
-  const pages = [pageUrl, validationHubUrl, soacValidationUrl, pvValidationUrl];
+  const pages = [pageUrl, validationHubUrl, soacValidationUrl, pvValidationUrl, mainsValidationUrl];
   const viewports = [
     { width:320, height:568 },
     { width:390, height:844 },
@@ -180,6 +191,32 @@ test("calculator and validation pages fit common phone, tablet and desktop width
       expect(layout.clippedVisibleControls, `${url} clips controls at ${viewport.width}px`).toEqual([]);
     }
   }
+});
+
+test("validation pages lead with simple visuals and keep technical material optional", async ({ page }) => {
+  await page.goto(validationHubUrl);
+  await expect(page.getByRole("heading", { name: "Validation checklist" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Validated or cross-checked/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Not yet fully validated/ })).toBeVisible();
+  await expect(page.getByText("PVT electrical cooling gain", { exact:true })).toBeVisible();
+  await expect(page.locator(".mini-chart")).toHaveCount(3);
+  await expect(page.getByText("Sydney example, yearly electricity")).toBeVisible();
+  await expect(page.getByText("Australian climate zones checked")).toBeVisible();
+
+  await page.goto(pvValidationUrl);
+  await expect(page.locator("#cityDifferenceChart")).toBeVisible();
+  await expect(page.locator("#resultChart")).toBeVisible();
+  await expect(page.locator(".easy-steps")).not.toHaveAttribute("open", "");
+
+  await page.goto(soacValidationUrl);
+  await expect(page.locator("#matchedChart")).toBeVisible();
+  await expect(page.getByText("Measured heat vs Model A")).toBeVisible();
+  await expect(page.locator(".technical-evidence")).not.toHaveAttribute("open", "");
+
+  await page.goto(mainsValidationUrl);
+  await expect(page.locator("#comparisonChartCer")).toBeVisible();
+  await expect(page.locator("#rmseBox")).toContainText("Lower is better");
+  await expect(page.locator(".expert-settings").first()).not.toHaveAttribute("open", "");
 });
 
 test("phone layouts keep expandable calculator controls touchable", async ({ page }) => {
@@ -222,10 +259,30 @@ test("full Sydney fixture calculation uses net AC and fits a phone", async ({ pa
   const boundary = await page.evaluate(() => ({
     headline:CURRENT_CALC_RESULT?.annualRaw?.pvtElectricKWh,
     netAc:CURRENT_CALC_RESULT?.annualRaw?.pvtNetAcKWh,
-    grossDc:CURRENT_CALC_RESULT?.annualRaw?.pvtGrossDcKWh
+    grossDc:CURRENT_CALC_RESULT?.annualRaw?.pvtGrossDcKWh,
+    annualWaterRise:CURRENT_CALC_RESULT?.annualRaw?.daytimeWaterTempRiseC,
+    monthlyRows:CURRENT_CALC_RESULT?.monthlyResults?.length,
+    firstMonthlyWaterRise:CURRENT_CALC_RESULT?.monthlyResults?.[0]?.waterTempRiseC,
+    temperatureDatasetLabels:temperatureChartInstance?.data?.datasets?.map(dataset => dataset.label) || [],
+    temperatureTableText:document.getElementById("temperatureDataTable")?.textContent || "",
+    reportHtml:buildPdfTemplateDocument()
   }));
   expect(boundary.headline).toBeCloseTo(boundary.netAc, 9);
   expect(boundary.netAc).toBeLessThan(boundary.grossDc);
+  expect(boundary.annualWaterRise).toBeGreaterThan(0);
+  expect(boundary.monthlyRows).toBe(12);
+  expect(boundary.firstMonthlyWaterRise).toBeGreaterThan(0);
+  expect(boundary.temperatureDatasetLabels).toContain("Water Temp Rise \u0394T (\u00B0C)");
+  expect(boundary.temperatureTableText).toContain("Water rise \u0394T");
+  expect(boundary.reportHtml).toContain("Detailed Annual Results");
+  expect(boundary.reportHtml).toContain("Economic Analysis");
+  expect(boundary.reportHtml).toContain("Levelised Cost");
+  expect(boundary.reportHtml).toContain("Monthly System Results");
+  expect(boundary.reportHtml).toContain("Data Sources And Reproducibility");
+  expect(boundary.reportHtml).toContain("Avg daytime outlet temp");
+  expect(boundary.reportHtml).toContain("Avg water temperature rise");
+  expect(boundary.reportHtml).toContain("Water Tin / Tout / rise");
+  expect(boundary.reportHtml).toContain("PVT supply value");
 
   await page.evaluate(() => {
     document.getElementById("modelB").checked = true;
@@ -337,7 +394,7 @@ test("SOAC field-validation page is linked, interactive, and works offline", asy
   await expect(validationLink).toBeVisible();
 
   await page.goto(soacValidationUrl);
-  await expect(page.locator("h1")).toContainText("What happened at SOAC");
+  await expect(page.locator("h1")).toContainText("SOAC field result compared with CoolSheet");
   await expect(page.locator("#headlineMatchedError")).toHaveText("−6.2%");
   await expect(page.locator("#dataStatus")).toHaveAttribute("data-status", "fallback");
   await expect(page.locator("canvas")).toHaveCount(5);
@@ -370,7 +427,9 @@ test("PV external-validation page presents clear external comparisons", async ({
   await page.goto(pvValidationUrl);
   await expect(page.locator("h1")).toContainText("Is the CoolSheet PV result reasonable?");
   await expect(page.getByText("2.22%", { exact:true })).toHaveCount(1);
-  await expect(page.locator("canvas:visible")).toHaveCount(1);
+  await expect(page.locator("canvas:visible")).toHaveCount(2);
+  await expect(page.locator(".easy-steps")).not.toHaveAttribute("open", "");
+  await page.locator(".easy-steps > summary").click();
   await expect(page.locator(".steps:visible li")).toHaveCount(3);
   await expect(page.locator(".benchmark-results .result")).toHaveCount(4);
   await expect(page.locator("#citySelect option")).toHaveCount(5);

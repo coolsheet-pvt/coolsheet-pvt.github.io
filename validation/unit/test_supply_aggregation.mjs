@@ -50,9 +50,10 @@ const code = [
   ["buildMonthlyBalancePreviewPanel","func"],
   ["buildMonthlyEnergyBalancePreview","func"],
   ["aggregateMonthlyAll","func"],
+  ["getMonthlyWaterTemperatureRise","func"],
   ["aggregateDailyAll","func"]
 ].map(([n,k]) => extract(n,k)).join("\n");
-const mod = new Function(code + "\nreturn {MONTH_DAYS, monthFromDayN, monthDayFromDayN, aggregateMonthly, calculateThermalStorage, calculateHourlyEnergyBalance, calculateHourlyElectricityBalance, calculateStorageMonthlyEnergyBalance, buildMonthlyEnergyBalancePreview, aggregateMonthlyAll, aggregateDailyAll};")();
+const mod = new Function(code + "\nreturn {MONTH_DAYS, monthFromDayN, monthDayFromDayN, aggregateMonthly, calculateThermalStorage, calculateHourlyEnergyBalance, calculateHourlyElectricityBalance, calculateStorageMonthlyEnergyBalance, buildMonthlyEnergyBalancePreview, aggregateMonthlyAll, getMonthlyWaterTemperatureRise, aggregateDailyAll};")();
 
 let pass=0, fail=0;
 const ok=(n,c,d="")=>{ c?pass++:fail++; console.log(`  ${c?"PASS":"FAIL"}  ${n}${c?"":"  "+d}`); };
@@ -106,6 +107,7 @@ console.log("\n# aggregateMonthlyAll (timezone-independent bucketing)");
   ok("every month has correct day count x24 PV",
     months.every((m,i)=>Math.abs(m.pv_kWh - mod.MONTH_DAYS[i]*24) < 1e-9));
   near("daytime Tout average = 30 (one sample/day)", months[0].Tout_C_avg, 30, 1e-9);
+  near("daytime water rise is Tout minus Tin", mod.getMonthlyWaterTemperatureRise(months[0]), 15, 1e-9);
   near("daytime plane irradiance average = 600 W/m2", months[0].G_Wm2_avg, 600, 1e-9);
   near("daytime air temperature average = 20 C", months[0].Ta_C_avg, 20, 1e-9);
 }

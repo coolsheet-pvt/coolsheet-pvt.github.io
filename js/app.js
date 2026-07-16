@@ -282,7 +282,7 @@ function collectAnnualReportMetrics(){
   if (CURRENT_CALC_RESULT?.annualMetrics?.length){
     return CURRENT_CALC_RESULT.annualMetrics.map(item => ({
       label: item.label,
-      value: formatExportValue(item),
+      value: reportPlainText(formatExportValue(item)),
       note: item.note || ""
     }));
   }
@@ -391,11 +391,135 @@ function renderEnergyBalanceGroup(title, items){
     </div>`;
 }
 
+function reportPlainText(value){
+  return String(value == null ? "" : value)
+    .replace(/[\u2010-\u2015]/g, "-")
+    .replace(/\bdegC\b/g, "\u00B0C")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getReportImageSource(selector, fallbackUrl){
+  const image = document.querySelector(selector);
+  if (!image?.complete || !image.naturalWidth || !image.naturalHeight) return fallbackUrl;
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = image.naturalWidth;
+    canvas.height = image.naturalHeight;
+    const context = canvas.getContext("2d");
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(image, 0, 0);
+    return canvas.toDataURL("image/jpeg", 0.92);
+  } catch (_e){
+    return fallbackUrl;
+  }
+}
+
+function collectAnnualReportTables(){
+  return (CURRENT_CALC_RESULT?.annualTables || []).map(table => ({
+    title: reportPlainText(table.title || "Result detail"),
+    rows: (table.rows || []).map(row => [reportPlainText(row?.[0]), reportPlainText(row?.[1])])
+      .filter(row => row[0] || row[1])
+  })).filter(table => table.rows.length);
+}
+
+function collectIndustryReportDetails(){
+  const root = document.getElementById("industryOutput");
+  if (!root || !root.textContent.trim()) return null;
+
+  const designRoot = root.querySelector("#designExplorer");
+  const designMetrics = designRoot ? Array.from(designRoot.querySelectorAll(".design-explorer-stat")).map(card => ({
+    label: reportPlainText(card.querySelector("span")?.textContent),
+    value: reportPlainText(card.querySelector("strong")?.textContent),
+    note: reportPlainText(card.querySelector("small")?.textContent)
+  })).filter(item => item.label && item.value) : [];
+  const target = designRoot?.querySelector("#designExplorerTargetInput")?.value;
+  if (target && designMetrics.length){
+    designMetrics.push({ label:"Selected heat-coverage target", value:`${reportPlainText(target)}%`, note:"Target used for the suggested collector area." });
+  }
+
+  const processes = Array.from(root.querySelectorAll(".process-breakdown-row")).map(row => ({
+    label: reportPlainText(row.querySelector(".process-title")?.textContent),
+    value: reportPlainText(row.querySelector(".process-kwh")?.textContent).replace(/(?<=\d)(?=kWh)/, " "),
+    note: Array.from(row.querySelectorAll(".process-pill")).map(pill => reportPlainText(pill.textContent)).filter(Boolean).join("; ")
+  })).filter(item => item.label && item.value);
+
+  let savings = [];
+  for (const table of root.querySelectorAll("table.result-table")){
+    const heading = reportPlainText(table.querySelector("tr:first-child")?.textContent);
+    if (!/^Savings \(Current Estimate\)/i.test(heading)) continue;
+    savings = Array.from(table.querySelectorAll("tr")).slice(1).map(row => {
+      const cells = Array.from(row.querySelectorAll("th,td")).map(cell => reportPlainText(cell.textContent));
+      return cells.length >= 2 ? [cells[0], cells[cells.length - 1]] : null;
+    }).filter(Boolean);
+    break;
+  }
+
+  return { designMetrics, processes, savings };
+}
+
+function collectMonthlyReportRows(){
+  return (CURRENT_CALC_RESULT?.monthlyResults || []).filter(row => row.month >= 1 && row.month <= 12);
+}
+
+function renderReportDetailTables(tables){
+  if (!tables?.length) return `<div class="empty-note">No detailed annual results are available.</div>`;
+  return `<div class="detail-grid">${tables.map(table => `
+    <div class="detail-table-box">
+      <h3>${escapeHtml(table.title)}</h3>
+      <table class="report-table result-detail-table">
+        ${table.rows.map(row => `<tr><th>${escapeHtml(row[0])}</th><td>${escapeHtml(row[1])}</td></tr>`).join("")}
+      </table>
+    </div>`).join("")}</div>`;
+}
+
+function renderMonthlyReport(rows){
+  if (!rows?.length) return `<div class="empty-note">Monthly results are not available.</div>`;
+  const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const maxEnergy = Math.max(1, ...rows.flatMap(row => [row.pvtElectricKWh, row.pvOnlyKWh, row.pvtThermalKWh].filter(isFiniteNumber)));
+  const heightPct = value => Math.max(2, Math.min(100, (Math.max(0, Number(value) || 0) / maxEnergy) * 100));
+  return `
+    <div class="monthly-chart" role="img" aria-label="Monthly PVT electricity, PV-only electricity and PVT thermal output">
+      <div class="monthly-legend"><span class="pvt">PVT electricity</span><span class="pv-only">PV-only electricity</span><span class="thermal">PVT thermal</span></div>
+      <div class="monthly-bars">${rows.map(row => `
+        <div class="month-group">
+          <div class="month-bar-area">
+            <span class="month-bar pvt" style="height:${heightPct(row.pvtElectricKWh).toFixed(1)}%"></span>
+            <span class="month-bar pv-only" style="height:${heightPct(row.pvOnlyKWh).toFixed(1)}%"></span>
+            <span class="month-bar thermal" style="height:${heightPct(row.pvtThermalKWh).toFixed(1)}%"></span>
+          </div>
+          <b>${monthNames[row.month - 1]}</b>
+        </div>`).join("")}</div>
+    </div>
+    <table class="monthly-table">
+      <thead><tr><th>Month</th><th>PVT elec.</th><th>PV-only</th><th>Cooling gain</th><th>PVT thermal</th><th>Water Tin / Tout / rise</th></tr></thead>
+      <tbody>${rows.map(row => {
+        const gain = (Number(row.pvtElectricKWh) || 0) - (Number(row.pvOnlyKWh) || 0);
+        const rise = row.waterTempRiseC;
+        const riseText = isFiniteNumber(rise) ? `${rise >= 0 ? "+" : ""}${formatExportNumber(rise,1)}` : "-";
+        return `<tr><th>${monthNames[row.month - 1]}</th><td>${formatExportNumber(row.pvtElectricKWh,0)} kWh</td><td>${formatExportNumber(row.pvOnlyKWh,0)} kWh</td><td>${gain >= 0 ? "+" : ""}${formatExportNumber(gain,0)} kWh</td><td>${formatExportNumber(row.pvtThermalKWh,0)} kWh</td><td>${formatExportNumber(row.inletTempC,1)} / ${formatExportNumber(row.outletTempC,1)} / ${riseText} C</td></tr>`;
+      }).join("")}</tbody>
+    </table>`;
+}
+
+function renderIndustryReportDetails(details){
+  if (!details || (!details.designMetrics.length && !details.processes.length && !details.savings.length)) return "";
+  return `<section class="section industry-detail">
+    <div class="section-title"><h2>Industry Detail</h2><small>Design guidance, process demand and savings</small></div>
+    ${details.designMetrics.length ? `<h3>Collector sizing guide</h3>${renderReportKpis(details.designMetrics, 8)}` : ""}
+    ${details.processes.length ? `<h3 class="subsection-title">Selected process demand</h3><table class="report-table process-report-table">${details.processes.map(item => `<tr><th>${escapeHtml(item.label)}</th><td>${escapeHtml(item.value)}</td><td>${escapeHtml(item.note)}</td></tr>`).join("")}</table>` : ""}
+    ${details.savings.length ? `<h3 class="subsection-title">Savings and avoided emissions</h3>${renderReportTable(details.savings, "savings-report-table")}` : ""}
+  </section>`;
+}
+
 function buildPdfTemplateDocument(){
   const generatedAt = new Date().toLocaleString();
   const locationName = CURRENT_LOC?.name || "Location not loaded";
-  const coolsheetLogoSrc = new URL("assets/coolsheet-logo.jpg", window.location.href).href;
-  const unswLogoSrc = new URL("assets/unsw-logo.jpg", window.location.href).href;
+  const coolsheetLogoUrl = new URL("assets/coolsheet-logo.jpg", window.location.href).href;
+  const unswLogoUrl = new URL("assets/unsw-logo.jpg", window.location.href).href;
+  const coolsheetLogoSrc = getReportImageSource(".brand-logo-coolsheet", coolsheetLogoUrl);
+  const unswLogoSrc = getReportImageSource(".brand-logo-unsw", unswLogoUrl);
   const area = getReportFieldValue("area");
   const industryLabel = getSelectedOptionText("industrySelect") || "None";
   const industryKey = document.getElementById("industrySelect")?.value || "";
@@ -424,8 +548,21 @@ function buildPdfTemplateDocument(){
   ].join("\n");
 
   const annualMetrics = collectAnnualReportMetrics();
+  const annualTables = collectAnnualReportTables();
   const industrySummary = collectIndustryReportSummary();
+  const industryDetails = collectIndustryReportDetails();
   const energyGroups = splitEnergyMetrics(industrySummary?.energy || []);
+  const monthlyRows = collectMonthlyReportRows();
+  const weatherMeta = CURRENT_CALC_RESULT?.weather || buildWeatherExportMetadata();
+  const provenanceRows = [
+    ["Weather source", reportPlainText(weatherMeta.source || "PVGIS typical meteorological year")],
+    ["Weather records", `${Number(weatherMeta.records || weatherRecords || 0).toLocaleString()} hourly records`],
+    ["Timezone", reportPlainText(weatherMeta.timezone || timezoneText || "N/A")],
+    ["Annual solar resource", `GHI ${formatExportNumber(weatherMeta.annualGhiKWhM2,0) || "N/A"} kWh/m2; DNI ${formatExportNumber(weatherMeta.annualDniKWhM2,0) || "N/A"} kWh/m2; DHI ${formatExportNumber(weatherMeta.annualDhiKWhM2,0) || "N/A"} kWh/m2`],
+    ["Weather API", weatherMeta.pvgisApiVersion ? `PVGIS API ${reportPlainText(weatherMeta.pvgisApiVersion)}; contract ${reportPlainText(weatherMeta.apiContractVersion || "N/A")}` : reportPlainText(weatherMeta.endpoint || "N/A")],
+    ["Dataset identity", reportPlainText(weatherMeta.datasetSha256 || "Not supplied by this weather source")],
+    ["Mains-water model", `BC-Aus model; ${mainsText}`]
+  ];
   const assumptionRows = [
     ["Site", locationName],
     ["Coordinates", CURRENT_LOC ? `${CURRENT_LOC.lat.toFixed(6)}, ${CURRENT_LOC.lon.toFixed(6)} (${timezoneText})` : "N/A"],
@@ -447,7 +584,15 @@ function buildPdfTemplateDocument(){
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>PVT Report - ${escapeHtml(locationName)}</title>
   <style>
-    @page{size:A4;margin:10mm;}
+    @page{
+      size:A4;margin:10mm 10mm 15mm;
+    }
+    @page :left{
+      @bottom-center{content:"CoolSheet PVT Report  |  Page " counter(page) " of " counter(pages);font:8px Arial;color:#66778c;}
+    }
+    @page :right{
+      @bottom-center{content:"CoolSheet PVT Report  |  Page " counter(page) " of " counter(pages);font:8px Arial;color:#66778c;}
+    }
     *{box-sizing:border-box;}
     html,body{margin:0;padding:0;}
     body{font-family:Arial,Helvetica,sans-serif;color:#142437;background:#edf3f7;font-size:10.2px;line-height:1.32;}
@@ -475,7 +620,7 @@ function buildPdfTemplateDocument(){
     .head-meta{display:grid;grid-template-columns:1fr;gap:4px;font-size:9.5px;}
     .head-meta div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid #e6edf4;padding-bottom:3px;}
     .head-meta span{color:#617286;font-weight:700;}
-    .section{margin:9px 0 0;padding:10px;border:1px solid #d7e1ec;border-radius:8px;background:#fbfdff;break-inside:avoid;}
+    .section{margin:9px 0 0;padding:10px;border:1px solid #d7e1ec;border-radius:8px;background:#fbfdff;}
     .section.compact{padding:9px 10px;}
     .section-title{display:flex;justify-content:space-between;gap:10px;align-items:baseline;margin-bottom:7px;}
     .section-title small{color:#617286;font-size:9px;}
@@ -497,10 +642,40 @@ function buildPdfTemplateDocument(){
     .balance-table td{font-weight:700;color:#102d45;text-align:right;font-size:10px;}
     .report-table{font-size:9.2px;}
     .report-table th{width:23%;}
+    .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:start;}
+    .detail-table-box{padding:8px;border:1px solid #dbe4ed;border-radius:7px;background:#fff;break-inside:avoid;}
+    .detail-table-box h3{padding-bottom:5px;border-bottom:1px solid #e4ebf2;}
+    .result-detail-table th{width:61%;}
+    .result-detail-table td{text-align:right;font-weight:700;color:#102d45;}
+    .status-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+    .status-card{display:grid;grid-template-columns:58px 1fr;gap:8px;align-items:start;padding:8px;border:1px solid #dce5ed;border-radius:7px;background:#fff;break-inside:avoid;}
+    .status-card b{display:block;margin-bottom:2px;color:#173047;font-size:10px;}
+    .status-card p{color:#617286;font-size:8.8px;}
+    .status-tag{display:block;padding:3px 4px;border-radius:4px;text-align:center;font-size:7.6px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;}
+    .status-card.supported .status-tag{background:#dff2e8;color:#126343;}
+    .status-card.early .status-tag{background:#fff0df;color:#8b491f;}
+    .status-card.scenario .status-tag{background:#e8eef4;color:#4d6174;}
+    .subsection-title{margin-top:10px;padding-top:8px;border-top:1px solid #dfe7ef;}
+    .process-report-table th{width:30%;}.process-report-table td:nth-child(2){width:22%;font-weight:700;white-space:nowrap;}.process-report-table td:last-child{font-size:8.5px;color:#617286;}
+    .savings-report-table th{width:70%;}.savings-report-table td{text-align:right;font-weight:700;}
+    .monthly-chart{padding:8px 9px 6px;border:1px solid #dce5ed;border-radius:7px;background:#fff;break-inside:avoid;}
+    .monthly-legend{display:flex;justify-content:flex-end;gap:12px;margin-bottom:5px;color:#53677a;font-size:8px;font-weight:700;}
+    .monthly-legend span:before{content:"";display:inline-block;width:8px;height:8px;margin-right:4px;vertical-align:-1px;border-radius:2px;background:#23699d;}
+    .monthly-legend .pv-only:before{background:#df9a35;}.monthly-legend .thermal:before{background:#64a8bd;}
+    .monthly-bars{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;height:115px;border-bottom:1px solid #adbac6;}
+    .month-group{display:grid;grid-template-rows:1fr 14px;min-width:0;text-align:center;font-size:7.5px;color:#53677a;}
+    .month-bar-area{display:flex;align-items:flex-end;justify-content:center;gap:1px;min-height:0;}
+    .month-bar{display:block;width:24%;min-height:2px;border-radius:2px 2px 0 0;background:#23699d;}
+    .month-bar.pv-only{background:#df9a35;}.month-bar.thermal{background:#64a8bd;}
+    .monthly-table{width:100%;margin-top:8px;border-collapse:collapse;font-size:8.2px;break-inside:avoid;}
+    .monthly-table th,.monthly-table td{padding:3px 4px;border-bottom:1px solid #e4ebf2;text-align:right;white-space:nowrap;}
+    .monthly-table th:first-child,.monthly-table td:first-child{text-align:left;}
+    .monthly-table thead th{background:#eef4f8;color:#496176;}
+    .provenance-table td{overflow-wrap:anywhere;word-break:break-word;}
     .empty-note{padding:8px;border:1px dashed #bac8d6;border-radius:6px;color:#617286;background:#fff;}
     @media (max-width:720px){
       .report-head{grid-template-columns:1fr;}
-      .kpi-grid,.industry .kpi-grid,.balance-grid{grid-template-columns:1fr 1fr;}
+      .kpi-grid,.industry .kpi-grid,.balance-grid,.detail-grid,.status-grid{grid-template-columns:1fr 1fr;}
       .handoff-actions input{flex-basis:100%;}
       .handoff-buttons{width:100%;justify-content:flex-end;}
     }
@@ -509,7 +684,8 @@ function buildPdfTemplateDocument(){
       .handoff-actions{display:none;}
       .report-shell{max-width:none;padding:0;}
       .report-doc{border:0;border-radius:0;padding:0;}
-      .report-head,.section,.balance-box,.kpi-card{break-inside:avoid;}
+      .report-head,.balance-box,.kpi-card{break-inside:avoid;}
+      .report-page-break{break-before:page;page-break-before:always;}
       .report-logo-row{margin-bottom:6px;}
       .report-logo{max-height:28px;}
       .report-logo.coolsheet{max-width:98px;}
@@ -524,6 +700,8 @@ function buildPdfTemplateDocument(){
       .industry-headline{padding:6px 8px;margin-bottom:6px;}
       .balance-grid{gap:6px;margin-top:6px;}
       .balance-table th,.balance-table td,.report-table th,.report-table td{padding:3px 4px;}
+      .section-title,.status-card,.monthly-chart,.monthly-table,.detail-table-box{break-inside:avoid;}
+      .monthly-section{break-inside:avoid;page-break-inside:avoid;}
     }
   </style>
 </head>
@@ -549,20 +727,30 @@ function buildPdfTemplateDocument(){
           <p class="muted">${escapeHtml(locationName)}</p>
         </div>
         <div class="head-meta">
-          <div><span>Generated</span>${escapeHtml(generatedAt)}</div>
-          <div><span>Version</span>${escapeHtml(reportVersion)}</div>
-          <div><span>Area</span>${escapeHtml(area || "N/A")} m<sup>2</sup></div>
-          <div><span>Industry</span>${escapeHtml(industryLabel)}</div>
-          <div><span>Profile</span>${escapeHtml(profileLabel)}</div>
+          <div><span>Generated</span><b>${escapeHtml(generatedAt)}</b></div>
+          <div><span>Version</span><b>${escapeHtml(reportVersion)}</b></div>
+          <div><span>Area</span><b>${escapeHtml(area || "N/A")} m<sup>2</sup></b></div>
+          <div><span>Industry</span><b>${escapeHtml(industryLabel)}</b></div>
+          <div><span>Profile</span><b>${escapeHtml(profileLabel)}</b></div>
         </div>
       </header>
 
-      <section class="section compact">
+      <section class="section compact annual">
         <div class="section-title">
           <h2>Annual System Output</h2>
           <small>PV + thermal production</small>
         </div>
-        ${renderReportKpis(annualMetrics, 4)}
+        ${renderReportKpis(annualMetrics, 8)}
+      </section>
+
+      <section class="section compact">
+        <div class="section-title"><h2>Validation Status</h2><small>How much confidence to place in each result</small></div>
+        <div class="status-grid">
+          <div class="status-card supported"><span class="status-tag">Supported</span><div><b>PV electricity</b><p>Compared with PVGIS and PVWatts across five Australian cities.</p></div></div>
+          <div class="status-card supported"><span class="status-tag">Checked</span><div><b>Mains-water temperature</b><p>Cross-checked with CER and EnergyPlus references across five climate zones.</p></div></div>
+          <div class="status-card early"><span class="status-tag">Early</span><div><b>PVT thermal output</b><p>Promising matched-input evidence from 19 monitored days at one site.</p></div></div>
+          <div class="status-card scenario"><span class="status-tag">Scenario</span><div><b>Cooling, demand and finance</b><p>PVT cooling gain, industry demand, savings and payback depend on assumptions and need site evidence.</p></div></div>
+        </div>
       </section>
 
       ${industrySummary ? `<section class="section compact industry">
@@ -577,6 +765,23 @@ function buildPdfTemplateDocument(){
           ${renderEnergyBalanceGroup("Thermal Balance", energyGroups.thermal)}
         </div>
       </section>` : ""}
+
+      <section class="section compact monthly-section">
+        <div class="section-title"><h2>Detailed Annual Results</h2><small>Electrical, thermal, temperature and financial results</small></div>
+        ${renderReportDetailTables(annualTables)}
+      </section>
+
+      ${renderIndustryReportDetails(industryDetails)}
+
+      <section class="section compact report-page-break">
+        <div class="section-title"><h2>Monthly System Results</h2><small>12-month energy and outlet-temperature profile</small></div>
+        ${renderMonthlyReport(monthlyRows)}
+      </section>
+
+      <section class="section compact report-page-break">
+        <div class="section-title"><h2>Data Sources And Reproducibility</h2><small>Weather and mains-water data used</small></div>
+        ${renderReportTable(provenanceRows, "provenance-table")}
+      </section>
 
       <section class="section compact">
         <div class="section-title">
@@ -4580,13 +4785,23 @@ function renderDailyChart(dailyData){
   });
 }
 
+function getMonthlyWaterTemperatureRise(row){
+  const inlet = Number(row?.Tin_C_avg);
+  const outlet = Number(row?.Tout_C_avg);
+  return row?.Tin_C_count > 0 && row?.Tout_C_count > 0 && isFiniteNumber(inlet) && isFiniteNumber(outlet)
+    ? outlet - inlet
+    : null;
+}
+
 function renderTemperatureChartJS(monthlyData){
-  const labels=[],toutData=[],tinData=[],pvPanelData=[],pvtPanelData=[];
+  const labels=[],toutData=[],tinData=[],waterRiseData=[],pvPanelData=[],pvtPanelData=[];
   monthlyData.forEach(row => {
     if (row.month === 0) return;
     labels.push(MONTH_NAMES[row.month - 1]);
     toutData.push(row.Tout_C_avg > 0 ? row.Tout_C_avg.toFixed(1) : null);
     tinData.push(row.Tin_C_avg > 0 ? row.Tin_C_avg.toFixed(1) : null);
+    const waterRise = getMonthlyWaterTemperatureRise(row);
+    waterRiseData.push(waterRise != null ? waterRise.toFixed(1) : null);
     pvPanelData.push(row.PVPanel_C_avg > 0 ? row.PVPanel_C_avg.toFixed(1) : null);
     pvtPanelData.push(row.PVTPanel_C_avg > 0 ? row.PVTPanel_C_avg.toFixed(1) : null);
   });
@@ -4599,7 +4814,8 @@ function renderTemperatureChartJS(monthlyData){
       {label:'PV-only Panel Temp (\u00B0C)',data:pvPanelData,borderColor:'rgba(190,111,0,1)',backgroundColor:'rgba(245,166,35,0.08)',borderWidth:2,fill:false,tension:0},
       {label:'PVT Panel Temp (\u00B0C)',data:pvtPanelData,borderColor:'rgba(8,61,91,1)',backgroundColor:'rgba(8,61,91,0.08)',borderWidth:2,fill:false,tension:0},
       {label:'PVT Outlet Temp (\u00B0C)',data:toutData,borderColor:'rgba(103,199,216,1)',backgroundColor:'rgba(103,199,216,0.12)',borderWidth:2,borderDash:[5,4],fill:false,tension:0},
-      {label:'Inlet Temp (\u00B0C)',data:tinData,borderColor:'rgba(80,130,80,1)',backgroundColor:'rgba(80,130,80,0.05)',borderWidth:2,borderDash:[2,4],pointRadius:3,fill:false,tension:0}
+      {label:'Inlet Temp (\u00B0C)',data:tinData,borderColor:'rgba(80,130,80,1)',backgroundColor:'rgba(80,130,80,0.05)',borderWidth:2,borderDash:[2,4],pointRadius:3,fill:false,tension:0},
+      {label:'Water Temp Rise \u0394T (\u00B0C)',data:waterRiseData,borderColor:'rgba(39,116,132,1)',backgroundColor:'rgba(39,116,132,0.08)',borderWidth:2,borderDash:[8,4],pointRadius:3,pointStyle:'triangle',fill:false,tension:0}
     ]},
     options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true}},plugins:{title:{display:true,text:'TMY Daytime Average Panel & Water Temperatures'}}}
   });
@@ -4659,11 +4875,12 @@ function renderTemperatureTable(monthlyData){
   const container = document.getElementById("temperatureDataTable");
   if (!monthlyData?.length){container.innerHTML="";return;}
   const mn = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  let html = `<table class="result-table"><tr><th>Month</th><th style="text-align:right;">Daytime Tin (\u00B0C)</th><th style="text-align:right;">Daytime Tout (\u00B0C)</th><th style="text-align:right;">PV-only panel (\u00B0C)</th><th style="text-align:right;">PVT panel (\u00B0C)</th><th style="text-align:right;">Cooling (\u00B0C)</th></tr>`;
+  let html = `<table class="result-table"><tr><th>Month</th><th style="text-align:right;">Daytime Tin (\u00B0C)</th><th style="text-align:right;">Daytime Tout (\u00B0C)</th><th style="text-align:right;">Water rise \u0394T (\u00B0C)</th><th style="text-align:right;">PV-only panel (\u00B0C)</th><th style="text-align:right;">PVT panel (\u00B0C)</th><th style="text-align:right;">Cooling (\u00B0C)</th></tr>`;
   monthlyData.forEach(row => {
     if (row.month === 0) return;
     const cooling = (row.PVPanel_C_avg > 0 && row.PVTPanel_C_avg > 0) ? row.PVPanel_C_avg - row.PVTPanel_C_avg : null;
-    html += `<tr><td>${mn[row.month]}</td><td class="num">${row.Tin_C_avg > 0 ? row.Tin_C_avg.toFixed(1) : '-'}</td><td class="num">${row.Tout_C_avg > 0 ? row.Tout_C_avg.toFixed(1) : '-'}</td><td class="num">${row.PVPanel_C_avg > 0 ? row.PVPanel_C_avg.toFixed(1) : '-'}</td><td class="num">${row.PVTPanel_C_avg > 0 ? row.PVTPanel_C_avg.toFixed(1) : '-'}</td><td class="num">${cooling != null ? cooling.toFixed(1) : '-'}</td></tr>`;
+    const waterRise = getMonthlyWaterTemperatureRise(row);
+    html += `<tr><td>${mn[row.month]}</td><td class="num">${row.Tin_C_avg > 0 ? row.Tin_C_avg.toFixed(1) : '-'}</td><td class="num">${row.Tout_C_avg > 0 ? row.Tout_C_avg.toFixed(1) : '-'}</td><td class="num">${waterRise != null ? `${waterRise >= 0 ? '+' : ''}${waterRise.toFixed(1)}` : '-'}</td><td class="num">${row.PVPanel_C_avg > 0 ? row.PVPanel_C_avg.toFixed(1) : '-'}</td><td class="num">${row.PVTPanel_C_avg > 0 ? row.PVTPanel_C_avg.toFixed(1) : '-'}</td><td class="num">${cooling != null ? cooling.toFixed(1) : '-'}</td></tr>`;
   });
   container.innerHTML = html + `</table>`;
 }
@@ -5071,7 +5288,7 @@ function showProcessCheckboxes(industryKey, animate=true){
     container.appendChild(div);
   }
   showIndustryPanel(profilePanel, "block", 0, animate);
-  showIndustryPanel(panel, "block", 60, animate);
+  showIndustryPanel(panel, "block", 140, animate);
 }
 
 function getSelectedProcessKeys(){
@@ -5152,7 +5369,7 @@ function syncIndustrySelectionUI(industryKey, resetThroughput=false, animate=tru
     [laundryPanel, industryKey === "commercial_laundry"]
   ];
   assumptionPanels.forEach(([panel, isActive]) => {
-    if (isActive) showIndustryPanel(panel, "block", 120, animate);
+    if (isActive) showIndustryPanel(panel, "block", 70, animate);
     else hideIndustryPanel(panel);
   });
 
@@ -5169,9 +5386,9 @@ function syncIndustrySelectionUI(industryKey, resetThroughput=false, animate=tru
       inp.style.display = "";
       if (animate){
         lbl.classList.remove("reveal"); void lbl.offsetHeight;
-        lbl.style.animationDelay = "120ms"; lbl.classList.add("reveal");
+        lbl.style.animationDelay = "60ms"; lbl.classList.add("reveal");
         inp.classList.remove("reveal"); void inp.offsetHeight;
-        inp.style.animationDelay = "120ms"; inp.classList.add("reveal");
+        inp.style.animationDelay = "60ms"; inp.classList.add("reveal");
       } else {
         lbl.classList.remove("reveal");
         inp.classList.remove("reveal");
@@ -5953,6 +6170,12 @@ async function calcAnnualPVT(){
     const daytimeToutAvg = avgOf(daytimeRows.filter(r => r.Tout_C > 0), "Tout_C");
     const daytimeAmbientAvg = avgOf(daytimeRows, "ta_C");
     const daytimeCoolingAvg = (isFiniteNumber(daytimePvPanelAvg) && isFiniteNumber(daytimePvtPanelAvg)) ? daytimePvPanelAvg - daytimePvtPanelAvg : null;
+    const daytimeWaterRiseValues = daytimeRows
+      .filter(row => isFiniteNumber(row.Tin_C) && isFiniteNumber(row.Tout_C) && row.Tout_C > 0)
+      .map(row => row.Tout_C - row.Tin_C);
+    const daytimeWaterRiseAvg = daytimeWaterRiseValues.length
+      ? daytimeWaterRiseValues.reduce((sum, value) => sum + value, 0) / daytimeWaterRiseValues.length
+      : null;
     // Below ~20 C the delivered water is marginal for most heating duties; slowing the
     // coolant flow raises outlet temperature (with a small thermal-energy trade-off).
     const LOW_OUTLET_THRESHOLD_C = 20;
@@ -5992,7 +6215,7 @@ async function calcAnnualPVT(){
       ? `${gainSign}${pvtElectricGainPct.toFixed(1)}% vs PV-only`
       : "Cooling effect disabled";
     const outletTempNote = isFiniteNumber(daytimeToutAvg)
-      ? `Avg daytime air ${isFiniteNumber(daytimeAmbientAvg) ? daytimeAmbientAvg.toFixed(1) : "-"}&deg;C${outletTooLow ? " - below 20&deg;C" : ""}`
+      ? `Inlet ${isFiniteNumber(daytimeTinAvg) ? daytimeTinAvg.toFixed(1) : "-"}&deg;C | Rise ${isFiniteNumber(daytimeWaterRiseAvg) && daytimeWaterRiseAvg >= 0 ? "+" : ""}${isFiniteNumber(daytimeWaterRiseAvg) ? daytimeWaterRiseAvg.toFixed(1) : "-"}&deg;C${outletTooLow ? " | Below 20&deg;C" : ""}`
       : "";
     let html = `
       <div class="output-card output-card-annual" style="position:relative;">
@@ -6074,6 +6297,7 @@ async function calcAnnualPVT(){
         <tr><td><b>Daytime PVT panel temperature</b></td><td class="num">${fmtE(daytimePvtPanelAvg,1,'&deg;C')}</td></tr>
         <tr><td><b>Average PVT cooling</b></td><td class="num">${fmtE(daytimeCoolingAvg,1,'&deg;C')}</td></tr>
         <tr><td><b>Daytime Tin / Tout</b></td><td class="num">${fmtE(daytimeTinAvg,1,'&deg;C')} / ${fmtE(daytimeToutAvg,1,'&deg;C')}</td></tr>
+        <tr><td><b>Average water temperature rise (Tout - Tin)</b></td><td class="num">${isFiniteNumber(daytimeWaterRiseAvg) && daytimeWaterRiseAvg >= 0 ? '+' : ''}${fmtE(daytimeWaterRiseAvg,1,'&deg;C')}</td></tr>
       </table>
       <h4 style="margin:14px 0 6px;color:#1a5276;">Economic Analysis</h4>
       <table class="result-table">
@@ -6103,7 +6327,8 @@ async function calcAnnualPVT(){
       exportMetric("PV-only baseline", E_pv_standalone_kWh, "kWh AC", 1, `Estimated net AC; temperature-corrected gross DC ${formatExportNumber(E_pv_standalone_dc_kWh,1)} kWh`),
       exportMetricText("Electricity from cooling", `${gainSign}${formatExportNumber(Math.abs(pvtElectricGainKWh), 1)} kWh`, coolingNote),
       exportMetric("Total output", totalEnergy, "kWh", 1, "Electrical + thermal combined"),
-      exportMetric("Avg daytime outlet temp", daytimeToutAvg, "degC", 1, `Avg daytime air ${formatExportValue(exportMetric("", daytimeAmbientAvg, "degC", 1))}`),
+      exportMetric("Avg daytime outlet temp", daytimeToutAvg, "degC", 1, `Inlet ${formatExportValue(exportMetric("", daytimeTinAvg, "degC", 1))}`),
+      exportMetric("Avg water temperature rise", daytimeWaterRiseAvg, "degC", 1, "Daytime outlet minus inlet"),
       exportMetric("PVT supply value", netAnnualBenefit, "", 2, "Upper-bound annual value (100% utilisation)", { prefix:"$", suffix:" /yr" })
     ];
     const annualTables = [
@@ -6123,13 +6348,16 @@ async function calcAnnualPVT(){
       {
         title: "Panel Temperature Model",
         rows: [
-          ["PV/PVT electrical model", tempModelText.replace(/<[^>]+>/g, "")],
+          ["PV/PVT electrical model", pvTempCorrEnable
+            ? `NOCT ${pvNoctC.toFixed(1)}\u00B0C; temperature coefficient ${(pvTempCoeffPerC*100).toFixed(2)}%/\u00B0C; STC ${PV_STC_CELL_TEMP_C}\u00B0C; cooling ${pvtCoolingSensitivityEnable ? "included" : "disabled"}; net AC reported`
+            : `Temperature correction disabled; cooling ${pvtCoolingSensitivityEnable ? "included" : "disabled"}; net AC reported`],
           ["Daytime window", `10:00-17:00, G > ${PV_DAYTIME_TEMP_MIN_IRRADIANCE} W/m2`],
           ["Average daytime air temperature", formatExportValue(exportMetric("", daytimeAmbientAvg, "degC", 1))],
           ["Daytime PV-only panel temperature", formatExportValue(exportMetric("", daytimePvPanelAvg, "degC", 1))],
           ["Daytime PVT panel temperature", formatExportValue(exportMetric("", daytimePvtPanelAvg, "degC", 1))],
           ["Average PVT cooling", formatExportValue(exportMetric("", daytimeCoolingAvg, "degC", 1))],
-          ["Daytime Tin / Tout", `${formatExportValue(exportMetric("", daytimeTinAvg, "degC", 1))} / ${formatExportValue(exportMetric("", daytimeToutAvg, "degC", 1))}`]
+          ["Daytime Tin / Tout", `${formatExportValue(exportMetric("", daytimeTinAvg, "degC", 1))} / ${formatExportValue(exportMetric("", daytimeToutAvg, "degC", 1))}`],
+          ["Average water temperature rise (Tout - Tin)", formatExportValue(exportMetric("", daytimeWaterRiseAvg, "degC", 1, "", { prefix:daytimeWaterRiseAvg >= 0 ? "+" : "" }))]
         ]
       },
       {
@@ -7076,7 +7304,10 @@ async function calcAnnualPVT(){
         opexAnnualAud: opexAnnual,
         lcoeAudPerKWh: lcoe,
         lcohAudPerKWh: lcoh,
-        combinedLcoeAudPerKWh: lcoeCombo
+        combinedLcoeAudPerKWh: lcoeCombo,
+        daytimeInletTempC: daytimeTinAvg,
+        daytimeOutletTempC: daytimeToutAvg,
+        daytimeWaterTempRiseC: daytimeWaterRiseAvg
       },
       hourly: {
         usedRows: used,
@@ -7122,6 +7353,19 @@ async function calcAnnualPVT(){
     }
 
     const monthlyAll = aggregateMonthlyAll(timeSeries, BASE_YEAR);
+    if (CURRENT_CALC_RESULT){
+      CURRENT_CALC_RESULT.monthlyResults = monthlyAll.map(row => ({
+        month: row.month,
+        pvtElectricKWh: row.pv_kWh,
+        pvOnlyKWh: row.pvOnly_kWh,
+        pvtThermalKWh: row.th_kWh,
+        inletTempC: row.Tin_C_avg,
+        outletTempC: row.Tout_C_avg,
+        waterTempRiseC: getMonthlyWaterTemperatureRise(row),
+        pvOnlyPanelTempC: row.PVPanel_C_avg,
+        pvtPanelTempC: row.PVTPanel_C_avg
+      }));
+    }
     renderMonthlyAllTable(monthlyAll);
     renderMonthlyChart(monthlyAll);
     renderPvComparisonChart(monthlyAll);

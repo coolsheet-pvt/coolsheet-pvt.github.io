@@ -19,9 +19,9 @@
     .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:15px 28px;border-bottom:1px solid var(--line);background:#fff}
     .topbar a{font-size:13px;font-weight:700;text-decoration:none}
     .toplinks{display:flex;gap:14px;flex-wrap:wrap;justify-content:flex-end}
-    .hero{padding:42px 34px 30px;background:linear-gradient(130deg,#082f49 0%,#0a4e69 60%,#126b74 100%);color:#fff}
+    .hero{padding:34px 34px 27px;background:linear-gradient(130deg,#082f49 0%,#0a4e69 60%,#126b74 100%);color:#fff}
     .eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;opacity:.78}
-    h1{font-size:clamp(30px,5vw,52px);line-height:1.08;max-width:900px;margin:9px 0 13px}
+    h1{font-size:clamp(30px,5vw,46px);line-height:1.08;max-width:850px;margin:9px 0 10px}
     .lead{max-width:860px;font-size:17px;margin:0;color:#e7f4f7}
     .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
     .chip{font-size:12px;padding:6px 10px;border:1px solid rgba(255,255,255,.3);border-radius:999px;background:rgba(255,255,255,.08)}
@@ -33,7 +33,7 @@
     .verdict-side{padding:22px;background:var(--wash);border:1px solid var(--line)}
     .verdict-side strong{display:block;font-size:35px;line-height:1;color:var(--navy);margin:6px 0}
     .verdict-side span,.verdict-side small{display:block;color:var(--muted)}
-    .stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:20px 0 30px}
+    .stat-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:20px 0 30px}
     .stat{padding:18px;border:1px solid var(--line);background:#fff}
     .stat span{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
     .stat strong{display:block;font-size:27px;line-height:1.2;margin:6px 0;color:var(--navy)}
@@ -50,6 +50,7 @@
     .chart-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;min-width:0}
     .chart-card{border:1px solid var(--line);padding:18px;background:#fff;min-width:0}
     .chart-card.wide{grid-column:1/-1}
+    .chart-card.primary-check{max-width:780px;margin:0 auto;padding:20px 22px;border-color:#b9d4c7;background:#fbfefd}
     .chart-card h3{font-size:16px;margin:0 0 5px;color:var(--navy)}
     .chart-card p{font-size:12.5px;color:var(--muted);margin:0 0 11px}
     .chart{height:315px;position:relative;min-width:0;width:100%}
@@ -66,8 +67,8 @@
     .calibrator{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(250px,.8fr);gap:18px;padding:22px;border:1px solid #e2c9b9;background:#fff8f3}
     .calibrator h3{margin:0 0 6px;color:#713512}
     .calibrator p{font-size:13px;color:#5d4a3e;margin:0 0 15px}
-    .control-row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center}
-    input[type=range]{width:100%;accent-color:var(--orange)}
+    .control-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center}
+    input[type=range]{min-width:0;width:100%;accent-color:var(--orange)}
     output{min-width:62px;text-align:center;font-weight:700;color:#713512}
     .cal-result{display:flex;flex-direction:column;justify-content:center;padding:18px;background:#fff;border:1px solid #ead7ca}
     .cal-result span{font-size:12px;color:var(--muted)}
@@ -80,14 +81,19 @@
     .source-box{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;padding:18px;background:#f6f8fa;border:1px solid var(--line);font-size:12.5px;color:var(--muted)}
     .source-links{display:flex;gap:12px;flex-wrap:wrap;justify-content:flex-end}
     .status{font-size:12px;color:var(--muted);margin-top:8px}
+    .chart-details,.technical-evidence{margin-top:18px;border:1px solid var(--line);background:#f8fafb}
+    .chart-details>summary,.technical-evidence>summary{min-height:46px;padding:13px 16px;cursor:pointer;color:var(--navy);font-weight:700}
+    .chart-details-body,.technical-evidence-body{padding:0 16px 18px}
+    .technical-evidence{margin-top:34px}.technical-evidence>summary{font-size:16px}
+    .technical-evidence-body>section:first-child{margin-top:14px}
     footer{padding:22px 34px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);background:#f7fafb}
     @media(max-width:850px){
       .verdict,.calibrator{grid-template-columns:1fr}.stat-grid{grid-template-columns:1fr 1fr}
       .boundary-grid,.finding-grid,.chart-grid{grid-template-columns:1fr}.chart-card.wide{grid-column:auto}
     }
     @media(max-width:560px){
-      .topbar{padding:13px 18px;align-items:flex-start}.toplinks{gap:8px}.hero{padding:34px 20px 26px}
-      main{padding:22px 18px 40px}.stat-grid{grid-template-columns:1fr}.chart{height:280px}
+      .topbar{padding:13px 18px;align-items:flex-start}.topbar a,.chart-details>summary,.technical-evidence>summary{display:flex;align-items:center;min-height:44px}.toplinks{gap:8px}.hero{padding:34px 20px 26px}
+      main{padding:22px 18px 40px}.stat-grid{grid-template-columns:1fr}.chart{height:270px}.chart-card.primary-check{padding:16px}
       .source-box{flex-direction:column}.source-links{justify-content:flex-start}footer{padding:20px 18px}
     }
   </style>
@@ -98,20 +104,16 @@
     <a href="../index.html">&larr; Back to calculator</a>
     <div class="toplinks">
       <a href="validation-hub.html">Validation</a>
-      <a href="../validation/field-data/soac-mar-2026/CoolSheet_Dashboard_SOAC_Mar2026_WindCorrected.htm" target="_blank" rel="noopener">Open supplied dashboard</a>
-      <a href="../validation/field-data/soac-mar-2026/soac_timeseries.csv">5-minute field data</a>
     </div>
   </nav>
 
   <header class="hero">
     <div class="eyebrow">Field validation case study</div>
-    <h1>What happened at SOAC, and what the calculator gets right</h1>
-    <p class="lead">A transparent comparison between CoolSheet's measured PVT performance at Sydney Olympic Aquatic Centre and this calculator's thermal models. The central result is not one pass/fail number: it is the boundary between collector physics, plant operation, and annual supply potential.</p>
+    <h1>SOAC field result compared with CoolSheet</h1>
+    <p class="lead">A 19-day check of measured PVT heat against the calculator's thermal models.</p>
     <div class="chips" aria-label="Study scope">
       <span class="chip">Data supplied by CoolSheet</span>
       <span class="chip">2&ndash;20 March 2026</span>
-      <span class="chip">207 modules</span>
-      <span class="chip">534.7 m&sup2;</span>
       <span class="chip">5-minute monitoring</span>
     </div>
   </header>
@@ -119,8 +121,8 @@
   <main>
     <div class="verdict">
       <div class="verdict-main">
-        <h2>Verdict: the core thermal equation is credible; the operating boundary needs work.</h2>
-        <p>With measured irradiance, inlet and ambient temperatures, the documented 2 m/s site wind, and the recorded pump-on schedule, the calculator's default Model A estimates <b id="verdictModelA">5.52 MWh</b> versus <b>5.89 MWh</b> processed field energy. That is about <b id="verdictGap">6.2% low</b>. The much larger website-versus-field gap occurs because the public calculation estimates available solar supply under typical weather, while the field total records heat actually delivered by an intermittently operated plant.</p>
+        <h2>Model A was close under measured conditions.</h2>
+        <p>Using measured weather, inlet temperature and operating times, Model A estimated <b id="verdictModelA">5.52 MWh</b> versus <b>5.89 MWh</b> measured heat. That is about <b id="verdictGap">6.2% low</b>.</p>
       </div>
       <div class="verdict-side">
         <span>Matched-input Model A error</span>
@@ -130,53 +132,46 @@
     </div>
 
     <div class="stat-grid" aria-label="Headline field results">
-      <div class="stat"><span>Measured delivered heat</span><strong>5,888 kWh</strong><small>processed total, 19 days</small></div>
-      <div class="stat"><span>Website default</span><strong>15,996 kWh</strong><small>same dates in a typical weather year</small></div>
-      <div class="stat"><span>Array generating</span><strong>110.8 h</strong><small>24.3% of the 456-hour campaign</small></div>
-      <div class="stat"><span>Measured median efficiency</span><strong>19.6%</strong><small>versus certified optical maximum 41.1%</small></div>
+      <div class="stat"><span>Measured heat</span><strong>5.89 MWh</strong><small>processed total, 19 days</small></div>
+      <div class="stat"><span>Matched Model A</span><strong>5.52 MWh</strong><small>same measured inputs and operation</small></div>
+      <div class="stat"><span>Difference</span><strong>6.2% low</strong><small>promising preliminary agreement</small></div>
     </div>
 
-    <section aria-labelledby="boundariesTitle">
-      <h2 id="boundariesTitle">Three different questions</h2>
-      <p class="section-intro">Keeping these boundaries separate prevents the short campaign from being used to over-calibrate a national annual model.</p>
-      <div class="boundary-grid">
-        <article class="boundary field">
-          <h3>1. What did the plant deliver?</h3>
-          <p>Actual March weather, pool-return inlet temperatures, real flow, pump starts, outages, transients, soiling, plumbing losses and controls. Answer: 5,888.4 kWh of processed thermal energy.</p>
-        </article>
-        <article class="boundary">
-          <h3>2. What supply did the website estimate?</h3>
-          <p>Typical-year weather, generic availability and continuous harvesting whenever useful sun is present. Answer: 15,995.6 kWh with the default collector, 22,915.1 kWh with the SOAC certified coefficients.</p>
-        </article>
-        <article class="boundary check">
-          <h3>3. Does the equation respond sensibly?</h3>
-          <p>Drive the equation with measured field conditions and only count recorded pump-on periods. This isolates thermal physics from TMY weather and plant availability. Model A then lands within about 6% of processed energy.</p>
-        </article>
-      </div>
-    </section>
-
     <section aria-labelledby="energyTitle">
-      <h2 id="energyTitle">Energy comparison</h2>
-      <p class="section-intro">The first chart exposes the full website boundary mismatch. The second holds weather, inlet temperature and operation closer to the field so the thermal equations can be judged more fairly.</p>
-      <div class="chart-grid">
-        <article class="chart-card">
-          <h3>Public calculator result vs delivered field heat</h3>
-          <p>Same calendar dates and area, but not the same weather or operating availability.</p>
-          <div class="chart"><canvas id="potentialChart" role="img" aria-label="Field heat compared with website default and SOAC coefficient estimates"></canvas></div>
-        </article>
-        <article class="chart-card">
-          <h3>Matched-input thermal equation check</h3>
-          <p>Measured G, T<sub>in</sub>, T<sub>amb</sub> and recorded pump-on periods; Model B also uses measured flow.</p>
-          <div class="chart"><canvas id="matchedChart" role="img" aria-label="Field heat compared with thermal model predictions under measured conditions"></canvas></div>
-        </article>
-        <article class="chart-card wide">
-          <h3>Measured daily thermal energy</h3>
-          <p>The plant had five days at or near zero and a best day of 685.7 kWh. A typical-year supply model does not contain these site-specific outages.</p>
-          <div class="chart short"><canvas id="dailyChart" role="img" aria-label="Measured daily SOAC thermal energy from 2 to 20 March 2026"></canvas></div>
-        </article>
+      <h2 id="energyTitle">Measured heat vs Model A</h2>
+      <p class="section-intro">This is the fairest comparison because both bars use the measured site conditions and recorded operating periods.</p>
+      <article class="chart-card primary-check">
+        <h3>Matched-input field check</h3>
+        <p>Field measurement and Model A prediction for the same 19-day period.</p>
+        <div class="chart"><canvas id="matchedChart" role="img" aria-label="Field heat compared with thermal model predictions under measured conditions"></canvas></div>
+      </article>
+      <div class="finding-grid" style="margin-top:16px">
+        <article class="finding good"><h3>What this supports</h3><p>Model A responds credibly when it receives measured weather, inlet temperature and operating hours.</p></article>
+        <article class="finding caution"><h3>Why the public result is higher</h3><p>The public calculator estimates available supply. The field data records heat delivered by a plant that was not always operating.</p></article>
+        <article class="finding"><h3>What is still unknown</h3><p>One site and 19 days cannot validate annual output, other industries, PV cooling gain or long-term performance.</p></article>
       </div>
+      <details class="chart-details">
+        <summary>Show the operating-boundary and daily charts</summary>
+        <div class="chart-details-body chart-grid">
+          <article class="chart-card">
+            <h3>Public supply estimate vs delivered heat</h3>
+            <p>Useful for showing the effect of different weather and plant availability, not for judging the equation alone.</p>
+            <div class="chart"><canvas id="potentialChart" role="img" aria-label="Field heat compared with website default and SOAC coefficient estimates"></canvas></div>
+          </article>
+          <article class="chart-card">
+            <h3>Measured heat by day</h3>
+            <p>Five days were at or near zero, showing the effect of actual site operation.</p>
+            <div class="chart"><canvas id="dailyChart" role="img" aria-label="Measured daily SOAC thermal energy from 2 to 20 March 2026"></canvas></div>
+          </article>
+        </div>
+      </details>
       <div id="dataStatus" class="status" data-status="loading">Checking the derived values against the preserved source data&hellip;</div>
     </section>
+
+    <details class="technical-evidence">
+      <summary>Technical analysis, sensitivity and source files</summary>
+      <div class="technical-evidence-body">
+        <p class="section-intro"><b>Technical interpretation:</b> the core thermal equation is credible under matched measured inputs, while the public supply and field-delivery boundaries remain different.</p>
 
     <section aria-labelledby="detailTitle">
       <h2 id="detailTitle">Where the discrepancies come from</h2>
@@ -209,11 +204,6 @@
           <p>Every third operating point is shown for legibility. Transient points above &eta;<sub>0</sub> are physically possible during thermal-mass discharge but are not steady-state validation points.</p>
           <div class="chart tall"><canvas id="scatterChart" role="img" aria-label="Measured efficiency versus irradiance operating points"></canvas></div>
         </article>
-      </div>
-      <div class="finding-grid" style="margin-top:16px">
-        <article class="finding good"><h3>What the model does well</h3><p>It responds in the right direction to irradiance and temperature difference. Under measured inputs and operation, default Model A closes the processed energy total to within roughly 6%.</p></article>
-        <article class="finding caution"><h3>What it misses</h3><p>The annual website has no aquatic plant availability model, pump schedule, shutdowns, warm pool-return inlet boundary, or explicit field delivery losses. These dominate the 2.7&times; gap.</p></article>
-        <article class="finding"><h3>What remains unvalidated</h3><p>The 19-day thermal campaign does not validate annual performance, other climates or industries, winter operation, PV electricity, the electrical cooling heuristic, or long-term degradation.</p></article>
       </div>
     </section>
 
@@ -264,6 +254,8 @@
         </div>
       </div>
     </section>
+      </div>
+    </details>
   </main>
 
   <footer>This is a field-validation case study, not certification of the complete annual calculator. All conclusions are limited to the stated site, monitored period, measurement boundary and available sensors.</footer>
@@ -291,7 +283,7 @@
   }
 
   barChart("potentialChart",["Field delivered","Website default","Website - SOAC coefficients"],[FIELD,WEBSITE_DEFAULT,WEBSITE_SOAC],[C.field,C.blue,C.orange]);
-  matchedChart=barChart("matchedChart",["Field processed","Model A matched","Model B certified","Model B wind-adjusted"],[FIELD,FALLBACK.modelA,FALLBACK.modelB,FALLBACK.modelBWind],[C.field,C.blue,C.orange,C.purple]);
+  matchedChart=barChart("matchedChart",["Measured field heat","Model A"],[FIELD,FALLBACK.modelA],[C.field,C.blue]);
   new Chart(document.getElementById("efficiencyChart"),{
     type:"bar",
     data:{labels:["Field median","Field bright-sun median","ISO model at same conditions","Certified optical max"],datasets:[{data:[.196,.202,.321,.4112],backgroundColor:[C.field,C.field,C.blue,C.grey],borderWidth:0,maxBarThickness:44}]},
@@ -331,7 +323,7 @@
     document.getElementById("modelBErrorCell").textContent=fmtPct(pct(result.modelB));
     document.getElementById("modelBWindEnergyCell").textContent=result.modelBWind.toLocaleString(undefined,{maximumFractionDigits:1})+" kWh";
     document.getElementById("modelBWindErrorCell").textContent=fmtPct(pct(result.modelBWind));
-    matchedChart.data.datasets[0].data=[FIELD,result.modelA,result.modelB,result.modelBWind]; matchedChart.update();
+    matchedChart.data.datasets[0].data=[FIELD,result.modelA]; matchedChart.update();
     FALLBACK.modelA=result.modelA; FALLBACK.modelB=result.modelB; FALLBACK.modelBWind=result.modelBWind;
     updateFactor();
   }
@@ -377,6 +369,9 @@
       status.dataset.status="fallback";
     }
   }
+  document.querySelectorAll("details").forEach(details=>details.addEventListener("toggle",()=>{
+    if(details.open)requestAnimationFrame(()=>window.dispatchEvent(new Event("resize")));
+  }));
   if(location.protocol==="file:"){
     renderScatter([]);
     const status=document.getElementById("dataStatus");

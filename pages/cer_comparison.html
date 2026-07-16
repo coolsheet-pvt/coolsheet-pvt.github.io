@@ -3,18 +3,21 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>CER DomDecks Comparison Tool</title>
+  <title>Mains-water Validation | CoolSheet</title>
   <style>
-    body{font-family:Arial,Helvetica,sans-serif;margin:18px;color:#111;}
-    .wrap{max-width:980px;}
-    .panel{padding:12px;border:1px solid #ddd;background:#fafafa;border-radius:8px;margin-top:10px;}
+    :root{--navy:#083d5b;--blue:#267fc1;--green:#18734e;--muted:#5d7080;--line:#d6dfea;--wash:#f4f7fa;}
+    *{box-sizing:border-box}
+    html,body{max-width:100%;overflow-x:hidden}
+    body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:24px 18px 50px;color:#173047;background:var(--wash);line-height:1.5;}
+    .wrap{max-width:980px;margin:0 auto;}
+    .panel{padding:18px;border:1px solid var(--line);background:#fff;border-radius:8px;margin-top:14px;}
     .note{font-size:12px;color:#444;line-height:1.45;}
     .grid{display:grid;grid-template-columns:1.2fr 1fr;gap:10px 16px;align-items:end;}
     .zone-grid{grid-template-columns:minmax(320px,460px) 1fr;}
     label{font-size:13px;}
     select{width:100%;padding:8px;box-sizing:border-box;}
-    .chart-panel{margin-top:10px;padding:12px;border:1px solid #d6dfea;background:#fff;border-radius:8px;}
-    .chart-box{position:relative;width:100%;height:360px;}
+    .chart-panel{min-width:0;margin-top:10px;padding:12px;border:1px solid #d6dfea;background:#fff;border-radius:8px;overflow:hidden;}
+    .chart-box{position:relative;min-width:0;width:100%;height:360px;}.chart-box canvas{max-width:100%!important;width:100%!important}
     .result-table{width:100%;border-collapse:collapse;margin:8px 0;font-size:13px;}
     .result-table th,.result-table td{padding:6px 10px;text-align:left;border-bottom:1px solid #ddd;vertical-align:top;}
     .result-table th{background:#f5f5f5;font-weight:600;}
@@ -43,8 +46,14 @@
     .info-box-body{padding:0 12px 12px;}
     button{padding:8px 12px;cursor:pointer;}
     .source-row > div:first-child{font-size:14px;}
+    .page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}.page-head h1{margin:3px 0 4px;color:var(--navy);font-size:30px}.page-head p{margin:0;color:var(--muted);font-size:14px}.back-links{display:flex;gap:12px;flex-wrap:wrap}.back-links a{font-size:13px;color:#1a5f9a;text-decoration:none;font-weight:700;white-space:nowrap}
+    .summary-card{margin-top:16px;padding:16px;border-left:5px solid var(--green);background:#edf7f2}.summary-card strong{display:block;color:#0d563a;font-size:17px}.summary-card p{margin:4px 0 0;color:#3d5f4e;font-size:13px}.zone-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;max-width:430px;margin-top:12px}.zone-strip span{display:grid;place-items:center;min-height:32px;border-radius:5px;background:#d8eee3;color:#145c40;font-size:11px;font-weight:800}
+    .simple-control{display:grid;grid-template-columns:minmax(230px,420px) minmax(0,1fr);gap:16px;align-items:start}.live-check{border:0;background:#f6f9fb}.live-check summary,.expert-settings>summary,.chart-key>summary{min-height:44px;padding:11px 13px;cursor:pointer;color:var(--navy);font-size:13px;font-weight:700}.live-check-body,.expert-body{padding:0 13px 13px}
+    .expert-settings{padding:0}.expert-settings>summary{font-size:14px}.chart-key{margin-top:10px;border-top:1px solid var(--line)}
+    .result-summary h4{color:var(--navy);font-size:18px!important}.result-summary .highlight-box{background:#edf7f2;border-color:#b8dac9}
+    .rmse-selected{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 18px;align-items:center}.rmse-selected strong{grid-row:1/3;color:#0d563a;font-size:34px;line-height:1}.rmse-selected span{font-weight:700;color:#244b3a}.rmse-selected small{color:#536d61}
     @media (max-width:780px){
-      .grid{grid-template-columns:1fr;}
+      body{padding:14px 10px 40px}.grid,.simple-control{grid-template-columns:1fr;}.page-head{flex-direction:column}.page-head h1{font-size:26px}.back-links a{display:flex;align-items:center;min-height:44px}.zone-strip{max-width:none}select,button{min-height:44px}
       .chart-box{height:320px;}
       .source-option-grid{grid-template-columns:1fr;}
       .chart-compare-grid{grid-template-columns:1fr;}
@@ -69,13 +78,17 @@
 <body>
 <div class="wrap">
   <div class="panel">
-    <div style="display:flex;align-items:baseline;flex-wrap:wrap;gap:8px 16px;margin-bottom:10px;">
-      <div style="margin:0 0 10px;"><a href="../index.html" style="font-size:13px;color:#1a5f9a;text-decoration:none;font-weight:600;">&larr; Back to calculator</a></div><h1 style="font-size:20px;margin:0;">CER DomDecks Comparison Tool</h1>
-      <span style="background:#1f6fb2;color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;white-space:nowrap;">5 AS/NZS 4234 Climate Zones</span>
-      <span style="background:#2e7d32;color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;white-space:nowrap;">Weather input: CER TMY + PVGIS (our API that pulls weather)</span>
+    <div class="page-head">
+      <div><h1>Mains-water validation</h1><p>See how the BC-Aus inlet-water model follows Australian monthly reference temperatures.</p></div>
+      <div class="back-links"><a href="validation-hub.html">Validation</a><a href="../index.html">Back to calculator</a></div>
+    </div>
+    <div class="summary-card">
+      <strong>Five Australian climate zones cross-checked</strong>
+      <p>Choose a zone below. The main graph compares the monthly model line with the Australian CER reference.</p>
+      <div class="zone-strip" aria-label="Five climate zones checked"><span>Zone 1</span><span>Zone 2</span><span>Zone 3</span><span>Zone 4</span><span>Zone 5</span></div>
     </div>
     <details class="info-box">
-      <summary>Info</summary>
+      <summary>What is being compared?</summary>
       <div class="info-box-body note">
         <p style="margin:0 0 6px;"><b>AS/NZS 4234:</b> The Australian/New Zealand standard for solar hot water system certification. Defines 5 climate zones and reference mains temperatures used by the Clean Energy Regulator (CER) for STC calculations.</p>
         <p style="margin:0 0 6px;"><b>CER TMY (solid lines):</b> Formula-only check - uses CER's own weather files, same data that produced the green reference line. Isolates formula bias.</p>
@@ -88,23 +101,27 @@
   </div>
 
   <div class="panel">
-    <div style="display:grid;grid-template-columns:minmax(260px,400px) 1fr;gap:10px 20px;align-items:start;">
+    <div class="simple-control">
       <div>
-        <label for="zoneSelect" style="font-size:13px;font-weight:600;display:block;margin-bottom:5px;">AS/NZS 4234 Climate Zone</label>
+        <label for="zoneSelect" style="font-size:13px;font-weight:700;display:block;margin-bottom:5px;">Choose a climate zone</label>
         <select id="zoneSelect"></select>
       </div>
-      <div>
-        <div style="font-size:13px;font-weight:600;margin-bottom:5px;">PVGIS weather input</div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <button id="fetchPvgisBtn" type="button" class="btn-primary" style="font-size:12px;padding:6px 10px;">Fetch this zone</button>
-          <button id="fetchAllPvgisBtn" type="button" class="btn-secondary" style="font-size:12px;padding:6px 10px;">Fetch all 5 zones</button>
-          <span id="pvgisStatus" class="note" style="display:none;"></span>
+      <details class="live-check">
+        <summary>Optional live PVGIS weather check</summary>
+        <div class="live-check-body">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <button id="fetchPvgisBtn" type="button" class="btn-primary" style="font-size:12px;padding:6px 10px;">Fetch this zone</button>
+            <button id="fetchAllPvgisBtn" type="button" class="btn-secondary" style="font-size:12px;padding:6px 10px;">Fetch all 5 zones</button>
+            <span id="pvgisStatus" class="note" style="display:none;"></span>
+          </div>
         </div>
-      </div>
+      </details>
     </div>
   </div>
 
-<div class="panel">
+<details class="panel expert-settings">
+  <summary>Advanced model settings</summary>
+  <div class="expert-body">
     <h4 style="margin:0 0 4px;font-size:16px;">BC-Aus constants <span style="font-size:12px;font-weight:400;color:#555;">- shared national fit replacing the US Burch-Christensen defaults, fitted to Australian CER data via <code>fit_bc_aus.py</code></span></h4>
     <p class="note" style="margin:6px 0 12px;line-height:1.6;">
       A Python script (<code>fit_bc_aus.py</code>) adjusts all five parameters simultaneously - <em>offsetF, ratio_c0, ratio_c1, lag_c0, lag_c1</em> - to find the combination that best matches the Australian CER reference temperatures across all 60 data points (5 zones × 12 months) from the CER DomDecks V30h climate files.
@@ -140,33 +157,40 @@
     </div>
     <div id="bcAusStatusLine" class="note" style="margin-top:10px;"></div>
   </div>
+</details>
 
   
-  <div class="panel">
-    <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Visible lines</div>
+  <details class="panel expert-settings">
+    <summary>Choose additional chart lines</summary>
+    <div class="expert-body">
     <div class="toggle-check-list">
       <label class="toggle-check"><input id="showCerRef"   type="checkbox" checked /><span style="color:#2e7d32;font-weight:700;">&#9644; CER DomDecks reference</span></label>
-      <label class="toggle-check"><input id="showBcAusCer" type="checkbox" checked /><span style="color:#7b1fa2;">&#9644; Australian recalibrated version of Burch-Christensen CER DATA</span></label>
-      <label class="toggle-check"><input id="showPvgis"    type="checkbox" checked /><span style="color:#007c7c;">&#9148; Australian recalibrated version of Burch-Christensen API DATA</span></label>
+      <label class="toggle-check"><input id="showBcAusCer" type="checkbox" /><span style="color:#7b1fa2;">&#9644; Australian recalibrated version of Burch-Christensen CER DATA</span></label>
+      <label class="toggle-check"><input id="showPvgis"    type="checkbox" /><span style="color:#007c7c;">&#9148; Australian recalibrated version of Burch-Christensen API DATA</span></label>
       <label class="toggle-check"><input id="showBcAusRegionalCer" type="checkbox" checked /><span style="color:#6d4c41;">&#9644; Regional Australian recalibrated version of Burch-Christensen CER DATA</span></label>
-      <label class="toggle-check"><input id="showBcAusRegionalPvgis" type="checkbox" checked /><span style="color:#8d6e63;">&#9148; Regional Australian recalibrated version of Burch-Christensen API DATA</span></label>
+      <label class="toggle-check"><input id="showBcAusRegionalPvgis" type="checkbox" /><span style="color:#8d6e63;">&#9148; Regional Australian recalibrated version of Burch-Christensen API DATA</span></label>
       <label class="toggle-check"><input id="showBaselineLines" type="checkbox" /><span style="color:#666;">&#9148; BC+6 &amp; BC+0</span></label>
     </div>
-  </div><div class="panel">
-    <h4 id="chartTitle" style="margin:0 0 8px;font-size:16px;">Burch-Christensen vs CER DomDecks</h4>
+    </div>
+  </details>
+  <div class="panel">
+    <h4 id="chartTitle" style="margin:0 0 8px;font-size:18px;color:var(--navy);">Monthly mains-water temperature</h4>
     <div class="chart-panel">
       <div class="chart-box" style="height:400px;">
         <canvas id="comparisonChartCer"></canvas>
       </div>
     </div>
-    <div class="note" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px 20px;">
+    <details class="chart-key">
+      <summary>Chart key</summary>
+      <div class="note" style="padding:0 13px 12px;display:flex;flex-wrap:wrap;gap:6px 20px;">
       <span><span style="color:#2e7d32;font-weight:700;">&#9644;</span> CER DomDecks reference</span>
       <span id="legendBaselines"><span style="color:#1565c0;">&#9148;</span> BC+6 &nbsp; <span style="color:#e65100;">&#9148;</span> BC+0</span>
       <span><span style="color:#7b1fa2;font-weight:700;">&#9644;</span> Australian recalibrated version of Burch-Christensen CER DATA</span>
       <span id="legendPvgis" style="display:none;color:#007c7c;font-weight:600;"><span>&#9148;</span> Australian recalibrated version of Burch-Christensen API DATA</span>
       <span id="legendRegionalCer" style="color:#6d4c41;font-weight:600;"><span>&#9644;</span> Regional Australian recalibrated version of Burch-Christensen CER DATA</span>
       <span id="legendRegionalPvgis" style="display:none;color:#8d6e63;font-weight:600;"><span>&#9148;</span> Regional Australian recalibrated version of Burch-Christensen API DATA</span>
-    </div>
+      </div>
+    </details>
     </div>
 
   <!--
@@ -205,8 +229,8 @@
   </div>
   -->
 
-  <div class="panel">
-    <h4 style="margin:0 0 8px;font-size:16px;">Annual RMSE (Root Mean Square Error)</h4>
+  <div class="panel result-summary">
+    <h4 style="margin:0 0 8px;font-size:16px;">How close is the model?</h4>
     <div id="rmseBox" class="highlight-box"></div>
   </div>
 </div>
@@ -717,7 +741,7 @@ function renderComparisonChart(chartKey, canvasId, cerMains, bcPlus6, bcPlus0, b
 
 
 function updateChartComparison(zoneName, cerMains, bcPlus6, bcPlus0, bcAus, pvgisBcAus, bcAusRegionalCer, bcAusRegionalPvgis){
-  document.getElementById("chartTitle").textContent = `Burch-Christensen vs CER DomDecks - ${zoneName}`;
+  document.getElementById("chartTitle").textContent = `Monthly mains-water temperature - ${zoneName}`;
   renderComparisonChart("cer", "comparisonChartCer", cerMains, bcPlus6, bcPlus0, bcAus, pvgisBcAus, bcAusRegionalCer, bcAusRegionalPvgis);
   const legendPvgis = document.getElementById("legendPvgis");
   if (legendPvgis) legendPvgis.style.display = Array.isArray(pvgisBcAus) ? "" : "none";
@@ -748,31 +772,17 @@ function updateTable(taMonthly, cerMains, bcPlus6, bcPlus0, bcAus){
 
 
 function updateRmseSummary(){
-  // The all-zone summary stays on the CER-TMY basis because BC-Aus is fitted
-  // against the CER reference dataset itself. The side-by-side charts above
-  // already show how the PVGIS climate input changes the selected zone.
-  const sections = Object.entries(ZONE_DATA).map(([zoneKey, zone]) => {
-    const bcAus = computeBCAus(zone.taMonthlyCER, zone.latitude);
-    const bcAusRegional = computeBCAusRegional(zone.taMonthlyCER, zone.latitude, zoneKey);
-    const rmseAus = computeRmse(bcAus, zone.cerMains);
-    const rmseRegional = computeRmse(bcAusRegional, zone.cerMains);
-    const pvgisLine = Array.isArray(zone.taMonthlyPVGIS)
-      ? `<div style="color:#007c7c;"><b>BC-Aus / PVGIS vs CER:</b> ${formatValue(computeRmse(computeBCAus(zone.taMonthlyPVGIS, zone.latitude), zone.cerMains), 3)} °C <span style="font-weight:400;font-size:11px;">(weather source difference)</span></div>`
-      : `<div style="color:#aaa;font-size:11px;">BC-Aus / PVGIS: not fetched</div>`;
-    const regionalPvgisLine = Array.isArray(zone.taMonthlyPVGIS)
-      ? `<div style="color:#8d6e63;"><b>Regional BC-Aus / PVGIS vs CER:</b> ${formatValue(computeRmse(computeBCAusRegional(zone.taMonthlyPVGIS, zone.latitude, zoneKey), zone.cerMains), 3)} °C <span style="font-weight:400;font-size:11px;">(weather source difference)</span></div>`
-      : `<div style="color:#aaa;font-size:11px;">Regional BC-Aus / PVGIS: not fetched</div>`;
-    return `
-      <div class="rmse-entry">
-        <div class="rmse-zone">${zone.name}</div>
-        <div><b>BC-Aus / CER TMY vs CER:</b> ${formatValue(rmseAus, 3)} °C</div>
-        <div><b>Regional BC-Aus / CER TMY vs CER:</b> ${formatValue(rmseRegional, 3)} °C</div>
-        ${pvgisLine}
-        ${regionalPvgisLine}
-      </div>`;
-  }).join("");
-
-  document.getElementById("rmseBox").innerHTML = `<div class="rmse-stack">${sections}</div>`;
+  const zoneKey = currentZoneKey || "zone3_sydney";
+  const zone = ZONE_DATA[zoneKey];
+  if (!zone) return;
+  const national = computeRmse(computeBCAus(zone.taMonthlyCER, zone.latitude), zone.cerMains);
+  const regional = computeRmse(computeBCAusRegional(zone.taMonthlyCER, zone.latitude, zoneKey), zone.cerMains);
+  document.getElementById("rmseBox").innerHTML = `
+    <div class="rmse-selected">
+      <strong>${formatValue(regional, 2)}&deg;C</strong>
+      <span>Regional model RMSE for ${zone.name}</span>
+      <small>Lower is better. The shared national model is ${formatValue(national, 2)}&deg;C. All five zones are available from the selector above.</small>
+    </div>`;
 }
 
 function renderZone(zoneKey){
@@ -917,6 +927,3 @@ initialise();
 </script>
 </body>
 </html>
-
-
-

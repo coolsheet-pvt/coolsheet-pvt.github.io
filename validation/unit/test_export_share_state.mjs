@@ -35,6 +35,13 @@ ok("successful results reveal the share action", SRC.includes('shareBtn.style.di
 ok("redundant per-result PV check action is removed", !SRC.includes("btnCheckPvScenario"));
 ok("report header keeps Save PDF beside Send report", SRC.includes('class="handoff-buttons"'));
 ok("report email sends the generated report HTML", SRC.includes("report_html: getReportExportHtml()"));
+ok("report includes all structured annual result tables", bodyOf("collectAnnualReportTables").includes("CURRENT_CALC_RESULT?.annualTables"));
+ok("report includes stored monthly calculation results", bodyOf("collectMonthlyReportRows").includes("CURRENT_CALC_RESULT?.monthlyResults"));
+ok("successful calculation stores monthly report data", SRC.includes("CURRENT_CALC_RESULT.monthlyResults = monthlyAll.map"));
+ok("report stores annual and monthly water temperature rise", SRC.includes("daytimeWaterTempRiseC: daytimeWaterRiseAvg") && SRC.includes("waterTempRiseC: getMonthlyWaterTemperatureRise(row)"));
+ok("report displays inlet, outlet and water temperature rise", SRC.includes("Water Tin / Tout / rise") && SRC.includes("Avg water temperature rise"));
+ok("report includes validation and reproducibility sections", SRC.includes("Validation Status") && SRC.includes("Data Sources And Reproducibility"));
+ok("report includes industry design, process and savings detail", bodyOf("collectIndustryReportDetails").includes("design-explorer-stat") && bodyOf("collectIndustryReportDetails").includes("process-breakdown-row") && bodyOf("collectIndustryReportDetails").includes("Savings \\(Current Estimate\\)"));
 ok("result actions stay hidden until calculation succeeds", SRC.includes("resultActions.hidden = true") && SRC.includes("resultActions.hidden = false"));
 ok("successful calculation scrolls to results", SRC.includes("scrollToCalculationResults();"));
 

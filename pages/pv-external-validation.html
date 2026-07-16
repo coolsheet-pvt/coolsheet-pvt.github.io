@@ -17,8 +17,9 @@
     .eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.1em;opacity:.75;font-weight:700}
     h1{font-size:clamp(30px,5vw,46px);line-height:1.1;margin:7px 0 10px;max-width:760px}
     header p{max-width:760px;margin:0;color:#dceef5;font-size:17px}
-    main{padding:28px}.answer{padding:20px 22px;background:var(--green-soft);border-left:6px solid var(--green)}
+    main{padding:28px}.answer{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:22px;align-items:center;padding:20px 22px;background:var(--green-soft);border-left:6px solid var(--green)}
     .answer h2{margin:0 0 5px;color:#0c5639;font-size:22px}.answer p{margin:0}.answer strong{font-size:1.15em}
+    .answer-number{text-align:right}.answer-number strong{display:block;color:#0c5639;font-size:34px;line-height:1}.answer-number span{display:block;margin-top:5px;color:#3c6956;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
     section{margin-top:32px}section>h2{font-size:24px;color:var(--navy);margin:0 0 7px}.intro{color:var(--muted);margin:0 0 16px;max-width:780px}
     .steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;list-style:none;padding:0;margin:16px 0 0;counter-reset:step}
     .steps li{counter-increment:step;padding:16px;background:var(--wash);border-top:4px solid var(--blue)}
@@ -30,6 +31,9 @@
     .result{padding:17px;border:1px solid var(--line);border-top:5px solid var(--green);min-width:0}.result.external{border-top-color:var(--blue)}.result:last-child{border-top-color:var(--orange)}
     .result span{display:block;font-size:12px;color:var(--muted)}.result strong{display:block;font-size:27px;color:var(--navy);line-height:1.2;margin:4px 0}.result small{display:block;color:var(--muted)}
     .chart-wrap{height:270px;position:relative;min-width:0;width:100%;margin-top:10px}.chart-wrap canvas{max-width:100%}
+    .overview-grid{display:grid;grid-template-columns:minmax(210px,.7fr) minmax(0,1.3fr);gap:22px;align-items:center;padding:18px;border:1px solid var(--line);background:#fff}
+    .overview-copy h2{margin:0 0 6px;color:var(--navy);font-size:21px}.overview-copy p{margin:0;color:var(--muted);font-size:13.5px}.overview-copy strong{color:var(--green)}
+    .overview-chart{height:230px;margin:0}.easy-steps{margin-top:12px;background:var(--wash)}.easy-steps .steps{margin:0 0 15px}
     .plain-result{padding:15px 17px;margin-top:14px;background:#f0f6fb;border-left:5px solid var(--blue);font-size:15px}
     .plain-result b{color:var(--navy)}.source-actions{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:13px;font-weight:700}
     .external-input{width:100%;min-width:0;padding:8px 9px;border:1px solid #9aafbd;border-radius:5px;color:var(--navy);font:700 21px Arial,Helvetica,sans-serif}
@@ -39,7 +43,7 @@
     .details-body{padding:0 0 16px;color:var(--muted);font-size:13px}.details-body p{margin:6px 0 10px}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:var(--wash);color:var(--navy)}
     footer{padding:20px 28px;border-top:1px solid var(--line);background:var(--wash);font-size:12px;color:var(--muted);margin-top:36px}
     @media(max-width:850px){.benchmark-results{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    @media(max-width:700px){.steps,.results,.benchmark-results{grid-template-columns:1fr}.meaning{grid-template-columns:1fr}.result strong{font-size:24px}}
+    @media(max-width:700px){nav a,summary,.source-actions a{display:flex;align-items:center;min-height:44px}.control select{min-height:44px}.answer,.overview-grid{grid-template-columns:1fr}.answer-number{text-align:left}.steps,.results,.benchmark-results{grid-template-columns:1fr}.meaning{grid-template-columns:1fr}.result strong{font-size:24px}.overview-chart{height:250px}}
     @media(max-width:480px){nav{padding:12px 17px;align-items:flex-start}header{padding:28px 19px}main{padding:22px 18px}.chart-wrap{height:240px}.source-actions{flex-direction:column;gap:7px}footer{padding:18px}}
   </style>
 </head>
@@ -58,9 +62,29 @@
 
   <main>
     <div class="answer" data-benchmark-only>
-      <h2>Short answer: yes.</h2>
-      <p>Across five cities, CoolSheet stayed within <strong>4.53%</strong> of the two matched-input calculators. The average matched-model difference was <strong>2.22%</strong>. The separate Australian regional benchmark was within 8.22%.</p>
+      <div><h2>Short answer: yes.</h2><p>CoolSheet closely followed PVGIS and PVWatts across all five Australian cities tested.</p></div>
+      <div class="answer-number"><strong>2.22%</strong><span>average difference</span></div>
     </div>
+
+    <section data-benchmark-only aria-labelledby="overviewTitle">
+      <div class="overview-grid">
+        <div class="overview-copy">
+          <h2 id="overviewTitle">Five-city result</h2>
+          <p>Every matched result was within <strong>4.53%</strong> of CoolSheet. Shorter bars mean closer agreement.</p>
+        </div>
+        <div class="chart-wrap overview-chart"><canvas id="cityDifferenceChart" role="img" aria-label="Absolute percentage difference between CoolSheet, PVGIS and PVWatts across five Australian cities"></canvas></div>
+      </div>
+      <details class="easy-steps">
+        <summary>Easy procedure</summary>
+        <div class="details-body">
+          <ol class="steps">
+            <li><b>Choose a city</b><span>This changes the weather used.</span></li>
+            <li><b>Compare the bars</b><span>They show yearly net AC electricity.</span></li>
+            <li><b>Read the result</b><span>A small difference means the models agree.</span></li>
+          </ol>
+        </div>
+      </details>
+    </section>
 
     <section id="scenarioValidation" aria-labelledby="scenarioTitle" hidden>
       <h2 id="scenarioTitle">Check your current CoolSheet setup</h2>
@@ -83,20 +107,9 @@
       <p class="intro" style="margin-top:12px">PVGIS cannot be read automatically by this browser page, so its yearly value is entered manually. No result is invented or estimated when an external service is unavailable.</p>
     </section>
 
-    <section aria-labelledby="procedureTitle" data-benchmark-only>
-      <h2 id="procedureTitle">Easy procedure</h2>
-      <p class="intro">Follow these three steps. You do not need to understand the equations.</p>
-      <ol class="steps">
-        <li><b>Choose a city</b><span>This changes the weather used for the comparison.</span></li>
-        <li><b>Compare the four numbers</b><span>Each number is yearly electricity delivered as AC.</span></li>
-        <li><b>Read the conclusion</b><span>A small difference means the models broadly agree.</span></li>
-      </ol>
-    </section>
-
     <section aria-labelledby="checkTitle" data-benchmark-only>
-      <h2 id="checkTitle">Check a location</h2>
-      <div class="control"><label for="citySelect"><b>1. Choose a city:</b></label><select id="citySelect"><option>Sydney</option><option>Melbourne</option><option>Brisbane</option><option>Perth</option><option>Adelaide</option></select><span id="stationNote" class="intro" style="margin:0"></span></div>
-      <div class="scenario"><b>Matched system in CoolSheet, PVGIS and PVWatts:</b> 4.0 kW DC &middot; 20 m&sup2; at 20% efficiency &middot; 30&deg; north-facing &middot; fixed open rack &middot; 14% system losses &middot; 96% inverter efficiency</div>
+      <h2 id="checkTitle">Explore one city</h2>
+      <div class="control"><label for="citySelect"><b>Choose a city:</b></label><select id="citySelect"><option>Sydney</option><option>Melbourne</option><option>Brisbane</option><option>Perth</option><option>Adelaide</option></select><span id="stationNote" class="intro" style="margin:0"></span></div>
 
       <div class="results benchmark-results" aria-live="polite">
         <article class="result"><span>CoolSheet</span><strong id="coolSheetValue">5,656.9 kWh</strong><small>yearly net AC electricity</small></article>
@@ -107,8 +120,14 @@
 
       <div class="chart-wrap"><canvas id="resultChart" role="img" aria-label="Yearly PV electricity comparison for the selected city"></canvas></div>
       <div id="plainResult" class="plain-result"><b>Result:</b> the matched Sydney models are within 4.53% of CoolSheet. The Australian regional benchmark is within 0.66%.</div>
-      <div class="source-actions"><a id="pvgisResultLink" target="_blank" rel="noopener">Open this PVGIS result</a><a id="pvwattsResultLink" target="_blank" rel="noopener">Open this PVWatts result</a><a href="https://www.yourhome.gov.au/energy/photovoltaic-systems" target="_blank" rel="noopener">Open Australian CEC benchmark source</a></div>
-      <p class="intro" style="margin-top:12px">PVGIS and PVWatts use the matched capacity, tilt, direction and loss assumptions. The CEC figure matches the city and 4 kW capacity, but its published regional average does not provide adjustable tilt or detailed loss settings.</p>
+      <details>
+        <summary>Matched setup and external result links</summary>
+        <div class="details-body">
+          <p><b>Matched system:</b> 4.0 kW DC, 20 m&sup2;, 20% efficiency, 30&deg; north-facing, fixed open rack, 14% system losses and 96% inverter efficiency.</p>
+          <div class="source-actions"><a id="pvgisResultLink" target="_blank" rel="noopener">Open this PVGIS result</a><a id="pvwattsResultLink" target="_blank" rel="noopener">Open this PVWatts result</a><a href="https://www.yourhome.gov.au/energy/photovoltaic-systems" target="_blank" rel="noopener">Open Australian CEC benchmark source</a></div>
+          <p>PVGIS and PVWatts use matched adjustable inputs. The CEC figure is a broader city benchmark and does not provide adjustable tilt or detailed loss settings.</p>
+        </div>
+      </details>
     </section>
 
     <section aria-labelledby="meaningTitle">
@@ -159,6 +178,7 @@
   const escapeHtml=value=>String(value).replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"})[char]);
   const difference=(external,ours)=>(external/ours-1)*100;
   const describe=value=>Math.abs(value)<.005?"the same as":Math.abs(value).toFixed(2)+"% "+(value>0?"higher than":"lower than");
+  new Chart(document.getElementById("cityDifferenceChart"),{type:"bar",data:{labels:["Sydney","Melbourne","Brisbane","Perth","Adelaide"],datasets:[{label:"PVGIS",data:[4.53,2.31,.46,.44,1.96],backgroundColor:"#287fbd",borderRadius:3,maxBarThickness:28},{label:"PVWatts",data:[.01,4.13,3.36,1.87,3.10],backgroundColor:"#7aaed1",borderRadius:3,maxBarThickness:28}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{boxWidth:12,usePointStyle:true}},tooltip:{callbacks:{label:ctx=>ctx.dataset.label+": "+ctx.parsed.y.toFixed(2)+"% difference"}}},scales:{x:{grid:{display:false}},y:{beginAtZero:true,suggestedMax:5,title:{display:true,text:"Absolute difference (%)"},grid:{color:"#d8e3e9"}}}}});
   const chart=new Chart(document.getElementById("resultChart"),{type:"bar",data:{labels:["CoolSheet","PVGIS","PVWatts","Australian CEC"],datasets:[{data:DATA.Sydney.values,backgroundColor:["#16724d","#287fbd","#d56228","#b48a19"],maxBarThickness:90}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>format(ctx.parsed.y)+" per year"}}},scales:{x:{grid:{display:false}},y:{beginAtZero:true,title:{display:true,text:"Yearly net AC electricity (kWh)"},grid:{color:"#d8e3e9"}}}}});
   function update(){
     const city=document.getElementById("citySelect").value,d=DATA[city],pvgisDiff=difference(d.values[1],d.values[0]),pvwattsDiff=difference(d.values[2],d.values[0]),cecDiff=difference(d.values[3],d.values[0]),matchedLargest=Math.max(Math.abs(pvgisDiff),Math.abs(pvwattsDiff));

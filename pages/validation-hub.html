@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="description" content="A plain-language guide to the evidence supporting the CoolSheet PVT calculator." />
-  <title>Validation Centre | CoolSheet</title>
+  <title>Validation | CoolSheet</title>
   <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" />
   <style>
     :root{--ink:#173047;--muted:#5d7080;--line:#d6dfea;--blue:#155f9d;--green:#18734e;--orange:#a75225;--paper:#fff;--wash:#f4f7fa}
@@ -20,32 +20,54 @@
     .eyebrow{margin:0 0 7px;color:#557086;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
     h1{margin:0;color:#083d5b;font-size:34px;line-height:1.15}
     .intro{max-width:720px;margin:10px 0 0;color:var(--muted);font-size:15px}
-    .summary{margin-top:25px;padding:14px 16px;border-left:4px solid var(--green);background:#edf7f2}
-    .summary strong{display:block;margin-bottom:2px;color:#0d563a;font-size:16px}
-    .summary span{display:block;color:#3d5f4e;font-size:13.5px}.summary span+span{margin-top:4px}
+    .validation-checklist{margin-top:25px;border:1px solid #c8d8e3;border-radius:9px;overflow:hidden;background:#fff}
+    .checklist-heading{padding:16px 18px;background:#eaf2f8;border-bottom:1px solid #c8d8e3}
+    .checklist-heading h2{margin:0;color:#083d5b;font-size:19px}
+    .checklist-heading p{margin:3px 0 0;color:#536979;font-size:13px}
+    .checklist-columns{display:grid;grid-template-columns:1fr 1fr}
+    .checklist-group{margin-top:0;padding:18px}
+    .checklist-group+ .checklist-group{border-left:1px solid var(--line)}
+    .checklist-group h3{display:flex;align-items:center;gap:8px;margin:0 0 12px;font-size:15px}
+    .checklist-group.validated h3{color:#0d563a}.checklist-group.remaining h3{color:#8a461f}
+    .checklist-list{display:grid;gap:11px;margin:0;padding:0;list-style:none}
+    .checklist-item{display:grid;grid-template-columns:25px minmax(0,1fr);gap:9px;align-items:start}
+    .check-icon{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;font-size:13px;font-weight:900}
+    .validated .check-icon{background:#dff2e8;color:var(--green)}
+    .remaining .check-icon{background:#f8eadf;color:var(--orange)}
+    .checklist-item strong{display:block;color:#173047;font-size:13.5px}
+    .checklist-item span:last-child{display:block;margin-top:1px;color:#5c6f7e;font-size:12px;line-height:1.4}
+    .validation-guidance{padding:12px 18px;border-top:1px solid var(--line);background:#f8fafc;color:#435a6b;font-size:12.5px}
+    .validation-guidance strong{color:#173047}
     section{margin-top:30px}
     section h2{margin:0 0 6px;color:#083d5b;font-size:20px}
     .section-copy{margin:0 0 12px;color:var(--muted);font-size:13.5px}
-    .checks{border-top:1px solid var(--line)}
-    .check-row{display:grid;grid-template-columns:190px minmax(0,1fr) auto;gap:18px;align-items:center;padding:20px 4px;border-bottom:1px solid var(--line);color:inherit;text-decoration:none}
-    .check-row:hover,.check-row:focus{background:#f7fafc;outline:none}
+    .checks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:17px}
+    .check-row{display:flex;min-width:0;flex-direction:column;padding:18px;border:1px solid var(--line);border-radius:8px;background:#fff;color:inherit;text-decoration:none;transition:border-color .16s,box-shadow .16s,transform .16s}
+    .check-row:hover,.check-row:focus{border-color:#93b4ca;box-shadow:0 7px 20px rgba(25,65,91,.10);transform:translateY(-2px);outline:none}
     .status{font-size:11px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:var(--blue)}
     .status.strong{color:var(--green)}.status.preliminary{color:var(--orange)}
-    .check-copy h3{margin:0 0 3px;color:#123f60;font-size:17px}
-    .check-copy p{margin:0;color:var(--muted);font-size:13.5px}
-    .check-copy .check-meta{margin-top:5px;color:#40586b;font-size:12px;font-weight:700}
-    .open-label{color:var(--blue);font-size:13px;font-weight:700;white-space:nowrap}
-    .limits{padding-top:26px;border-top:1px solid var(--line)}
-    .limits ul{margin:10px 0 0;padding-left:20px;color:#435868;font-size:13.5px}
-    .limits li{margin:7px 0}
+    .check-copy h3{margin:7px 0 3px;color:#123f60;font-size:18px}
+    .check-copy p{margin:0;color:var(--muted);font-size:13px}
+    .check-copy .check-meta{margin-top:7px;color:#40586b;font-size:12px;font-weight:700}
+    .open-label{margin-top:auto;padding-top:15px;color:var(--blue);font-size:13px;font-weight:700;white-space:nowrap}
+    .mini-chart{margin:15px 0 13px;padding:13px;border-radius:7px;background:#f5f8fa}
+    .mini-chart-title{margin:0 0 9px;color:#53697a;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+    .bar-row{display:grid;grid-template-columns:66px minmax(0,1fr) 62px;gap:7px;align-items:center;margin:7px 0;font-size:10px;color:#526777}
+    .bar-track{height:9px;border-radius:20px;background:#dfe8ee;overflow:hidden}
+    .bar-fill{display:block;width:var(--bar);height:100%;border-radius:inherit;background:var(--blue)}
+    .bar-fill.green{background:var(--green)}.bar-fill.orange{background:var(--orange)}
+    .bar-value{text-align:right;font-weight:700;color:#324b5d;font-variant-numeric:tabular-nums}
+    .zone-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin:12px 0 8px}
+    .zone-strip span{display:grid;place-items:center;min-height:31px;border-radius:5px;background:#dcecf7;color:#174f75;font-size:10px;font-weight:800}
+    .visual-note{margin:7px 0 0;color:#607384;font-size:10.5px;line-height:1.35}
     details{margin-top:26px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
     summary{padding:13px 2px;cursor:pointer;color:#234f72;font-size:13.5px;font-weight:700}
     .reference-links{display:grid;grid-template-columns:1fr 1fr;gap:9px 20px;padding:2px 2px 16px;font-size:13px}
     .reference-links a{font-weight:700}
     footer{max-width:760px;margin:18px auto 0;color:#6a7884;font-size:11px;text-align:center}
     @media(max-width:700px){
-      body{padding:14px 10px 50px}
-      main{margin-top:18px;padding:24px 18px 28px}h1{font-size:28px}.check-row{grid-template-columns:1fr;gap:5px;padding:16px 2px}.open-label{margin-top:3px}.reference-links{grid-template-columns:1fr}
+      body{padding:14px 10px 50px}.back-link,summary{min-height:44px}.reference-links a{display:flex;align-items:center;min-height:44px}
+      main{margin-top:18px;padding:24px 18px 28px}h1{font-size:28px}.checklist-columns{grid-template-columns:1fr}.checklist-group+ .checklist-group{border-left:0;border-top:1px solid var(--line)}.checks{grid-template-columns:1fr}.check-row{padding:17px}.reference-links{grid-template-columns:1fr}
     }
     @media(max-width:430px){.back-link{width:100%;justify-content:center}}
   </style>
@@ -61,22 +83,63 @@
     <h1>What has been validated?</h1>
     <p class="intro">A quick guide to the evidence behind the CoolSheet results.</p>
 
-    <div class="summary">
-      <strong>Suitable for early feasibility checks</strong>
-      <span>PV results have strong independent support. PVT thermal evidence is promising but currently limited to one monitored site.</span>
-      <span>Industry demand and financial results should still be treated as scenarios that depend on the selected assumptions.</span>
+    <div class="validation-checklist" aria-labelledby="checklistTitle">
+      <div class="checklist-heading">
+        <h2 id="checklistTitle">Validation checklist</h2>
+        <p>See what is supported by comparison data and what still needs more evidence.</p>
+      </div>
+      <div class="checklist-columns">
+        <section class="checklist-group validated" aria-labelledby="validatedTitle">
+          <h3 id="validatedTitle"><span class="check-icon" aria-hidden="true">&#10003;</span>Validated or cross-checked</h3>
+          <ul class="checklist-list">
+            <li class="checklist-item">
+              <span class="check-icon" aria-hidden="true">&#10003;</span>
+              <span><strong>PV electricity output</strong><span>Compared with PVGIS and PVWatts across five Australian cities.</span></span>
+            </li>
+            <li class="checklist-item">
+              <span class="check-icon" aria-hidden="true">&#10003;</span>
+              <span><strong>Mains-water temperature</strong><span>Cross-checked against CER and EnergyPlus references across five climate zones.</span></span>
+            </li>
+          </ul>
+        </section>
+        <section class="checklist-group remaining" aria-labelledby="remainingTitle">
+          <h3 id="remainingTitle"><span class="check-icon" aria-hidden="true">?</span>Not yet fully validated</h3>
+          <ul class="checklist-list">
+            <li class="checklist-item">
+              <span class="check-icon" aria-hidden="true">!</span>
+              <span><strong>PVT thermal output</strong><span>Early field evidence is promising, but covers only 19 days at one site.</span></span>
+            </li>
+            <li class="checklist-item">
+              <span class="check-icon" aria-hidden="true">!</span>
+              <span><strong>PVT electrical cooling gain</strong><span>Needs direct field testing against a comparable uncooled PV system.</span></span>
+            </li>
+            <li class="checklist-item">
+              <span class="check-icon" aria-hidden="true">!</span>
+              <span><strong>Industry and financial results</strong><span>Demand, savings and payback remain scenarios until site data is supplied.</span></span>
+            </li>
+          </ul>
+        </section>
+      </div>
+      <div class="validation-guidance"><strong>How to use the calculator:</strong> suitable for early feasibility comparisons, but not a certified performance forecast.</div>
     </div>
 
     <section aria-labelledby="checksTitle">
       <h2 id="checksTitle">Validation checks</h2>
-      <p class="section-copy">Select a result to see the matched inputs, source data, calculation method and differences.</p>
+      <p class="section-copy">Each card shows the main finding first. Open it only if you want the supporting comparison.</p>
       <div class="checks">
         <a class="check-row" href="pv-external-validation.html">
           <span class="status strong">Strong benchmark agreement</span>
           <div class="check-copy">
             <h3>PV electricity</h3>
-            <p>CoolSheet PV-only output was compared with PVGIS and PVWatts using matched inputs, plus an Australian CEC regional benchmark.</p>
-            <p class="check-meta">2.22% average matched-model difference &middot; 4.53% largest matched-model difference &middot; 5 cities</p>
+            <p>Yearly PV output closely follows two independent calculators.</p>
+            <div class="mini-chart" aria-label="Sydney yearly PV result comparison">
+              <p class="mini-chart-title">Sydney example, yearly electricity</p>
+              <div class="bar-row"><span>CoolSheet</span><span class="bar-track"><span class="bar-fill green" style="--bar:95.7%"></span></span><span class="bar-value">5.66 MWh</span></div>
+              <div class="bar-row"><span>PVGIS</span><span class="bar-track"><span class="bar-fill" style="--bar:100%"></span></span><span class="bar-value">5.91 MWh</span></div>
+              <div class="bar-row"><span>PVWatts</span><span class="bar-track"><span class="bar-fill" style="--bar:95.7%"></span></span><span class="bar-value">5.66 MWh</span></div>
+              <p class="visual-note">The full check covers five Australian cities.</p>
+            </div>
+            <p class="check-meta">2.22% average difference &middot; 5 cities</p>
           </div>
           <span class="open-label">Open check &rarr;</span>
         </a>
@@ -84,8 +147,14 @@
           <span class="status preliminary">Preliminary field evidence</span>
           <div class="check-copy">
             <h3>PVT thermal output</h3>
-            <p>Measured SOAC weather, flow and heat output were compared with the CoolSheet thermal models.</p>
-            <p class="check-meta">Model A about 6.2% low &middot; 19 monitored days &middot; 1 site</p>
+            <p>With measured inputs, Model A was close to the delivered field heat.</p>
+            <div class="mini-chart" aria-label="SOAC measured heat and matched Model A comparison">
+              <p class="mini-chart-title">Same measured inputs, 19 days</p>
+              <div class="bar-row"><span>Measured</span><span class="bar-track"><span class="bar-fill green" style="--bar:100%"></span></span><span class="bar-value">5.89 MWh</span></div>
+              <div class="bar-row"><span>Model A</span><span class="bar-track"><span class="bar-fill orange" style="--bar:93.8%"></span></span><span class="bar-value">5.52 MWh</span></div>
+              <p class="visual-note">Promising, but limited to one site and one short period.</p>
+            </div>
+            <p class="check-meta">6.2% low &middot; 19 monitored days &middot; 1 site</p>
           </div>
           <span class="open-label">Open check &rarr;</span>
         </a>
@@ -93,23 +162,17 @@
           <span class="status">Cross-checked model</span>
           <div class="check-copy">
             <h3>Mains-water temperature</h3>
-            <p>The BC-Aus inlet-water model was compared with Australian reference datasets.</p>
-            <p class="check-meta">5 climate zones &middot; Monthly profiles &middot; CER and EnergyPlus references</p>
+            <p>The inlet-water model was checked across Australian climates.</p>
+            <div class="mini-chart" aria-label="Five Australian climate zones cross-checked">
+              <p class="mini-chart-title">Australian climate zones checked</p>
+              <div class="zone-strip"><span>Z1</span><span>Z2</span><span>Z3</span><span>Z4</span><span>Z5</span></div>
+              <p class="visual-note">Monthly profiles were compared with CER and EnergyPlus references.</p>
+            </div>
+            <p class="check-meta">5 climate zones &middot; 12 months per zone</p>
           </div>
           <span class="open-label">Open check &rarr;</span>
         </a>
       </div>
-    </section>
-
-    <section class="limits" aria-labelledby="limitsTitle">
-      <h2 id="limitsTitle">Important limits</h2>
-      <p class="section-copy">These results support comparison and early feasibility work, but they are not certified forecasts.</p>
-      <ul>
-        <li><strong>Not yet field validated:</strong> PVT cooling gain and full-year PVT performance.</li>
-        <li>Industry demand and operating schedules remain scenario based.</li>
-        <li>Costs, savings and payback depend on site-specific assumptions.</li>
-        <li>Site shading, faults, downtime and equipment ageing are not modelled directly.</li>
-      </ul>
     </section>
 
     <details>
