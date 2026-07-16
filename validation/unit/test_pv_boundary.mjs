@@ -32,4 +32,8 @@ assert.match(app,/const pv_kWh = pvt_dc_kWh;/,
 assert.match(app,/pvtNetAcKWh: E_pvt_ac_kWh/,
   "Export state should keep the net AC boundary separate from headline electricity");
 assert.match(app,/PVT estimated net AC electricity/);
+assert.match(app,/annual-summary-item annual-electricity-summary/,
+  "Related electricity results should share one annual summary card");
+assert.match(app,/annual-electricity-breakdown[^]*?<span>PV-only baseline<\/span>[^]*?<span>Cooling gain<\/span>/,
+  "The combined electricity card should explain the baseline and cooling gain");
 console.log("PV cooling effect and DC/AC boundary tests passed.");

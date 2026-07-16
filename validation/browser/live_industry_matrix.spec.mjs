@@ -285,7 +285,7 @@ async function loadWeather(page, baseUrl, city) {
 
 async function calculate(page) {
   await page.click("#btnAnnual");
-  await expect(page.locator("#annualOutput .annual-summary-item")).toHaveCount(7, { timeout: 120000 });
+  await expect(page.locator("#annualOutput .annual-summary-item")).toHaveCount(5, { timeout: 120000 });
   await expect(page.locator("#downloadLink")).toBeVisible({ timeout: 30000 });
 }
 

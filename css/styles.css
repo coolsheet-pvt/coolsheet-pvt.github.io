@@ -46,6 +46,8 @@ label{font-size:13px;font-weight:600;color:#2c3a4a;}
 input,select{width:100%;padding:8px 10px;box-sizing:border-box;border:1px solid #c8d0db;border-radius:5px;font-size:13px;background:#fff;transition:border-color 0.18s,box-shadow 0.18s,transform 0.18s;}
 input:focus,select:focus{outline:none;border-color:#1f6fb2;box-shadow:0 0 0 3px rgba(31,111,178,0.15);transform:translateY(-1px);}
 .btns{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0;}
+.calculator-actions{align-items:stretch;}
+.calculator-actions>button{min-height:42px;margin-top:0;padding:10px 16px;line-height:1.2;}
 button{display:inline-flex;align-items:center;justify-content:center;text-align:center;padding:10px 16px;cursor:pointer;border:1px solid #1a5f9a;border-radius:6px;background:linear-gradient(180deg,#2680c2 0%,#1a5f9a 100%);color:#fff;font-size:13px;font-weight:600;transition:background 0.18s,box-shadow 0.18s,transform 0.14s;}
 button:hover{background:linear-gradient(180deg,#2d8fd4 0%,#1f6fb2 100%);box-shadow:0 4px 12px rgba(26,95,154,0.35);transform:translateY(-2px);}
 button:active{background:#1a5f9a;transform:scale(0.96) translateY(0);box-shadow:none;}
@@ -67,6 +69,11 @@ button:active{background:#1a5f9a;transform:scale(0.96) translateY(0);box-shadow:
 #downloadLink:hover,.secondary-action:hover{background:#bdd4e8;opacity:1;transform:translateY(-2px);box-shadow:0 4px 12px rgba(44,90,130,0.2);}
 #downloadLink:active,.secondary-action:active{transform:scale(0.96);box-shadow:none;}
 #downloadLink:focus,.secondary-action:focus{outline:2px solid rgba(44,90,130,0.2);outline-offset:2px;}
+.result-actions{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:16px 0 20px;padding:14px 2px;border-bottom:1px solid #c6d8e8;}
+.result-actions[hidden]{display:none;}
+.result-actions-title{flex:0 0 auto;font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#45667f;}
+.result-actions-controls{display:flex;justify-content:flex-end;align-items:stretch;gap:10px;flex-wrap:wrap;}
+.result-actions #downloadLink,.result-actions .secondary-action{min-height:40px;margin-top:0;padding:10px 14px;box-sizing:border-box;align-items:center;justify-content:center;}
 #supplyChartsPanel{min-height:0;}
 #supplyChartsPanel h4{margin:0 0 6px;}
 #supplyChartsPanel .display-controls{margin-top:0;}
@@ -99,9 +106,16 @@ body.testing-mode .kwater-label{display:inline;}
 .annual-summary-item strong{display:block;font-size:20px;line-height:1.15;color:#fff;font-variant-numeric:tabular-nums;}
 .annual-summary-item small{display:block;margin-top:6px;color:rgba(255,255,255,0.82);line-height:1.35;}
 .annual-summary-item strong,.industry-summary-cell strong,.insight-pill .big,.energy-flow-card strong,.metric-value,.summary-value{overflow-wrap:anywhere;}
+.annual-summary-item.annual-electricity-summary{flex:2 1 440px;display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.4fr);gap:16px;align-items:stretch;border-color:rgba(255,206,120,0.5);background:rgba(255,193,90,0.15);}
+.annual-electricity-main{display:flex;flex-direction:column;justify-content:center;padding-right:16px;border-right:1px solid rgba(255,255,255,0.24);}
+.annual-electricity-breakdown{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:12px;align-items:center;}
+.annual-electricity-part{min-width:0;}
+.annual-electricity-part span{margin-bottom:5px;color:rgba(255,255,255,0.74);}
+.annual-electricity-part strong{font-size:16px;}
+.annual-electricity-part small{margin-top:4px;color:#ffe1a8;}
+.annual-electricity-operator{margin:0 !important;color:#ffe1a8 !important;font-size:22px !important;font-weight:800;}
+.annual-electricity-gain strong{color:#ffe1a8;}
 .annual-summary-item.annual-finance{border-color:rgba(255,255,255,0.2);background:rgba(255,255,255,0.16);}
-.annual-summary-item.annual-tempcorr{border-color:rgba(255,206,120,0.5);background:rgba(255,193,90,0.15);}
-.annual-summary-item.annual-tempcorr small{color:#ffe1a8;}
 .annual-summary-item.annual-finance.negative{border-color:rgba(255,255,255,0.24);background:rgba(255,255,255,0.12);}
 /* Cool-blue highlight + winter tip when daytime outlet temperature is below 20 C */
 .annual-summary-item.annual-outlet-low{border-color:rgba(120,180,255,0.55);background:rgba(90,150,230,0.18);}
@@ -500,6 +514,7 @@ button:disabled{opacity:0.55;cursor:wait;transform:none;box-shadow:none;}
   .summary-card-grid,.advanced-grid{grid-template-columns:1fr;}
   .metric-cards,.industry-summary-row,.insight-strip,.recommended-size-grid{grid-template-columns:1fr 1fr;}
   .annual-summary-grid .annual-summary-item{flex-basis:calc(50% - 5px);}
+  .annual-summary-item.annual-electricity-summary{flex-basis:100%;grid-template-columns:minmax(0,.7fr) minmax(0,1.3fr);}
   .energy-flow-summary{grid-template-columns:1fr;}
   .industry-chart-grid{grid-template-columns:1fr;}
   .balance-preview-grid{grid-template-columns:1fr;}
@@ -518,6 +533,8 @@ button:disabled{opacity:0.55;cursor:wait;transform:none;box-shadow:none;}
   .annual-card-head{display:block;}
   .annual-actions,.industry-actions{align-items:stretch;}
   .annual-actions .detail-toggle,.industry-actions .detail-toggle{width:100%;}
+  .result-actions{align-items:flex-start;flex-direction:column;}
+  .result-actions-controls{width:100%;justify-content:flex-start;}
   .industry-model-box{min-width:0;max-width:none;width:100%;}
   .dairy-result-head{grid-template-columns:1fr;}
   .data-table-container,.annual-detail-panel,.industry-detail-panel,.results-block{overflow-x:auto;}
@@ -542,11 +559,16 @@ button:disabled{opacity:0.55;cursor:wait;transform:none;box-shadow:none;}
   .btns{gap:8px;margin:12px 0;}
   .btns button,#downloadLink,.secondary-action,.detail-toggle{width:100%;text-align:center;justify-content:center;}
   #downloadLink,.secondary-action{margin-top:0;}
+  .result-actions-controls{display:grid;grid-template-columns:1fr;}
   .annual-card-head{gap:8px;margin-bottom:10px;}
   .annual-location{font-size:13px;}
   .output-card{padding:12px;border-radius:10px;}
   .annual-summary-item,.industry-summary-cell,.metric-card,.summary-card{padding:11px 12px;min-height:0;}
   .annual-summary-item strong,.industry-summary-cell strong,.metric-value,.summary-value{font-size:18px;}
+  .annual-summary-item.annual-electricity-summary{grid-template-columns:1fr;gap:12px;}
+  .annual-electricity-main{padding-right:0;padding-bottom:12px;border-right:0;border-bottom:1px solid rgba(255,255,255,0.24);}
+  .annual-electricity-breakdown{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:9px;}
+  .annual-electricity-part strong{font-size:15px;}
   .annual-actions,.industry-actions{align-items:stretch;gap:8px;}
   .annual-actions .note,.industry-actions .note{width:100%;font-size:12px;}
   .display-controls{display:grid;grid-template-columns:1fr;gap:8px;margin-top:12px;}

@@ -33,6 +33,7 @@ ok("share links include reproducibility note", bodyOf("buildShareScenarioPayload
 ok("shared-link loader keeps v1 flat input compatibility", bodyOf("applySharedScenarioFromUrl").includes("applyInputState(payload);"));
 ok("successful results reveal the share action", SRC.includes('shareBtn.style.display = "inline-block"'));
 ok("successful results reveal the PV check action", SRC.includes('pvCheckBtn.style.display = "inline-block"'));
+ok("result actions stay hidden until calculation succeeds", SRC.includes("resultActions.hidden = true") && SRC.includes("resultActions.hidden = false"));
 ok("successful calculation scrolls to results", SRC.includes("scrollToCalculationResults();"));
 
 console.log(`\n=== ${pass} passed, ${fail} failed ===`);

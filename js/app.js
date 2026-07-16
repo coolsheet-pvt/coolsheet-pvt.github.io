@@ -3,7 +3,7 @@
 
 // Single source of truth for the app version shown in the header + PDF/report.
 // Keep in sync with the ?v= cache-bust query on css/js in index.html.
-const APP_VERSION = "13.38";
+const APP_VERSION = "13.41";
 
 // ================================================================
 //  DETAILS ANIMATION - replay slideDown every time a panel opens
@@ -50,6 +50,8 @@ function setIndustryOutput(html){
 
 function resetExportActions(){
   CURRENT_CALC_RESULT = null;
+  const resultActions = document.getElementById("resultActions");
+  if (resultActions) resultActions.hidden = true;
   const csvLink = document.getElementById("downloadLink");
   if (csvLink){
     csvLink.style.display = "none";
@@ -5514,25 +5516,30 @@ async function calcAnnualPVT(){
         </div>
       </div>
       <div class="annual-summary-grid">
-        <div class="annual-summary-item">
-          <span>PVT electricity</span>
-          <strong>${fmtE(E_pv_kWh,1,'kWh')}</strong>
-          <small>${pvtElectricityNote}</small>
+        <div class="annual-summary-item annual-electricity-summary">
+          <div class="annual-electricity-main">
+            <span>PVT electricity</span>
+            <strong>${fmtE(E_pv_kWh,1,'kWh')}</strong>
+            <small>${pvtElectricityNote}</small>
+          </div>
+          <div class="annual-electricity-breakdown" aria-label="PVT electricity breakdown">
+            <div class="annual-electricity-part">
+              <span>PV-only baseline</span>
+              <strong>${fmtE(E_pv_standalone_kWh,1,'kWh')}</strong>
+              <small>Same area, uncooled</small>
+            </div>
+            <span class="annual-electricity-operator" aria-hidden="true">+</span>
+            <div class="annual-electricity-part annual-electricity-gain">
+              <span>Cooling gain</span>
+              <strong>${gainSign}${fmtE(Math.abs(pvtElectricGainKWh),1,'kWh')}</strong>
+              <small>${coolingNote}</small>
+            </div>
+          </div>
         </div>
         <div class="annual-summary-item">
           <span>PVT thermal</span>
           <strong>${fmtE(E_th_kWh,1,'kWh')}</strong>
           <small>Annual thermal yield</small>
-        </div>
-        <div class="annual-summary-item annual-tempcorr">
-          <span>PV-only baseline</span>
-          <strong>${fmtE(E_pv_standalone_kWh,1,'kWh')}</strong>
-          <small>Same area, uncooled NOCT model</small>
-        </div>
-        <div class="annual-summary-item annual-tempcorr">
-          <span>Electricity from cooling</span>
-          <strong>${gainSign}${fmtE(Math.abs(pvtElectricGainKWh),1,'kWh')}</strong>
-          <small>${coolingNote}</small>
         </div>
         <div class="annual-summary-item">
           <span>Total output</span>
@@ -6645,6 +6652,8 @@ async function calcAnnualPVT(){
       pdfBtn.disabled = false;
       pdfBtn.textContent = "Generate PDF report";
     }
+    const resultActions = document.getElementById("resultActions");
+    if (resultActions) resultActions.hidden = false;
     document.dispatchEvent(new CustomEvent("pvt:results-rendered"));
     scrollToCalculationResults();
 

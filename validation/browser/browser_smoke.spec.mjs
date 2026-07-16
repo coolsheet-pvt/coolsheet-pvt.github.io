@@ -22,6 +22,18 @@ test("calculator UI loads without console errors", async ({ page }) => {
   await expect(page.locator("#btnShareLink")).toBeHidden();
   await expect(page.locator("#btnCheckPvScenario")).toBeHidden();
   await expect(page.locator("#btnResetInputs")).toBeVisible();
+  await expect(page.locator("#resultActions")).toBeHidden();
+  await expect(page.locator(".calculator-actions #btnAnnual")).toHaveCount(1);
+  await expect(page.locator(".calculator-actions #btnResetInputs")).toHaveCount(1);
+  await expect(page.locator(".calculator-actions #downloadLink, .calculator-actions #btnGeneratePdf, .calculator-actions #btnShareLink, .calculator-actions #btnCheckPvScenario")).toHaveCount(0);
+  await expect(page.locator("#resultActions #downloadLink, #resultActions #btnGeneratePdf, #resultActions #btnShareLink, #resultActions #btnCheckPvScenario")).toHaveCount(4);
+  const actionAlignment = await page.evaluate(() => {
+    const calculate = document.getElementById("btnAnnual").getBoundingClientRect();
+    const reset = document.getElementById("btnResetInputs").getBoundingClientRect();
+    return { topDifference:Math.abs(calculate.top-reset.top), heightDifference:Math.abs(calculate.height-reset.height) };
+  });
+  expect(actionAlignment.topDifference).toBeLessThan(1);
+  expect(actionAlignment.heightDifference).toBeLessThan(1);
   await expect(page.locator("#output")).toBeHidden();
   await page.evaluate(() => setOutput("<div class=\"output-card output-card-annual\">Test result</div>"));
   await expect(page.locator("#output")).toBeVisible();
