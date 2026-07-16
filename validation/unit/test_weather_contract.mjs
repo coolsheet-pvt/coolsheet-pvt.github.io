@@ -16,8 +16,8 @@ assert.match(app, /processKey === "outdoor_pool"/);
 assert.match(backend, /"modelBLongwavePolicy": "frozen-prohibited"/);
 assert.match(backend, /row\.get\("IR\(h\)"/);
 
-const modelStart = app.indexOf("// Model A: simple linear");
-const modelEnd = app.indexOf("const th_kWh = th_W / 1000", modelStart);
+const modelStart = app.indexOf("function calculatePvtThermalSample");
+const modelEnd = app.indexOf("function calculatePvtThermalHourly", modelStart);
 assert.ok(modelStart >= 0 && modelEnd > modelStart, "protected model block markers missing");
 const protectedModelBlock = app.slice(modelStart, modelEnd);
 assert.doesNotMatch(protectedModelBlock, /relativeHumidity|infraredHorizontal|IR\(h\)/,

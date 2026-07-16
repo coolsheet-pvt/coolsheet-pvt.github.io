@@ -803,6 +803,108 @@ function calculateThermalStorage(requestPayload){
   };
 }
 
+// Reusable thermal supply calculation. The annual calculator and the design
+// explorer both call this so the sizing view cannot drift from the main model.
+function calculatePvtThermalSample(record, calculator, options){
+  const areaM2 = Number(options?.areaM2);
+  const totalFlowKgHr = Number(options?.totalFlowKgHr);
+  const thermalModel = options?.thermalModel || "A";
+  const mains = options?.mains || {};
+  const solarHour = isFiniteNumber(record?.solarHour) ? record.solarHour : record?.hourN;
+  const result = calculator.calculate(record.dayN, solarHour, record.dni, record.dhi);
+  const G = Math.max(0, Number(result?.totalIrradiance) || 0);
+  const Tin = mains?.byDay?.[record.dayN] ?? mains?.annualAvgC ?? 14;
+  const ta = Number(record.ta);
+  const vwind = Number(record.vwind) || 0;
+  const a0 = Number(options?.a0) || 0;
+  const a1 = Number(options?.a1) || 0;
+  const a2 = Number(options?.a2) || 0;
+  let etaTh = 0;
+  let th_W = 0;
+
+  if (thermalModel === "A") {
+    if (G > 1e-6){
+      etaTh = clamp(a0 + a1 * ((Tin - ta) / G) + a2 * vwind, 0, 1);
+      th_W = etaTh * G * areaM2;
+    }
+  } else {
+    const isoEta0 = Number(options?.isoEta0) || 0.762;
+    const isoA1 = Number(options?.isoA1) || 3.93;
+    const isoA2 = Number(options?.isoA2) || 0.0095;
+    const isoA3 = Number(options?.isoA3) || 0;
+    const isoA4 = Number(options?.isoA4) || 0;
+    const isoA6 = Number(options?.isoA6) || 0;
+    const isoA8 = Number(options?.isoA8) || 0;
+    const isoTout0 = Number(options?.isoTout0) || 40;
+    const isoIterMax = Math.max(1, Number(options?.isoIterMax) || 5);
+    const Ta_K = ta + 273.15;
+    const Ta4 = SIGMA * Math.pow(Ta_K, 4);
+    const EL = 5.31e-13 * Math.pow(Ta_K, 6);
+    if (G > 1e-6 && totalFlowKgHr > 1e-12) {
+      const mdot_cp = (totalFlowKgHr / 3600) * 4184;
+      let Tout_iter = isoTout0;
+      for (let iter = 0; iter < isoIterMax; iter++) {
+        const Tm = (Tin + Tout_iter) / 2;
+        const dT = Tm - ta;
+        const Q_model = areaM2 * (isoEta0 * G
+          - isoA1 * dT
+          - isoA2 * dT * dT
+          - isoA3 * vwind * dT
+          + isoA4 * (EL - Ta4)
+          - isoA6 * vwind * G
+          - isoA8 * Math.pow(dT, 4));
+        const Q_flow = mdot_cp * (Tout_iter - Tin);
+        const dQm_dTout = areaM2 * (-isoA1 * 0.5 - isoA2 * dT - isoA3 * vwind * 0.5 - isoA8 * 2 * Math.pow(dT, 3));
+        const denominator = mdot_cp - dQm_dTout;
+        if (Math.abs(denominator) <= 1e-12) break;
+        const step = (Q_flow - Q_model) / denominator;
+        if (!Number.isFinite(step)) break;
+        Tout_iter -= step;
+        if (Math.abs(step) < 1e-4) break;
+      }
+      const Tm_f = (Tin + Tout_iter) / 2;
+      const dT_f = Tm_f - ta;
+      th_W = Math.max(0, areaM2 * (isoEta0 * G
+        - isoA1 * dT_f
+        - isoA2 * dT_f * dT_f
+        - isoA3 * vwind * dT_f
+        + isoA4 * (EL - Ta4)
+        - isoA6 * vwind * G
+        - isoA8 * Math.pow(dT_f, 4)));
+      etaTh = (G * areaM2 > 1e-6) ? clamp(th_W / (G * areaM2), 0, 1) : 0;
+    }
+  }
+
+  const th_kWh = th_W / 1000;
+  const Tout_C = th_kWh > 1e-12 && totalFlowKgHr > 1e-12
+    ? Tin + (th_kWh * 3600) / (totalFlowKgHr * 4.184)
+    : "";
+  return { G, Tin, etaTh, th_W, th_kWh, Tout_C };
+}
+
+function calculatePvtThermalHourly(options){
+  const areaM2 = Number(options?.areaM2);
+  const flowRateLpsPerM2 = Number(options?.flowRateLpsPerM2);
+  const met = Array.isArray(options?.met) ? options.met : [];
+  const calculator = options?.calculator;
+  const totalFlowKgHr = flowRateLpsPerM2 * areaM2 * 3600;
+  const hourly = [];
+  let annualKWh = 0;
+  let peakKW = 0;
+  for (const record of met){
+    if (!calculator || ![record?.dayN, record?.hourN, record?.dni, record?.dhi, record?.ta, record?.vwind].every(isFiniteNumber)) {
+      hourly.push(0);
+      continue;
+    }
+    const sample = calculatePvtThermalSample(record, calculator, { ...options, areaM2, totalFlowKgHr });
+    const value = isFiniteNumber(sample.th_kWh) ? Math.max(0, sample.th_kWh) : 0;
+    hourly.push(value);
+    annualKWh += value;
+    peakKW = Math.max(peakKW, value);
+  }
+  return { hourly, annualKWh, peakKW };
+}
+
 // ================================================================
 //  TILTED SURFACE RADIATION  (Supply-side core)
 // ================================================================
@@ -1206,6 +1308,7 @@ let CURRENT_TZ   = null;   // {timeZone, gmtOffset}
 let CURRENT_MAINS = null;  // effective mains used everywhere {annualAvgC, minC, maxC, byDay, byMonth}
 let CURRENT_MAINS_MODEL = null;  // raw BC-Aus model output (before any custom monthly overrides)
 let CURRENT_PROCESS_DETAIL = null;
+let CURRENT_DESIGN_EXPLORER = null;
 let CURRENT_CALC_RESULT = null;
 let LAST_SHARED_SCENARIO_METADATA = null;
 let CURRENT_WEATHER_PROVENANCE = null;
@@ -3698,79 +3801,255 @@ function buildIndustryPerformanceSummary(opts){
     </div>`;
 }
 
-function buildRecommendedSystemSizeBox(opts){
-  const areaM2 = Number(opts?.areaM2);
-  const heatCoverage = Number(opts?.heatCoverageFraction);
-  const defaultTargetPct = isFiniteNumber(opts?.targetPct) ? clamp(Number(opts.targetPct), 1, 100) : 50;
-  const areaText = isFiniteNumber(areaM2)
-    ? `${areaM2.toLocaleString(undefined, { maximumFractionDigits: 1 })} m\u00B2`
-    : "-";
-  const coverageText = isFiniteNumber(heatCoverage)
-    ? `${(heatCoverage * 100).toFixed(1)}%`
-    : "-";
-  const estimateArea = targetFraction => {
-    if (!isFiniteNumber(areaM2) || areaM2 <= 0 || !isFiniteNumber(heatCoverage) || heatCoverage <= 1e-6) return null;
-    return areaM2 * targetFraction / heatCoverage;
+function setDesignExplorerState(opts){
+  CURRENT_DESIGN_EXPLORER = {
+    areaM2: Number(opts?.areaM2),
+    demandHourly: Array.isArray(opts?.demandHourly) ? opts.demandHourly.slice() : [],
+    met: Array.isArray(opts?.met) ? opts.met : [],
+    calculator: opts?.calculator,
+    mains: opts?.mains || {},
+    flowRateLpsPerM2: Number(opts?.flowRateLpsPerM2),
+    thermalModel: opts?.thermalModel || "A",
+    a0: opts?.a0,
+    a1: opts?.a1,
+    a2: opts?.a2,
+    isoEta0: opts?.isoEta0,
+    isoA1: opts?.isoA1,
+    isoA2: opts?.isoA2,
+    isoA3: opts?.isoA3,
+    isoA4: opts?.isoA4,
+    isoA6: opts?.isoA6,
+    isoA8: opts?.isoA8,
+    isoTout0: opts?.isoTout0,
+    isoIterMax: opts?.isoIterMax,
+    storageVolumeLitres: Math.max(0, Number(opts?.storageVolumeLitres) || 0),
+    industryLabel: opts?.industryLabel || "Selected industry",
+    cache: new Map()
   };
-  const defaultArea = estimateArea(defaultTargetPct / 100);
-  const defaultAreaText = isFiniteNumber(defaultArea)
-    ? `${defaultArea.toLocaleString(undefined, { maximumFractionDigits: 0 })} m\u00B2`
-    : "Not available";
-
-  return `
-    <div class="recommended-size-box">
-      <div class="recommended-size-head">
-        <div>
-          <span>Area guide</span>
-          <small>Choose a heat-coverage target to estimate collector area</small>
-        </div>
-      </div>
-      <div class="recommended-size-grid">
-        <div class="recommended-size-row">
-          <span>Current area</span>
-          <strong>${areaText}</strong>
-        </div>
-        <div class="recommended-size-row">
-          <span>Current heat coverage</span>
-          <strong>${coverageText}</strong>
-        </div>
-        <label class="recommended-size-target">
-          <span>Target heat coverage</span>
-          <div class="recommended-size-input-row">
-            <input type="number" min="1" max="100" step="1" value="${defaultTargetPct.toFixed(0)}"
-              data-current-area="${isFiniteNumber(areaM2) ? areaM2 : ""}"
-              data-current-coverage="${isFiniteNumber(heatCoverage) ? heatCoverage : ""}"
-              oninput="updateRecommendedSizeTarget(this)"
-              onchange="updateRecommendedSizeTarget(this)" />
-            <b>%</b>
-          </div>
-        </label>
-        <div class="recommended-size-answer">
-          <span>Estimated area</span>
-          <strong data-recommended-size-output>${defaultAreaText}</strong>
-        </div>
-      </div>
-    </div>`;
+  CURRENT_DESIGN_EXPLORER.mainsTempArray = CURRENT_DESIGN_EXPLORER.met.map(record =>
+    CURRENT_DESIGN_EXPLORER.mains?.byDay?.[record.dayN] ?? CURRENT_DESIGN_EXPLORER.mains?.annualAvgC ?? 14
+  );
+  return CURRENT_DESIGN_EXPLORER;
 }
 
-function updateRecommendedSizeTarget(input){
-  const box = input?.closest?.(".recommended-size-box");
-  const output = box?.querySelector?.("[data-recommended-size-output]");
-  if (!output) return;
+function designExplorerNumber(value, decimals=0){
+  return isFiniteNumber(value)
+    ? Number(value).toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
+    : "-";
+}
 
-  const areaM2 = Number(input.dataset.currentArea);
-  const heatCoverage = Number(input.dataset.currentCoverage);
-  const raw = Number(input.value);
-  const targetPct = clamp(raw, 1, 100);
-  // Correct genuinely out-of-range entries (e.g. "500") without disrupting mid-typing.
-  if (isFiniteNumber(raw) && raw !== targetPct) input.value = targetPct;
+function designExplorerEnergy(value){
+  return isFiniteNumber(value) ? `${designExplorerNumber(value)} kWh/yr` : "-";
+}
 
-  if (!isFiniteNumber(areaM2) || areaM2 <= 0 || !isFiniteNumber(heatCoverage) || heatCoverage <= 1e-6 || !isFiniteNumber(targetPct)){
-    output.textContent = "Not available";
-    return;
+function calculateDesignExplorerScenario(areaM2, state=CURRENT_DESIGN_EXPLORER){
+  const area = Number(areaM2);
+  if (!state || !isFiniteNumber(area) || area <= 0 || !state.demandHourly.length) return null;
+  const cacheKey = area.toFixed(4);
+  if (state.cache?.has(cacheKey)) return state.cache.get(cacheKey);
+
+  const supply = calculatePvtThermalHourly({ ...state, areaM2: area });
+  let balance;
+  if (state.storageVolumeLitres > 0){
+    const storage = calculateThermalStorage({
+      tank_volume_litres: state.storageVolumeLitres,
+      pvt_supply_array: supply.hourly,
+      hotel_demand_array: state.demandHourly,
+      mains_temp: state.mains?.annualAvgC ?? 14,
+      mains_temp_array: state.mainsTempArray
+    });
+    const demandMonthly = aggregateMonthly(state.demandHourly, state.met);
+    const storageMonthly = calculateStorageMonthlyEnergyBalance(storage, state.demandHourly, state.met);
+    const totalDemand = demandMonthly.reduce((sum, value) => sum + (value || 0), 0);
+    const unmet = Number(storage.total_unmet_demand_kwh) || 0;
+    const excess = Number(storage.total_excess_pvt_kwh) || 0;
+    balance = {
+      demandMonthly,
+      matchedMonthly: storageMonthly.matchedMonthly,
+      unmetMonthly: storageMonthly.unmetMonthly,
+      excessMonthly: storageMonthly.excessMonthly,
+      metBySupply: Math.max(0, totalDemand - unmet),
+      unmet,
+      excess,
+      solarFraction: totalDemand > 0 ? Math.max(0, totalDemand - unmet) / totalDemand : 0
+    };
+  } else {
+    balance = calculateHourlyEnergyBalance(supply.hourly, state.demandHourly, state.met);
   }
-  const needed = areaM2 * (targetPct / 100) / heatCoverage;
-  output.textContent = `${needed.toLocaleString(undefined, { maximumFractionDigits: 0 })} m\u00B2`;
+
+  const scenario = {
+    areaM2: area,
+    thermalKWh: supply.annualKWh,
+    peakKW: supply.peakKW,
+    balance,
+    coverage: balance.solarFraction
+  };
+  state.cache?.set(cacheKey, scenario);
+  return scenario;
+}
+
+function findDesignExplorerTargetArea(targetPct, state=CURRENT_DESIGN_EXPLORER){
+  const target = clamp(Number(targetPct) / 100, 0.01, 0.99);
+  if (!state || !isFiniteNumber(state.areaM2) || state.areaM2 <= 0) return { achievable:false, target };
+
+  const minimumArea = 1;
+  const maximumArea = Math.max(state.areaM2 * 16, state.areaM2 + 1000, 2000);
+  let low = minimumArea;
+  let high = Math.max(state.areaM2, minimumArea);
+  let lowScenario = calculateDesignExplorerScenario(low, state);
+  let highScenario = calculateDesignExplorerScenario(high, state);
+
+  if (lowScenario.coverage < target){
+    while (highScenario.coverage < target && high < maximumArea){
+      low = high;
+      lowScenario = highScenario;
+      high = Math.min(maximumArea, high * 1.8);
+      highScenario = calculateDesignExplorerScenario(high, state);
+    }
+  }
+
+  if (highScenario.coverage < target){
+    return { achievable:false, target, maxArea:high, maxCoverage:highScenario.coverage };
+  }
+
+  for (let i = 0; i < 14; i++){
+    const mid = (low + high) / 2;
+    const midScenario = calculateDesignExplorerScenario(mid, state);
+    if (midScenario.coverage >= target){
+      high = mid;
+      highScenario = midScenario;
+    } else {
+      low = mid;
+      lowScenario = midScenario;
+    }
+  }
+  return { achievable:true, target, scenario:highScenario, lowScenario };
+}
+
+function buildDesignExplorerMonthlyBars(scenario){
+  const demand = scenario?.balance?.demandMonthly || [];
+  const matched = scenario?.balance?.matchedMonthly || [];
+  return MONTH_NAMES.map((month, index) => {
+    const demandKWh = Math.max(0, Number(demand[index]) || 0);
+    const matchedKWh = Math.min(demandKWh, Math.max(0, Number(matched[index]) || 0));
+    const percent = demandKWh > 1e-9 ? clamp((matchedKWh / demandKWh) * 100, 0, 100) : 0;
+    return `<div class="design-explorer-month"><span>${month.slice(0,3)}</span><div class="design-explorer-month-track"><i style="width:${percent.toFixed(2)}%"></i></div><strong>${percent.toFixed(0)}%</strong></div>`;
+  }).join("");
+}
+
+function getDesignExplorerMessage(scenario, targetPct, recommendation, state){
+  const target = Number(targetPct);
+  if (!recommendation.achievable){
+    return `The selected ${target.toFixed(0)}% target is not reached below ${designExplorerNumber(recommendation.maxArea)} m\u00B2 in this hourly scenario. More area cannot replace missing daytime demand; storage or a load schedule change may be needed.`;
+  }
+  if (scenario.coverage + 1e-9 >= target / 100){
+    return `This ${designExplorerNumber(scenario.areaM2)} m\u00B2 scenario meets the ${target.toFixed(0)}% target using the ${state.storageVolumeLitres > 0 ? "selected tank" : "same-hour direct-use"} result.`;
+  }
+  return `The selected area delivers ${(scenario.coverage * 100).toFixed(1)}%; the hourly model estimates about ${designExplorerNumber(recommendation.scenario.areaM2)} m\u00B2 to reach ${target.toFixed(0)}%.`;
+}
+
+function buildRecommendedSystemSizeBox(opts){
+  if (!CURRENT_DESIGN_EXPLORER) return "";
+  const state = CURRENT_DESIGN_EXPLORER;
+  const initialTargetPct = 50;
+  const scenario = calculateDesignExplorerScenario(state.areaM2, state);
+  const recommendation = findDesignExplorerTargetArea(initialTargetPct, state);
+  const currentArea = Math.max(1, state.areaM2);
+  const minArea = Math.max(1, Math.floor(currentArea * 0.25));
+  const maxArea = Math.max(Math.ceil(currentArea * 6), minArea + 100);
+  const recommendationText = recommendation.achievable
+    ? `${designExplorerNumber(recommendation.scenario.areaM2)} m\u00B2`
+    : "Direct-use target not reached";
+  const modeText = state.storageVolumeLitres > 0
+    ? `Hourly match with ${designExplorerNumber(state.storageVolumeLitres)} L selected tank`
+    : "Same-hour direct-use match; excess heat is not carried overnight";
+
+  return `
+    <section class="design-explorer" id="designExplorer" aria-labelledby="designExplorerTitle">
+      <div class="design-explorer-head">
+        <div>
+          <div class="design-explorer-kicker">PVT Design Explorer</div>
+          <h3 id="designExplorerTitle">Explore useful collector area</h3>
+          <p>${escapeHtml(state.industryLabel)} &middot; ${escapeHtml(modeText)}</p>
+        </div>
+        <span class="design-explorer-chip">8,760 hourly points</span>
+      </div>
+      <div class="design-explorer-controls">
+        <div class="design-explorer-control">
+          <label for="designExplorerAreaRange">Collector area (m\u00B2)</label>
+          <div class="design-explorer-input-line">
+            <input id="designExplorerAreaRange" type="range" min="${minArea}" max="${maxArea}" step="1" value="${currentArea.toFixed(0)}" oninput="updateDesignExplorer('area-range')" aria-label="Collector area slider" />
+            <input id="designExplorerAreaInput" type="number" min="1" max="10000" step="1" value="${currentArea.toFixed(0)}" oninput="updateDesignExplorer('area-input')" aria-label="Collector area in square metres" />
+          </div>
+        </div>
+        <div class="design-explorer-control">
+          <label for="designExplorerTargetRange">Target daytime solar heat coverage (%)</label>
+          <div class="design-explorer-input-line">
+            <input id="designExplorerTargetRange" type="range" min="5" max="95" step="1" value="${initialTargetPct}" oninput="updateDesignExplorer('target-range')" aria-label="Target heat coverage slider" />
+            <input id="designExplorerTargetInput" type="number" min="1" max="99" step="1" value="${initialTargetPct}" oninput="updateDesignExplorer('target-input')" aria-label="Target heat coverage percentage" />
+          </div>
+        </div>
+      </div>
+      <div class="design-explorer-stat-grid">
+        <div class="design-explorer-stat design-explorer-stat-primary"><span>Actual heat coverage</span><strong data-explorer-output="coverage">${(scenario.coverage * 100).toFixed(1)}%</strong><small>Delivered heat divided by annual process heat demand</small></div>
+        <div class="design-explorer-stat"><span>Solar heat delivered</span><strong data-explorer-output="delivered">${designExplorerEnergy(scenario.balance.metBySupply)}</strong><small>Counted at the demand hour</small></div>
+        <div class="design-explorer-stat"><span>Backup heat</span><strong data-explorer-output="backup">${designExplorerEnergy(scenario.balance.unmet)}</strong><small>Remaining process demand</small></div>
+        <div class="design-explorer-stat"><span>Suggested area</span><strong data-explorer-output="target-area">${recommendationText}</strong><small>Smallest simulated area for the selected target</small><button type="button" class="design-explorer-apply" onclick="applyDesignExplorerTarget()">Use suggested area</button></div>
+      </div>
+      <div class="design-explorer-message" data-explorer-message>${getDesignExplorerMessage(scenario, initialTargetPct, recommendation, state)}</div>
+      <div class="design-explorer-chart-wrap">
+        <div class="design-explorer-chart-head"><div><b>Monthly useful heat coverage</b><small>Same-hour demand matching by month</small></div><span data-explorer-output="thermal">${designExplorerEnergy(scenario.thermalKWh)} PVT thermal output</span></div>
+        <div class="design-explorer-bars" data-explorer-bars>${buildDesignExplorerMonthlyBars(scenario)}</div>
+      </div>
+    </section>`;
+}
+
+function updateDesignExplorer(source = ""){
+  const root = document.getElementById("designExplorer");
+  const state = CURRENT_DESIGN_EXPLORER;
+  if (!root || !state) return;
+  const range = root.querySelector("#designExplorerAreaRange");
+  const areaInput = root.querySelector("#designExplorerAreaInput");
+  const targetRange = root.querySelector("#designExplorerTargetRange");
+  const targetInput = root.querySelector("#designExplorerTargetInput");
+  const rawArea = Number(source === "area-range" ? range?.value : areaInput?.value);
+  const rawTarget = Number(source === "target-range" ? targetRange?.value : targetInput?.value);
+  if (!isFiniteNumber(rawArea) || rawArea <= 0 || !isFiniteNumber(rawTarget)) return;
+  const area = clamp(rawArea, 1, 10000);
+  const targetPct = clamp(rawTarget, 1, 99);
+  if (areaInput) areaInput.value = area.toFixed(0);
+  if (range) range.value = clamp(area, Number(range.min), Number(range.max)).toFixed(0);
+  if (targetInput) targetInput.value = targetPct.toFixed(0);
+  if (targetRange) targetRange.value = clamp(targetPct, Number(targetRange.min), Number(targetRange.max)).toFixed(0);
+
+  const scenario = calculateDesignExplorerScenario(area, state);
+  const recommendation = findDesignExplorerTargetArea(targetPct, state);
+  const output = key => root.querySelector(`[data-explorer-output="${key}"]`);
+  if (!scenario) return;
+  if (output("coverage")) output("coverage").textContent = `${(scenario.coverage * 100).toFixed(1)}%`;
+  if (output("delivered")) output("delivered").textContent = designExplorerEnergy(scenario.balance.metBySupply);
+  if (output("backup")) output("backup").textContent = designExplorerEnergy(scenario.balance.unmet);
+  if (output("thermal")) output("thermal").textContent = `${designExplorerEnergy(scenario.thermalKWh)} PVT thermal output`;
+  if (output("target-area")) output("target-area").textContent = recommendation.achievable
+    ? `${designExplorerNumber(recommendation.scenario.areaM2)} m\u00B2`
+    : "Direct-use target not reached";
+  const message = root.querySelector("[data-explorer-message]");
+  if (message) message.textContent = getDesignExplorerMessage(scenario, targetPct, recommendation, state);
+  const bars = root.querySelector("[data-explorer-bars]");
+  if (bars) bars.innerHTML = buildDesignExplorerMonthlyBars(scenario);
+}
+
+function applyDesignExplorerTarget(){
+  const root = document.getElementById("designExplorer");
+  const state = CURRENT_DESIGN_EXPLORER;
+  if (!root || !state) return;
+  const targetInput = root.querySelector("#designExplorerTargetInput");
+  const areaInput = root.querySelector("#designExplorerAreaInput");
+  const targetPct = Number(targetInput?.value);
+  const recommendation = findDesignExplorerTargetArea(targetPct, state);
+  if (!recommendation.achievable || !areaInput) return;
+  areaInput.value = recommendation.scenario.areaM2.toFixed(0);
+  updateDesignExplorer();
 }
 
 function buildIndustryEnergyFlowSummary(opts){
@@ -5241,6 +5520,7 @@ async function calcAnnualPVT(){
     btnAnnual.disabled = true;
     document.getElementById("calcHint").style.display = "inline";
     resetExportActions();
+    CURRENT_DESIGN_EXPLORER = null;
     syncInstalledCostInputs();
 
     // 1) Read inputs
@@ -5336,65 +5616,22 @@ async function calcAnnualPVT(){
       // Solar geometry uses true solar time when the backend provides it; otherwise
       // falls back to local-clock hourN (older backend). Demand scheduling below still
       // uses r.hourN (clock time) as before.
-      const solarH = isFiniteNumber(r.solarHour) ? r.solarHour : r.hourN;
-      const res = calculator.calculate(r.dayN, solarH, r.dni, r.dhi);
-      const G   = Math.max(0, res.totalIrradiance);
-      const Tin = CURRENT_MAINS.byDay[r.dayN] ?? CURRENT_MAINS.annualAvgC;
-
-      let etaTh = 0, th_W = 0;
+      const thermalSample = calculatePvtThermalSample(r, calculator, {
+        areaM2: A,
+        totalFlowKgHr: totalFlow_kg_hr,
+        thermalModel,
+        mains: CURRENT_MAINS,
+        a0, a1, a2,
+        isoEta0, isoA1, isoA2, isoA3, isoA4, isoA6, isoA8, isoTout0, isoIterMax
+      });
+      const G = thermalSample.G;
+      const Tin = thermalSample.Tin;
+      const etaTh = thermalSample.etaTh;
+      const th_W = thermalSample.th_W;
       const pv_stc_kWh = (etaPv * G * A) / 1000;
-
-      if (thermalModel === 'A') {
-        // Model A: simple linear
-        if (G > 1e-6){ etaTh = a0 + a1 * ((Tin - r.ta) / G) + a2 * r.vwind; etaTh = clamp(etaTh, 0, 1); }
-        th_W = etaTh * G * A;
-      } else {
-        // Model B: ISO 9806 Eq.12 with Newton iteration
-        const Ta_K = r.ta + 273.15;
-        const Ta4  = SIGMA * Math.pow(Ta_K, 4);            // black-body flux at ambient temp
-        // Sky long-wave irradiance E_L. TMY carries no measured E_L, so use Swinbank's
-        // clear-sky estimate L_down = 5.31e-13 * Ta_K^6 (W/m^2). (E_L - sigma*Ta^4) is then
-        // negative, i.e. a net radiative loss to the sky. Only active when a4 (isoA4) > 0.
-        const EL   = 5.31e-13 * Math.pow(Ta_K, 6);
-        const u    = r.vwind || 0;
-        if (G > 1e-6 && totalFlow_kg_hr > 1e-12) {
-          const mdot_cp = (totalFlow_kg_hr / 3600) * 4184; // W/K
-          let Tout_iter = isoTout0;
-          for (let iter = 0; iter < isoIterMax; iter++) {
-            const Tm  = (Tin + Tout_iter) / 2;
-            const dT  = Tm - r.ta;
-            const Q_model = A * (isoEta0 * G
-                               - isoA1 * dT
-                               - isoA2 * dT * dT
-                               - isoA3 * u  * dT
-                               + isoA4 * (EL - Ta4)
-                               - isoA6 * u  * G
-                               - isoA8 * Math.pow(dT, 4));
-            const Q_flow  = mdot_cp * (Tout_iter - Tin);
-            const dQm_dTout = A * (-isoA1 * 0.5 - isoA2 * dT - isoA3 * u * 0.5 - isoA8 * 2 * Math.pow(dT, 3));
-            const step = (Q_flow - Q_model) / (mdot_cp - dQm_dTout);
-            Tout_iter -= step;
-            if (Math.abs(step) < 1e-4) break;
-          }
-          const Tm_f = (Tin + Tout_iter) / 2;
-          const dT_f = Tm_f - r.ta;
-          th_W = Math.max(0, A * (isoEta0 * G
-                                  - isoA1 * dT_f
-                                  - isoA2 * dT_f * dT_f
-                                  - isoA3 * u  * dT_f
-                                  + isoA4 * (EL - Ta4)
-                                  - isoA6 * u  * G
-                                  - isoA8 * Math.pow(dT_f, 4)));
-          etaTh = (G * A > 1e-6) ? clamp(th_W / (G * A), 0, 1) : 0;
-        }
-      }
-
-      const th_kWh = th_W / 1000;
+      const th_kWh = thermalSample.th_kWh;
       const hourlyFlow = (th_kWh > 1e-12) ? totalFlow_kg_hr : "";
-      let Tout_C = "";
-      if (th_kWh > 1e-12 && totalFlow_kg_hr > 1e-12){
-        Tout_C = Tin + (th_kWh * 3600) / (totalFlow_kg_hr * 4.184);
-      }
+      const Tout_C = thermalSample.Tout_C;
 
       const pvPanelTempC = calcNoctPanelTempC(r.ta, G, pvNoctC);
       const exploratoryPvtPanelTempC = calcPvtPanelTempC({
@@ -5721,6 +5958,19 @@ async function calcAnnualPVT(){
     let industryReportSummary = null;
 
     CURRENT_PROCESS_DETAIL = null;
+    const configureDesignExplorer = (demandHourly, storageVolumeLitres=0) => setDesignExplorerState({
+      areaM2: A,
+      demandHourly,
+      met,
+      calculator,
+      mains: CURRENT_MAINS,
+      flowRateLpsPerM2: flowRate,
+      thermalModel,
+      a0, a1, a2,
+      isoEta0, isoA1, isoA2, isoA3, isoA4, isoA6, isoA8, isoTout0, isoIterMax,
+      storageVolumeLitres,
+      industryLabel: INDUSTRY_UI[industry]?.name || industry || "Selected industry"
+    });
 
     // 5) Industry demand section
     const industry   = document.getElementById("industrySelect").value;
@@ -5760,6 +6010,7 @@ async function calcAnnualPVT(){
       const exportSavingsAud = elecExcess * feedInTariff;
       const thermalFuelSavingsAud = (demandMet * 3.6 / boilerEff) * gasPrice;
       const totalSavingsAud = electricalSavingsAud + exportSavingsAud + thermalFuelSavingsAud;
+      configureDesignExplorer(thermalHourly);
 
       const procLabels = {
         fatty_film_rinse: `Process A: Fatty Film Rinse (kWater = ${dairyAssumptions.processParams.fatty_film_rinse.kWater.toFixed(2)})`,
@@ -5911,6 +6162,7 @@ async function calcAnnualPVT(){
       const exportSavingsAud = elecExcess * feedInTariff;
       const thermalFuelSavingsAud = (demandMet * 3.6 / boilerEff) * gasPrice;
       const totalSavingsAud = electricalSavingsAud + exportSavingsAud + thermalFuelSavingsAud;
+      configureDesignExplorer(thermalHourly);
 
       const procLabels = {
         cip_prerinse: `Process A: CIP Pre-Rinse (kWater = ${breweryAssumptions.processParams.cip_prerinse.kWater.toFixed(2)})`,
@@ -6120,6 +6372,7 @@ async function calcAnnualPVT(){
       const exportSavingsAud = elecExcess * feedInTariff;
       const thermalFuelSavingsAud = (demandMet * 3.6 / boilerEff) * gasPrice;
       const totalSavingsAud = electricalSavingsAud + exportSavingsAud + thermalFuelSavingsAud;
+      configureDesignExplorer(thermalHourly, tankVolumeLitres);
       const hotelUnusedHeatNote = tankVolumeLitres > 0
         ? "Excess PVT thermal after storage matching."
         : "PVT heat above hourly process demand, with no storage counted.";
@@ -6305,6 +6558,7 @@ async function calcAnnualPVT(){
       const aquaticElectricalSavingsAud = aquaticElecMetByPv * electricityPrice;
       const aquaticExportSavingsAud = aquaticElecExcess * feedInTariff;
       const annualSavings = thermalFuelSavingsAud + aquaticElectricalSavingsAud + aquaticExportSavingsAud;
+      configureDesignExplorer(thermalHourly);
 
       const procLabels = {};
       for (const key of activeAquaticKeys) procLabels[key] = (processes[key]?.label || AQUATIC_PROCESS_SHORT_LABELS[key] || key);
@@ -6470,6 +6724,7 @@ async function calcAnnualPVT(){
       const exportSavingsAud = elecExcess * feedInTariff;
       const thermalFuelSavingsAud = (demandMet * 3.6 / boilerEff) * gasPrice;
       const totalSavingsAud = electricalSavingsAud + exportSavingsAud + thermalFuelSavingsAud;
+      configureDesignExplorer(thermalHourly);
 
       const procLabels = {};
       for (const key of selectedKeys) procLabels[key] = processes[key]?.label || LAUNDRY_PROCESS_SHORT_LABELS[key] || key;
