@@ -43,7 +43,7 @@ assert.match(appSource, /\(1 - \(1 - nonInverterLoss\) \* inverterEfficiency\) \
 assert.match(homePage, /pages\/pv-external-validation\.html/);
 assert.match(homePage, /pages\/validation-hub\.html/);
 assert.match(homePage, /AUD\/ft&sup2;; non-SI/);
-assert.match(homePage, /Important disclaimer and privacy/);
+assert.match(homePage, /About, sources and privacy/);
 assert.doesNotMatch(homePage, /Need to add disclaimer later/);
 assert.match(appSource, /pvOnlyNetAcKWh/);
 assert.match(validationPage, /Easy procedure/);
