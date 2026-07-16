@@ -71,7 +71,7 @@ function buildSeries(){
         date: `${YEAR}-${String(month).padStart(2,"0")}-${String(day).padStart(2,"0")}`,
         month, dayOfMonth: day, dayN, hourN: h,
         pv_kWh: 1, pvOnly_kWh: 0.5, th_kWh: 2,
-        Tout_C: 30, Tin_C: 15, pvPanel_C: 40, pvtPanel_C: 35,
+        Tout_C: 30, Tin_C: 15, pvPanel_C: 40, pvtPanel_C: 35, G_Wm2: 600, Ta_C: 20,
         daytimeTempSample: h === 12
       });
     }
@@ -106,6 +106,8 @@ console.log("\n# aggregateMonthlyAll (timezone-independent bucketing)");
   ok("every month has correct day count x24 PV",
     months.every((m,i)=>Math.abs(m.pv_kWh - mod.MONTH_DAYS[i]*24) < 1e-9));
   near("daytime Tout average = 30 (one sample/day)", months[0].Tout_C_avg, 30, 1e-9);
+  near("daytime plane irradiance average = 600 W/m2", months[0].G_Wm2_avg, 600, 1e-9);
+  near("daytime air temperature average = 20 C", months[0].Ta_C_avg, 20, 1e-9);
 }
 
 console.log("\n# aggregateDailyAll (fixed TMY calendar, no phantom Feb 29)");

@@ -32,7 +32,9 @@ ok("share links use versioned payload", bodyOf("buildShareScenarioPayload").incl
 ok("share links include reproducibility note", bodyOf("buildShareScenarioPayload").includes("reproducibilityNote"));
 ok("shared-link loader keeps v1 flat input compatibility", bodyOf("applySharedScenarioFromUrl").includes("applyInputState(payload);"));
 ok("successful results reveal the share action", SRC.includes('shareBtn.style.display = "inline-block"'));
-ok("successful results reveal the PV check action", SRC.includes('pvCheckBtn.style.display = "inline-block"'));
+ok("redundant per-result PV check action is removed", !SRC.includes("btnCheckPvScenario"));
+ok("report header keeps Save PDF beside Send report", SRC.includes('class="handoff-buttons"'));
+ok("report email sends the generated report HTML", SRC.includes("report_html: getReportExportHtml()"));
 ok("result actions stay hidden until calculation succeeds", SRC.includes("resultActions.hidden = true") && SRC.includes("resultActions.hidden = false"));
 ok("successful calculation scrolls to results", SRC.includes("scrollToCalculationResults();"));
 

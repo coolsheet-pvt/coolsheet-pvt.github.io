@@ -45,7 +45,6 @@ assert.match(homePage, /pages\/validation-hub\.html/);
 assert.match(homePage, /AUD\/ft&sup2;; non-SI/);
 assert.match(homePage, /Important disclaimer and privacy/);
 assert.doesNotMatch(homePage, /Need to add disclaimer later/);
-assert.match(appSource, /function buildCurrentPvValidationUrl\(\)/);
 assert.match(appSource, /pvOnlyNetAcKWh/);
 assert.match(validationPage, /Easy procedure/);
 assert.match(validationPage, /Check your current CoolSheet setup/);

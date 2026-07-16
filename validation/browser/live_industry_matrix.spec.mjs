@@ -285,7 +285,7 @@ async function loadWeather(page, baseUrl, city) {
 
 async function calculate(page) {
   await page.click("#btnAnnual");
-  await expect(page.locator("#annualOutput .annual-summary-item")).toHaveCount(5, { timeout: 120000 });
+  await expect(page.locator("#annualOutput .annual-summary-item")).toHaveCount(4, { timeout: 120000 });
   await expect(page.locator("#downloadLink")).toBeVisible({ timeout: 30000 });
 }
 
@@ -367,12 +367,12 @@ async function collectScenarioOutputs(page, city, industry, target, options = {}
     };
     const weather = typeof buildWeatherExportMetadata === "function" ? buildWeatherExportMetadata() : {};
     const location = CURRENT_LOC ? { name: CURRENT_LOC.name, lat: CURRENT_LOC.lat, lon: CURRENT_LOC.lon } : null;
-    const heatDemandKWh = energyCards["Heat demand consumed"]?.value;
-    const solarHeatUsedKWh = energyCards["Solar heat delivered to process"]?.value;
-    const backupHeatKWh = energyCards["Backup heat needed"]?.value;
-    const electricDemandKWh = energyCards["Electric demand consumed"]?.value;
-    const solarHeatCoveragePct = insightPairs["Direct-use heat coverage"]?.value;
-    const savingsAud = insightPairs["Yearly Savings"]?.value;
+    const heatDemandKWh = energyCards["Process heat demand"]?.value;
+    const solarHeatUsedKWh = energyCards["PVT heat used"]?.value;
+    const backupHeatKWh = energyCards["Backup heat"]?.value;
+    const electricDemandKWh = energyCards["Site electricity"]?.value;
+    const solarHeatCoveragePct = insightPairs["Heat coverage"]?.value;
+    const savingsAud = insightPairs["Annual savings"]?.value;
     const processTotalText = document.querySelector("#industryOutput .process-breakdown-total .process-kwh")?.textContent || "";
 
     let hourlyCsv = null;

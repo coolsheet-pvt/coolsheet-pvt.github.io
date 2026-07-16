@@ -17,16 +17,35 @@ test("calculator UI loads without console errors", async ({ page }) => {
   await expect(page.locator("#btnAnnual")).toBeVisible();
   await expect(page.locator("#btnAnnual")).toHaveText("Calculate results");
   await expect(page.locator("#industrySelect")).toBeVisible();
+  await expect(page.locator("#industryEvidenceNotice")).toHaveCount(0);
+  const processSelectorComesFirst = await page.evaluate(() => {
+    const processPanel = document.getElementById("processPanel");
+    const throughputLabel = document.getElementById("throughputLabel");
+    const dairyPanel = document.getElementById("dairyAssumptionsPanel");
+    return Boolean(
+      processPanel.compareDocumentPosition(throughputLabel) & Node.DOCUMENT_POSITION_FOLLOWING
+      && processPanel.compareDocumentPosition(dairyPanel) & Node.DOCUMENT_POSITION_FOLLOWING
+    );
+  });
+  expect(processSelectorComesFirst).toBe(true);
   await expect(page.locator("#downloadLink")).toBeHidden();
   await expect(page.locator("#btnGeneratePdf")).toBeHidden();
   await expect(page.locator("#btnShareLink")).toBeHidden();
-  await expect(page.locator("#btnCheckPvScenario")).toBeHidden();
   await expect(page.locator("#btnResetInputs")).toBeVisible();
   await expect(page.locator("#resultActions")).toBeHidden();
+  await expect(page.locator("#supplyChartsPanel")).toHaveCSS("border-top-style", "none");
+  await page.evaluate(() => renderTemperatureTmyNote([
+    { month:8, PVPanel_C_count:1, PVPanel_C_avg:30, G_Wm2_avg:476, Ta_C_avg:15.1 },
+    { month:9, PVPanel_C_count:1, PVPanel_C_avg:40.6, G_Wm2_avg:649, Ta_C_avg:20.4 }
+  ]));
+  await expect(page.locator("#temperatureTmyNote")).toContainText("Why Sep changes");
+  await expect(page.locator("#temperatureTmyNote")).toContainText("476 to 649 W/m");
   await expect(page.locator(".calculator-actions #btnAnnual")).toHaveCount(1);
   await expect(page.locator(".calculator-actions #btnResetInputs")).toHaveCount(1);
-  await expect(page.locator(".calculator-actions #downloadLink, .calculator-actions #btnGeneratePdf, .calculator-actions #btnShareLink, .calculator-actions #btnCheckPvScenario")).toHaveCount(0);
-  await expect(page.locator("#resultActions #downloadLink, #resultActions #btnGeneratePdf, #resultActions #btnShareLink, #resultActions #btnCheckPvScenario")).toHaveCount(4);
+  await expect(page.locator(".workflow-step-demand .calculator-actions")).toHaveCount(0);
+  await expect(page.locator(".workflow-step-demand + .calculator-actions")).toHaveCount(1);
+  await expect(page.locator(".calculator-actions #downloadLink, .calculator-actions #btnGeneratePdf, .calculator-actions #btnShareLink")).toHaveCount(0);
+  await expect(page.locator("#resultActions #downloadLink, #resultActions #btnGeneratePdf, #resultActions #btnShareLink")).toHaveCount(3);
   const actionAlignment = await page.evaluate(() => {
     const calculate = document.getElementById("btnAnnual").getBoundingClientRect();
     const reset = document.getElementById("btnResetInputs").getBoundingClientRect();
@@ -40,7 +59,31 @@ test("calculator UI loads without console errors", async ({ page }) => {
   await page.evaluate(() => setOutput(""));
   await expect(page.locator("#output")).toBeHidden();
   await expect(page.locator("#weatherServiceIndicator")).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "Validation centre" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Validation", exact:true })).toBeVisible();
+  await expect(page.locator(".footer-details-body")).toBeHidden();
+  await page.locator(".footer-details > summary").click();
+  await expect(page.locator(".footer-details-body")).toBeVisible();
+  await expect(page.locator(".footer-sources dl > div")).toHaveCount(4);
+  await expect(page.locator(".workflow-step")).toHaveCount(2);
+  await expect(page.locator(".workflow-step-site .workflow-step-number")).toHaveText("1");
+  await expect(page.locator(".workflow-step-demand .workflow-step-number")).toHaveText("2");
+  await expect(page.locator(".workflow-step-status")).toHaveCount(0);
+  await expect(page.locator(".workflow-step-title p")).toHaveCount(0);
+  await expect(page.locator(".workflow-step-header").first()).toHaveCSS("background-color", "rgb(233, 240, 245)");
+  const stepPalette = await page.evaluate(() => {
+    const siteHeader = document.querySelector(".workflow-step-site .workflow-step-header");
+    const demandHeader = document.querySelector(".workflow-step-demand .workflow-step-header");
+    const siteNumber = document.querySelector(".workflow-step-site .workflow-step-number");
+    const demandNumber = document.querySelector(".workflow-step-demand .workflow-step-number");
+    return {
+      siteHeader:getComputedStyle(siteHeader).backgroundColor,
+      demandHeader:getComputedStyle(demandHeader).backgroundColor,
+      siteNumber:getComputedStyle(siteNumber).color,
+      demandNumber:getComputedStyle(demandNumber).color
+    };
+  });
+  expect(stepPalette.siteHeader).toBe(stepPalette.demandHeader);
+  expect(stepPalette.siteNumber).toBe(stepPalette.demandNumber);
   await expect(page.getByText("Try modern UI", { exact:false })).toHaveCount(0);
   await expect(page.locator('script[src*="ui-modern"]')).toHaveCount(0);
   const optionalSystemSettings = page.locator("details.advanced-settings").filter({ has:page.locator("#tiltAngle") });
@@ -48,6 +91,7 @@ test("calculator UI loads without console errors", async ({ page }) => {
   await optionalSystemSettings.locator(":scope > summary").click();
   await expect(optionalSystemSettings.locator("details.setting-group")).toHaveCount(3);
   await expect(optionalSystemSettings.locator("details.setting-group[open]")).toHaveCount(0);
+  await expect(page.locator('label[for="azimuthAngle"]')).toHaveText("Panel direction (0° north, 180° south):");
   await expect(page.locator("#mainsMonthGrid")).toBeHidden();
   const pvGroup = optionalSystemSettings.locator("details.setting-group").filter({ has:page.locator("#etaPvPercent") });
   await pvGroup.locator(":scope > summary").click();
@@ -70,13 +114,22 @@ test("calculator UI loads without console errors", async ({ page }) => {
   const thermalGroup = optionalSystemSettings.locator("details.setting-group").filter({ has:page.locator("#modelA") });
   await thermalGroup.locator(":scope > summary").click();
   await expect(page.locator("#modelA")).toBeVisible();
+  const groupBodyColours = await page.locator(".setting-group-body").evaluateAll(elements => elements.map(element => getComputedStyle(element).backgroundColor));
+  expect(new Set(groupBodyColours).size).toBe(1);
   await expect(page.locator("#modelB")).toBeVisible();
   await expect(thermalGroup.locator(".thermal-model-card")).toHaveCSS("border-top-style", "none");
   await expect(thermalGroup.locator(".thermal-model-option").first()).toHaveCSS("border-top-style", "none");
+  await thermalGroup.locator("#modelAParams .thermal-model-details > summary").click();
+  await expect(page.locator("#pvtA0")).toBeVisible();
+  const thermalFieldWidth = await thermalGroup.locator("#modelAParams .thermal-model-fields").evaluate(element => element.getBoundingClientRect().width);
+  expect(thermalFieldWidth).toBeLessThanOrEqual(759);
   const economicsSettings = page.locator("details.economics-settings");
   await expect(economicsSettings.locator(":scope > summary")).toHaveText("Costs and savings assumptions");
   await economicsSettings.locator(":scope > summary").click();
   await expect(economicsSettings.locator(".economics-section-title")).toHaveCount(3);
+  await expect(economicsSettings.locator(".advanced-settings-body")).toHaveCSS("padding-top", "10px");
+  await expect(economicsSettings.locator(".advanced-grid").first()).toHaveCSS("row-gap", "7px");
+  await expect(economicsSettings.locator(".economics-section-title").nth(1)).toHaveCSS("padding-top", "10px");
   await expect(economicsSettings.locator(".setting-chip").first()).toBeHidden();
   await expect(page.locator("#autoCapexFromWatts")).toBeVisible();
   await expect(page.locator("#autoCapexFromWatts")).toBeChecked();
@@ -117,6 +170,69 @@ test("how-it-works diagram animates and opens step details", async ({ page }) =>
   await expect(detailModal).toBeHidden();
   await page.locator("#btnCloseMainsChart").click();
   await expect(overviewModal).toBeHidden();
+});
+
+test("winter flow action recalculates and report actions stay grouped", async ({ page }) => {
+  await page.goto(pageUrl);
+  const result = await page.evaluate(() => {
+    window.__flowRecalculated = false;
+    window.calcAnnualPVT = () => { window.__flowRecalculated = true; };
+    const suggested = getSuggestedFlowRate(0.02);
+    applySuggestedFlowRate(suggested);
+    const reportHtml = buildPdfTemplateDocument();
+    return {
+      suggested,
+      inputValue:document.getElementById("flowRate")?.value,
+      recalculated:window.__flowRecalculated,
+      groupedActions:/<div class="handoff-buttons">[\s\S]*Save PDF[\s\S]*Send report[\s\S]*<\/div>/.test(reportHtml)
+    };
+  });
+  expect(result).toEqual({
+    suggested:0.015,
+    inputValue:"0.015",
+    recalculated:true,
+    groupedActions:true
+  });
+  await expect(page.locator("#btnCheckPvScenario")).toHaveCount(0);
+});
+
+test("industry percentage metrics render proportional bars", async ({ page }) => {
+  await page.goto(pageUrl);
+  await page.evaluate(() => {
+    const industry = document.getElementById("industryOutput");
+    industry.style.display = "block";
+    industry.innerHTML = buildIndustryPerformanceSummary({
+      savingsAud:16851,
+      solarHeatFraction:0.28,
+      solarElecFraction:0.151,
+      unusedHeatKWh:82960,
+      unusedElectricityKWh:52465,
+      areaM2:250,
+      locationName:"Sydney, New South Wales, Australia"
+    });
+  });
+  const bars = page.locator("#industryOutput .percentage-bar");
+  await expect(bars).toHaveCount(2);
+  await expect(bars.nth(0)).toHaveAttribute("aria-valuenow", "15.1");
+  await expect(bars.nth(1)).toHaveAttribute("aria-valuenow", "28.0");
+  await expect(bars.nth(0).locator(".percentage-bar-fill")).toHaveAttribute("style", "width:15.1%");
+  await expect(bars.nth(1).locator(".percentage-bar-fill")).toHaveAttribute("style", "width:28.0%");
+});
+
+test("restored Step 2 content is stable on first load and animates on user change", async ({ page }) => {
+  await page.goto(pageUrl);
+  await page.evaluate(() => {
+    localStorage.setItem("pvtCalcInputs.v1", JSON.stringify({ industrySelect:"dairy_farm" }));
+    localStorage.setItem("pvtCalcInputs.defaultsVersion", "2026-07-pvt-cooling-default-on");
+  });
+  await page.reload();
+  await expect(page.locator("#industrySelect")).toHaveValue("dairy_farm");
+  await expect(page.locator("#dairyAssumptionsPanel")).toBeVisible();
+  await expect(page.locator(".workflow-step-demand .reveal")).toHaveCount(0);
+
+  await page.locator("#industrySelect").selectOption("brewery");
+  await expect(page.locator("#breweryAssumptionsPanel")).toBeVisible();
+  expect(await page.locator(".workflow-step-demand .reveal").count()).toBeGreaterThan(0);
 });
 
 test("SOAC field-validation page is linked, interactive, and works offline", async ({ page }) => {
@@ -334,13 +450,13 @@ test.skip("retired modern UI presentation layer", async ({ page }) => {
     industry.innerHTML = `
       <div class="output-card output-card-industry">
         <div class="insight-hero">
-          <div class="insight-kicker">Solar Performance Summary</div>
-          <div class="insight-title">You save $20,000 AUD/yr with 60.0% direct-use heat coverage</div>
-          <div class="insight-sub">Based on 250 m² PVT collector area at Test Site</div>
+          <div class="insight-kicker">Performance summary</div>
+          <div class="insight-title">Save $20,000 AUD/yr with 60.0% heat coverage</div>
+          <div class="insight-sub">250 m² PVT collector at Test Site</div>
           <div class="insight-strip">
-            <div class="insight-pill"><div class="eyebrow">Solar Electricity</div><div class="big">20.0%</div></div>
-            <div class="insight-pill"><div class="eyebrow">Direct-use heat coverage</div><div class="big">60.0%</div></div>
-            <div class="insight-pill"><div class="eyebrow">Yearly Savings</div><div class="big">$20,000 /yr</div></div>
+            <div class="insight-pill"><div class="eyebrow">Solar electricity</div><div class="big">20.0%</div></div>
+            <div class="insight-pill"><div class="eyebrow">Heat coverage</div><div class="big">60.0%</div></div>
+            <div class="insight-pill"><div class="eyebrow">Annual savings</div><div class="big">$20,000 /yr</div></div>
             <div class="insight-pill"><div class="big">50 kWh</div></div>
           </div>
         </div>

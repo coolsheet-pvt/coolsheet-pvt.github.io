@@ -42,4 +42,14 @@ assert.match(app,/annual-summary-item annual-electricity-summary/,
   "Related electricity results should share one annual summary card");
 assert.match(app,/annual-electricity-breakdown[^]*?<span>PV-only baseline<\/span>[^]*?<span>Cooling gain<\/span>/,
   "The combined electricity card should explain the baseline and cooling gain");
+assert.match(app,/annual-finance-grid[^]*?<span>PVT supply value<\/span>[^]*?<span>Avg daytime outlet temp<\/span>/,
+  "Supply value and average outlet temperature should share one annual summary card");
+assert.match(app,/function applySuggestedFlowRate\(nextFlowRate\)[^]*?void calcAnnualPVT\(\)/,
+  "The winter flow suggestion should update the input and immediately recalculate");
+assert.doesNotMatch(app,/Open PVGIS validation result/,
+  "The redundant PVGIS validation-result action should not appear in annual results");
+assert.match(app,/Open PVGIS tool/,
+  "The direct PVGIS tool action should remain available");
+assert.doesNotMatch(app,/PVGIS ERA5,[^]*?Open for economics, levelised costs, and calculation detail/,
+  "The extra PVGIS model detail should not clutter the annual results card");
 console.log("PV cooling effect and DC/AC boundary tests passed.");

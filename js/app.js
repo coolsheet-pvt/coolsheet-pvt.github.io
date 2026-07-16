@@ -42,7 +42,7 @@ function setIndustryOutput(html){
   el.innerHTML = html
     ? `<div class="industry-section-head">
         <div class="industry-section-kicker">Industry analysis</div>
-        <h3>Industry Specific Results</h3>
+        <h3>Industry results</h3>
       </div>${html}`
     : "";
   el.style.display = html ? "block" : "none";
@@ -65,11 +65,6 @@ function resetExportActions(){
   }
   const shareBtn = document.getElementById("btnShareLink");
   if (shareBtn) shareBtn.style.display = "none";
-  const pvCheckBtn = document.getElementById("btnCheckPvScenario");
-  if (pvCheckBtn){
-    pvCheckBtn.style.display = "none";
-    pvCheckBtn.disabled = true;
-  }
 }
 
 function scrollToCalculationResults(){
@@ -147,43 +142,6 @@ function buildPvgisValidationLink({ latitude, longitude, areaM2, etaPv, tiltAngl
     lossPct,
     pvgisAspect
   };
-}
-
-function buildCurrentPvValidationUrl(){
-  const annual = CURRENT_CALC_RESULT?.annualRaw;
-  if (!annual || !CURRENT_LOC) return null;
-  const areaM2 = getInputNumber("area", null);
-  const moduleEfficiency = getInputNumber("etaPv", null);
-  const tiltDeg = getInputNumber("tiltAngle", null);
-  const azimuthDeg = getInputNumber("azimuthAngle", null);
-  const albedo = getInputNumber("albedo", 0.2);
-  if (![areaM2,moduleEfficiency,tiltDeg,azimuthDeg,annual.pvOnlyNetAcKWh].every(isFiniteNumber)) return null;
-  const params = new URLSearchParams({
-    mode: "scenario",
-    name: CURRENT_LOC.name || "Current CoolSheet location",
-    lat: CURRENT_LOC.lat.toFixed(6),
-    lon: CURRENT_LOC.lon.toFixed(6),
-    area: areaM2.toFixed(3),
-    efficiency: moduleEfficiency.toFixed(5),
-    capacity: (areaM2 * moduleEfficiency).toFixed(3),
-    tilt: tiltDeg.toFixed(2),
-    azimuth: azimuthDeg.toFixed(2),
-    albedo: Number(albedo).toFixed(3),
-    systemLoss: Number(annual.pvSystemLossPct).toFixed(2),
-    inverterEfficiency: Number(annual.pvInverterEfficiencyPct).toFixed(2),
-    coolsheetAc: Number(annual.pvOnlyNetAcKWh).toFixed(3)
-  });
-  return `pages/pv-external-validation.html?${params.toString()}`;
-}
-
-function openCurrentPvValidation(){
-  const url = buildCurrentPvValidationUrl();
-  if (!url){
-    setOutput("Run the CoolSheet calculation first, then choose Check this PV result.", true);
-    return;
-  }
-  const opened = window.open(url, "_blank");
-  if (opened) opened.opener = null;
 }
 
 function getInstalledCostBasis(){
@@ -298,24 +256,24 @@ function buildIndustryExportSummary(performanceOpts, energyOpts){
     : "-";
   const energyValue = value => isFiniteNumber(value) ? `${formatSummaryWhole(value)} kWh/yr` : "-";
   return {
-    headline: `You save $${formatSummaryWhole(savingsAud)} AUD/yr with ${formatSummaryPercent(heatCoverage)} direct-use heat coverage`,
-    subhead: `Based on ${areaText} PVT collector area at ${performanceOpts.locationName || "selected location"}`,
+    headline: `Save $${formatSummaryWhole(savingsAud)} AUD/yr with ${formatSummaryPercent(heatCoverage)} heat coverage`,
+    subhead: `${areaText} PVT collector at ${performanceOpts.locationName || "selected location"}`,
     metrics: [
-      exportMetricText("Solar Electricity", formatSummaryPercent(elecCoverage), "Share of site electricity covered by PV."),
-      exportMetricText("Direct-use heat coverage", formatSummaryPercent(heatCoverage), "Share of process heat covered by same-hour PVT heat."),
-      exportMetricText("Yearly Savings", `$${formatSummaryWhole(savingsAud)} /yr`, "Thermal fuel plus electricity value counted for this industry each year."),
-      exportMetricText("Unused heat energy", energyValue(performanceOpts.unusedHeatKWh), "PVT heat above hourly process demand."),
-      exportMetricText("Unused electrical energy", energyValue(performanceOpts.unusedElectricityKWh), "PV electricity above hourly site demand.")
+      exportMetricText("Solar electricity", formatSummaryPercent(elecCoverage), "Site electricity supplied by PV."),
+      exportMetricText("Heat coverage", formatSummaryPercent(heatCoverage), "Process heat supplied by same-hour PVT heat."),
+      exportMetricText("Annual savings", `$${formatSummaryWhole(savingsAud)} /yr`, "Annual electricity and fuel value."),
+      exportMetricText("Unused heat", energyValue(performanceOpts.unusedHeatKWh), "PVT heat above hourly demand."),
+      exportMetricText("PV exported", energyValue(performanceOpts.unusedElectricityKWh), "PV above hourly site demand.")
     ],
     energy: [
-      exportMetricText("Electric demand consumed", energyValue(energyOpts.electricDemandKWh), "Total electricity required by the site."),
-      exportMetricText("Solar electricity used", energyValue(energyOpts.solarElectricUsedKWh), "PV electricity consumed on site."),
-      exportMetricText("Grid electricity needed", energyValue(energyOpts.gridElectricityNeededKWh), "Remaining electricity imported from grid."),
-      exportMetricText("PV exported", energyValue(energyOpts.exportedElectricityKWh), "PV electricity above hourly site demand, exported to the grid."),
-      exportMetricText("Heat demand consumed", energyValue(energyOpts.thermalDemandKWh), "Total process heat required."),
-      exportMetricText("Solar heat delivered to process", energyValue(energyOpts.solarHeatUsedKWh), "Same-hour process demand supplied by PVT heat."),
-      exportMetricText("Backup heat needed", energyValue(energyOpts.backupHeatNeededKWh), "Remaining heat from boiler or backup."),
-      exportMetricText("Solar heat unused", energyValue(energyOpts.unusedHeatKWh), energyOpts.unusedHeatNote || "PVT heat above hourly process demand.")
+      exportMetricText("Site electricity", energyValue(energyOpts.electricDemandKWh), "Total site demand."),
+      exportMetricText("PV used on site", energyValue(energyOpts.solarElectricUsedKWh), "Used directly on site."),
+      exportMetricText("Grid electricity", energyValue(energyOpts.gridElectricityNeededKWh), "Imported from grid."),
+      exportMetricText("PV exported", energyValue(energyOpts.exportedElectricityKWh), "Surplus sent to grid."),
+      exportMetricText("Process heat demand", energyValue(energyOpts.thermalDemandKWh), "Total process heat."),
+      exportMetricText("PVT heat used", energyValue(energyOpts.solarHeatUsedKWh), "Used in the same hour."),
+      exportMetricText("Backup heat", energyValue(energyOpts.backupHeatNeededKWh), "Supplied by boiler or backup."),
+      exportMetricText("Unused PVT heat", energyValue(energyOpts.unusedHeatKWh), energyOpts.unusedHeatNote || "Above same-hour process demand.")
     ]
   };
 }
@@ -498,6 +456,7 @@ function buildPdfTemplateDocument(){
     .handoff-actions button{padding:8px 11px;border:1px solid #1a5f9a;border-radius:6px;background:#1f6fb2;color:#fff;font-weight:700;cursor:pointer;font-size:12px;}
     .handoff-actions button.secondary{background:#fff;color:#1a5f9a;border-color:#9ebed8;}
     .handoff-actions input{min-width:220px;flex:1 1 220px;padding:8px 10px;border:1px solid #c8d0db;border-radius:6px;font:inherit;font-size:12px;}
+    .handoff-buttons{display:flex;align-items:center;gap:8px;margin-left:auto;}
     .handoff-status{flex-basis:100%;font-size:11px;font-weight:700;color:#425466;}
     .handoff-status.ok{color:#0b6b2d;}
     .handoff-status.err{color:#b00020;}
@@ -542,6 +501,8 @@ function buildPdfTemplateDocument(){
     @media (max-width:720px){
       .report-head{grid-template-columns:1fr;}
       .kpi-grid,.industry .kpi-grid,.balance-grid{grid-template-columns:1fr 1fr;}
+      .handoff-actions input{flex-basis:100%;}
+      .handoff-buttons{width:100%;justify-content:flex-end;}
     }
     @media print{
       body{background:#fff;font-size:9.4px;line-height:1.24;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
@@ -569,9 +530,11 @@ function buildPdfTemplateDocument(){
 <body data-report-filename="${escapeHtml(reportFilename)}" data-email-subject="${escapeHtml(emailSubject)}">
   <main class="report-shell">
     <div class="handoff-actions" aria-label="Report actions">
-      <button type="button" onclick="window.print()">Save PDF</button>
       <input id="handoffEmail" type="email" placeholder="recipient@example.gov.au" aria-label="Recipient email address" />
-      <button id="btnSendReport" type="button" class="secondary" onclick="sendReportEmail()">Send report</button>
+      <div class="handoff-buttons">
+        <button type="button" onclick="window.print()">Save PDF</button>
+        <button id="btnSendReport" type="button" class="secondary" onclick="sendReportEmail()">Send report</button>
+      </div>
       <div id="emailStatus" class="handoff-status" aria-live="polite"></div>
     </div>
     <article class="report-doc">
@@ -704,6 +667,22 @@ function generatePdfTemplate(){
 }
 function clamp(x, lo, hi){ return Math.min(hi, Math.max(lo, x)); }
 function isFiniteNumber(x){ return typeof x === "number" && Number.isFinite(x); }
+
+function getSuggestedFlowRate(flowRate){
+  const current = Number(flowRate);
+  if (!Number.isFinite(current) || current <= 0.005) return current;
+  return Math.max(0.005, Math.round(current * 0.75 * 1000) / 1000);
+}
+
+function applySuggestedFlowRate(nextFlowRate){
+  const input = document.getElementById("flowRate");
+  const next = Number(nextFlowRate);
+  if (!input || !Number.isFinite(next) || next <= 0) return;
+  input.value = String(Number(next.toFixed(3)));
+  input.dispatchEvent(new Event("input", { bubbles:true }));
+  input.dispatchEvent(new Event("change", { bubbles:true }));
+  void calcAnnualPVT();
+}
 function cToF(c){ return (c * 9 / 5) + 32; }
 function fToC(f){ return (f - 32) * 5 / 9; }
 
@@ -3681,10 +3660,22 @@ function formatSummaryCurrency(value){
     : "-";
 }
 
+function buildPercentageBar(percent, label){
+  if (!isFiniteNumber(percent)) return "";
+  const boundedPercent = clamp(percent, 0, 100);
+  const displayPercent = boundedPercent.toFixed(1);
+  return `
+    <div class="percentage-bar" role="progressbar" aria-label="${escapeHtml(label)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${displayPercent}" aria-valuetext="${displayPercent}%">
+      <span class="percentage-bar-fill" style="width:${displayPercent}%"></span>
+    </div>`;
+}
+
 function buildIndustryPerformanceSummary(opts){
   const savingsAud = isFiniteNumber(opts.savingsAud) ? opts.savingsAud : 0;
-  const heatCoverage = isFiniteNumber(opts.solarHeatFraction) ? `${(opts.solarHeatFraction * 100).toFixed(1)}%` : "-";
-  const electricCoverage = isFiniteNumber(opts.solarElecFraction) ? `${(opts.solarElecFraction * 100).toFixed(1)}%` : "-";
+  const heatCoveragePct = isFiniteNumber(opts.solarHeatFraction) ? opts.solarHeatFraction * 100 : null;
+  const electricCoveragePct = isFiniteNumber(opts.solarElecFraction) ? opts.solarElecFraction * 100 : null;
+  const heatCoverage = isFiniteNumber(heatCoveragePct) ? `${heatCoveragePct.toFixed(1)}%` : "-";
+  const electricCoverage = isFiniteNumber(electricCoveragePct) ? `${electricCoveragePct.toFixed(1)}%` : "-";
   const unusedHeat = isFiniteNumber(opts.unusedHeatKWh) ? `${formatSummaryWhole(opts.unusedHeatKWh)} kWh` : "-";
   const unusedElectricity = isFiniteNumber(opts.unusedElectricityKWh) ? `${formatSummaryWhole(opts.unusedElectricityKWh)} kWh` : "-";
   const areaText = isFiniteNumber(opts.areaM2)
@@ -3694,15 +3685,15 @@ function buildIndustryPerformanceSummary(opts){
 
   return `
     <div class="insight-hero" style="margin-bottom:16px;">
-      <div class="insight-kicker">Solar Performance Summary</div>
-      <div class="insight-title">You save $${formatSummaryWhole(savingsAud)} AUD/yr with ${heatCoverage} direct-use heat coverage</div>
-      <div class="insight-sub">Based on ${areaText} PVT collector area at ${locationText}</div>
-      <p class="coverage-definition-note">Coverage = same-hour PVT heat delivered to process / total annual process heat demand. Excess heat is not counted unless storage is enabled.</p>
+      <div class="insight-kicker">Performance summary</div>
+      <div class="insight-title">Save $${formatSummaryWhole(savingsAud)} AUD/yr with ${heatCoverage} heat coverage</div>
+      <div class="insight-sub">${areaText} PVT collector at ${locationText}</div>
+      <p class="coverage-definition-note">Heat coverage = same-hour PVT heat used / annual process heat demand. Excess heat requires storage.</p>
       <div class="insight-strip">
-        <div class="insight-pill"><div class="eyebrow">Solar Electricity</div><div class="big">${electricCoverage}</div><small>Share of site electricity covered by PV.</small></div>
-        <div class="insight-pill"><div class="eyebrow">Direct-use heat coverage</div><div class="big">${heatCoverage}</div><small>Share of process heat covered by same-hour PVT heat.</small></div>
-        <div class="insight-pill"><div class="eyebrow">Yearly Savings</div><div class="big">$${formatSummaryWhole(savingsAud)} /yr</div><small>Thermal fuel plus electricity value counted for this industry each year.</small></div>
-        <div class="insight-pill"><div class="eyebrow">Unused heat energy</div><div class="big">${unusedHeat}</div><div class="eyebrow" style="margin-top:12px;">Unused electrical energy</div><div class="big">${unusedElectricity}</div></div>
+        <div class="insight-pill insight-pill-percentage"><div class="eyebrow">Solar electricity</div><div class="big">${electricCoverage}</div>${buildPercentageBar(electricCoveragePct, "Solar electricity coverage")}<small>Site electricity supplied by PV.</small></div>
+        <div class="insight-pill insight-pill-percentage"><div class="eyebrow">Heat coverage</div><div class="big">${heatCoverage}</div>${buildPercentageBar(heatCoveragePct, "Heat coverage")}<small>Process heat supplied by PVT.</small></div>
+        <div class="insight-pill"><div class="eyebrow">Annual savings</div><div class="big">$${formatSummaryWhole(savingsAud)} /yr</div><small>Annual electricity and fuel value.</small></div>
+        <div class="insight-pill"><div class="eyebrow">Unused heat</div><div class="big">${unusedHeat}</div><div class="eyebrow" style="margin-top:12px;">PV exported</div><div class="big">${unusedElectricity}</div></div>
       </div>
     </div>`;
 }
@@ -3730,8 +3721,8 @@ function buildRecommendedSystemSizeBox(opts){
     <div class="recommended-size-box">
       <div class="recommended-size-head">
         <div>
-          <span>Rough system-size guide</span>
-          <small>Pick a target direct-use heat coverage for a ballpark collector area</small>
+          <span>Area guide</span>
+          <small>Choose a heat-coverage target to estimate collector area</small>
         </div>
       </div>
       <div class="recommended-size-grid">
@@ -3740,11 +3731,11 @@ function buildRecommendedSystemSizeBox(opts){
           <strong>${areaText}</strong>
         </div>
         <div class="recommended-size-row">
-          <span>Current direct-use heat coverage</span>
+          <span>Current heat coverage</span>
           <strong>${coverageText}</strong>
         </div>
         <label class="recommended-size-target">
-          <span>Target direct-use heat coverage</span>
+          <span>Target heat coverage</span>
           <div class="recommended-size-input-row">
             <input type="number" min="1" max="100" step="1" value="${defaultTargetPct.toFixed(0)}"
               data-current-area="${isFiniteNumber(areaM2) ? areaM2 : ""}"
@@ -3755,7 +3746,7 @@ function buildRecommendedSystemSizeBox(opts){
           </div>
         </label>
         <div class="recommended-size-answer">
-          <span>Rough area guide</span>
+          <span>Estimated area</span>
           <strong data-recommended-size-output>${defaultAreaText}</strong>
         </div>
       </div>
@@ -3792,24 +3783,24 @@ function buildIndustryEnergyFlowSummary(opts){
         </div>
         <div class="energy-flow-cards">
           <div class="energy-flow-card">
-            <span>Electric demand consumed</span>
+            <span>Site electricity</span>
             <strong>${energyValue(opts.electricDemandKWh)}</strong>
-            <small>Total electricity required by the site.</small>
+            <small>Total site demand.</small>
           </div>
           <div class="energy-flow-card">
-            <span>Solar electricity used</span>
+            <span>PV used on site</span>
             <strong>${energyValue(opts.solarElectricUsedKWh)}</strong>
-            <small>PV electricity consumed on site.</small>
+            <small>Used directly on site.</small>
           </div>
           <div class="energy-flow-card">
-            <span>Grid electricity needed</span>
+            <span>Grid electricity</span>
             <strong>${energyValue(opts.gridElectricityNeededKWh)}</strong>
-            <small>Remaining electricity imported from grid.</small>
+            <small>Imported from grid.</small>
           </div>
           <div class="energy-flow-card">
             <span>PV exported</span>
             <strong>${energyValue(opts.exportedElectricityKWh)}</strong>
-            <small>PV electricity above hourly site demand, exported to the grid.</small>
+            <small>Surplus sent to grid.</small>
           </div>
         </div>
       </section>
@@ -3819,22 +3810,22 @@ function buildIndustryEnergyFlowSummary(opts){
         </div>
         <div class="energy-flow-cards">
           <div class="energy-flow-card">
-            <span>Heat demand consumed</span>
+            <span>Process heat demand</span>
             <strong>${energyValue(opts.thermalDemandKWh)}</strong>
-            <small>Total process heat required.</small>
+            <small>Total process heat.</small>
           </div>
           <div class="energy-flow-card">
-            <span>Solar heat delivered to process</span>
+            <span>PVT heat used</span>
             <strong>${energyValue(opts.solarHeatUsedKWh)}</strong>
-            <small>Same-hour process demand supplied by PVT heat.</small>
+            <small>Used in the same hour.</small>
           </div>
           <div class="energy-flow-card">
-            <span>Backup heat needed</span>
+            <span>Backup heat</span>
             <strong>${energyValue(opts.backupHeatNeededKWh)}</strong>
-            <small>Remaining heat from boiler or backup.</small>
+            <small>Supplied by boiler or backup.</small>
           </div>
           <div class="energy-flow-card">
-            <span>Solar heat unused</span>
+            <span>Unused PVT heat</span>
             <strong>${energyValue(opts.unusedHeatKWh)}</strong>
             <small>${opts.unusedHeatNote || "PVT heat above hourly process demand (no storage)."}</small>
           </div>
@@ -4132,13 +4123,36 @@ function renderTemperatureChartJS(monthlyData){
   temperatureChartInstance = new Chart(ctx.getContext('2d'), {
     type:'line',
     data:{labels, datasets:[
-      {label:'PV-only Panel Temp (\u00B0C)',data:pvPanelData,borderColor:'rgba(190,111,0,1)',backgroundColor:'rgba(245,166,35,0.08)',borderWidth:2,fill:false,tension:0.35},
-      {label:'PVT Panel Temp (\u00B0C)',data:pvtPanelData,borderColor:'rgba(8,61,91,1)',backgroundColor:'rgba(8,61,91,0.08)',borderWidth:2,fill:false,tension:0.35},
-      {label:'PVT Outlet Temp (\u00B0C)',data:toutData,borderColor:'rgba(103,199,216,1)',backgroundColor:'rgba(103,199,216,0.12)',borderWidth:2,borderDash:[5,4],fill:false,tension:0.35},
-      {label:'Inlet Temp (\u00B0C)',data:tinData,borderColor:'rgba(80,130,80,1)',backgroundColor:'rgba(80,130,80,0.05)',borderWidth:2,borderDash:[2,4],pointRadius:3,fill:false,tension:0.35}
+      {label:'PV-only Panel Temp (\u00B0C)',data:pvPanelData,borderColor:'rgba(190,111,0,1)',backgroundColor:'rgba(245,166,35,0.08)',borderWidth:2,fill:false,tension:0},
+      {label:'PVT Panel Temp (\u00B0C)',data:pvtPanelData,borderColor:'rgba(8,61,91,1)',backgroundColor:'rgba(8,61,91,0.08)',borderWidth:2,fill:false,tension:0},
+      {label:'PVT Outlet Temp (\u00B0C)',data:toutData,borderColor:'rgba(103,199,216,1)',backgroundColor:'rgba(103,199,216,0.12)',borderWidth:2,borderDash:[5,4],fill:false,tension:0},
+      {label:'Inlet Temp (\u00B0C)',data:tinData,borderColor:'rgba(80,130,80,1)',backgroundColor:'rgba(80,130,80,0.05)',borderWidth:2,borderDash:[2,4],pointRadius:3,fill:false,tension:0}
     ]},
-    options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true}},plugins:{title:{display:true,text:'Daytime Average Panel & Water Temperatures'}}}
+    options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true}},plugins:{title:{display:true,text:'TMY Daytime Average Panel & Water Temperatures'}}}
   });
+}
+
+function renderTemperatureTmyNote(monthlyData){
+  const container = document.getElementById("temperatureTmyNote");
+  if (!container){ return; }
+  let largestJump = null;
+  for (let i = 1; i < (monthlyData?.length || 0); i++){
+    const previous = monthlyData[i - 1];
+    const current = monthlyData[i];
+    if (!(previous?.PVPanel_C_count > 0) || !(current?.PVPanel_C_count > 0)) continue;
+    const jumpC = current.PVPanel_C_avg - previous.PVPanel_C_avg;
+    if (!largestJump || Math.abs(jumpC) > Math.abs(largestJump.jumpC)){
+      largestJump = { previous, current, jumpC };
+    }
+  }
+  if (!largestJump || Math.abs(largestJump.jumpC) < 5){
+    container.textContent = "PVGIS TMY joins representative historical months, so adjacent monthly temperatures may not form a perfectly smooth sequence. Raw model averages are shown.";
+    return;
+  }
+  const { previous, current } = largestJump;
+  const previousName = MONTH_NAMES[previous.month - 1];
+  const currentName = MONTH_NAMES[current.month - 1];
+  container.innerHTML = `<b>Why ${currentName} changes:</b> the PVGIS TMY daytime inputs change from ${previousName} to ${currentName}: panel irradiance ${previous.G_Wm2_avg.toFixed(0)} to ${current.G_Wm2_avg.toFixed(0)} W/m&sup2; and air temperature ${previous.Ta_C_avg.toFixed(1)} to ${current.Ta_C_avg.toFixed(1)}&deg;C. PVGIS TMY joins representative historical months, so neighbouring months can change sharply. Raw model averages are shown without smoothing.`;
 }
 
 // ================================================================
@@ -4190,7 +4204,9 @@ function aggregateMonthlyAll(series, year){
     Tout_C_sum:0, Tout_C_count:0, Tout_C_avg:0,
     Tin_C_sum:0, Tin_C_count:0, Tin_C_avg:0,
     PVPanel_C_sum:0, PVPanel_C_count:0, PVPanel_C_avg:0,
-    PVTPanel_C_sum:0, PVTPanel_C_count:0, PVTPanel_C_avg:0
+    PVTPanel_C_sum:0, PVTPanel_C_count:0, PVTPanel_C_avg:0,
+    G_Wm2_sum:0, G_Wm2_count:0, G_Wm2_avg:0,
+    Ta_C_sum:0, Ta_C_count:0, Ta_C_avg:0
   }));
   series.forEach(r => {
     // Bucket by the row's own TMY month (1-12) - no Date parsing, so results
@@ -4207,6 +4223,8 @@ function aggregateMonthlyAll(series, year){
       if (Number(r.Tin_C) > 0){months[m].Tin_C_sum += Number(r.Tin_C); months[m].Tin_C_count += 1;}
       if (Number(r.pvPanel_C) > 0){months[m].PVPanel_C_sum += Number(r.pvPanel_C); months[m].PVPanel_C_count += 1;}
       if (Number(r.pvtPanel_C) > 0){months[m].PVTPanel_C_sum += Number(r.pvtPanel_C); months[m].PVTPanel_C_count += 1;}
+      if (Number(r.G_Wm2) > 0){months[m].G_Wm2_sum += Number(r.G_Wm2); months[m].G_Wm2_count += 1;}
+      if (isFiniteNumber(Number(r.Ta_C))){months[m].Ta_C_sum += Number(r.Ta_C); months[m].Ta_C_count += 1;}
     }
   });
   months.forEach(m => {
@@ -4214,6 +4232,8 @@ function aggregateMonthlyAll(series, year){
     m.Tin_C_avg  = m.Tin_C_count  > 0 ? m.Tin_C_sum  / m.Tin_C_count  : 0;
     m.PVPanel_C_avg = m.PVPanel_C_count > 0 ? m.PVPanel_C_sum / m.PVPanel_C_count : 0;
     m.PVTPanel_C_avg = m.PVTPanel_C_count > 0 ? m.PVTPanel_C_sum / m.PVTPanel_C_count : 0;
+    m.G_Wm2_avg = m.G_Wm2_count > 0 ? m.G_Wm2_sum / m.G_Wm2_count : 0;
+    m.Ta_C_avg = m.Ta_C_count > 0 ? m.Ta_C_sum / m.Ta_C_count : 0;
   });
   return months;
 }
@@ -4417,7 +4437,7 @@ function toggleIndustryDetails(button){
   const willShow = panel.hidden;
   panel.hidden = !willShow;
   button.setAttribute("aria-expanded", String(willShow));
-  button.textContent = willShow ? "Hide detailed industry results" : "Show detailed industry results";
+  button.textContent = willShow ? "Hide result details" : "Show result details";
 }
 
 function updateCERZoneDisplay(lat,lon,countryCode){
@@ -4520,6 +4540,24 @@ function revealPanel(el, display="block", delayMs=0){
   el.classList.add("reveal");
 }
 
+function showIndustryPanel(el, display="block", delayMs=0, animate=true){
+  if (!el) return;
+  if (animate){
+    revealPanel(el, display, delayMs);
+    return;
+  }
+  el.classList.remove("reveal");
+  el.style.removeProperty("animation-delay");
+  el.style.display = display;
+}
+
+function hideIndustryPanel(el){
+  if (!el) return;
+  el.classList.remove("reveal");
+  el.style.removeProperty("animation-delay");
+  el.style.display = "none";
+}
+
 function syncAquaticProcessInputs(){
   const inputByProcess = {
     indoor_pool: "aquaticIndoorArea",
@@ -4535,7 +4573,7 @@ function syncAquaticProcessInputs(){
   });
 }
 
-function showProcessCheckboxes(industryKey){
+function showProcessCheckboxes(industryKey, animate=true){
   const panel = document.getElementById("processPanel");
   const profilePanel = document.getElementById("profilePanel");
   const container = document.getElementById("processChecks");
@@ -4543,11 +4581,11 @@ function showProcessCheckboxes(industryKey){
   updateProcessDiagramVisibility(industryKey);
   updateProfileTypeRules(industryKey);
   const processes = INDUSTRY_PROCESSES[industryKey];
-  if (!processes){ panel.style.display="none"; profilePanel.style.display="none"; return; }
+  if (!processes){ hideIndustryPanel(panel); hideIndustryPanel(profilePanel); return; }
   if (industryKey === "aquatic_centres"){
     syncAquaticProcessInputs();
-    revealPanel(profilePanel, "block", 0);
-    panel.style.display = "none";
+    showIndustryPanel(profilePanel, "block", 0, animate);
+    hideIndustryPanel(panel);
     return;
   }
   for (const [key, proc] of Object.entries(processes)){
@@ -4559,8 +4597,8 @@ function showProcessCheckboxes(industryKey){
     div.innerHTML = `<label><input type="checkbox" value="${key}" checked /><span>${baseName}<span class="kwater-label">${kWaterPart}</span></span></label>`;
     container.appendChild(div);
   }
-  revealPanel(profilePanel, "block", 0);
-  revealPanel(panel, "block", 120);
+  showIndustryPanel(profilePanel, "block", 0, animate);
+  showIndustryPanel(panel, "block", 60, animate);
 }
 
 function getSelectedProcessKeys(){
@@ -4623,8 +4661,8 @@ function updateProfileTypeRules(industryKey){
   }
 }
 
-function syncIndustrySelectionUI(industryKey, resetThroughput=false){
-  showProcessCheckboxes(industryKey);
+function syncIndustrySelectionUI(industryKey, resetThroughput=false, animate=true){
+  showProcessCheckboxes(industryKey, animate);
   const ui = INDUSTRY_UI[industryKey];
   const lbl = document.getElementById("throughputLabel");
   const inp = document.getElementById("throughputInput");
@@ -4633,26 +4671,17 @@ function syncIndustrySelectionUI(industryKey, resetThroughput=false){
   const breweryPanel = document.getElementById("breweryAssumptionsPanel");
   const aquaticPanel = document.getElementById("aquaticInputsPanel");
   const laundryPanel = document.getElementById("laundryInputsPanel");
-  const evidenceNotice = document.getElementById("industryEvidenceNotice");
-  if (evidenceNotice){
-    evidenceNotice.textContent = industryEvidenceText(industryKey);
-    evidenceNotice.style.display = INDUSTRY_EVIDENCE[industryKey] ? "block" : "none";
-  }
-  if (dairyPanel) dairyPanel.style.display = industryKey === "dairy_farm" ? "block" : "none";
-  if (breweryPanel) breweryPanel.style.display = industryKey === "brewery" ? "block" : "none";
-
-  if (hotelPanel){
-    if (industryKey === "hotel"){ revealPanel(hotelPanel, "block", 100); }
-    else { hotelPanel.style.display = "none"; }
-  }
-  if (aquaticPanel){
-    if (industryKey === "aquatic_centres"){ revealPanel(aquaticPanel, "block", 100); }
-    else { aquaticPanel.style.display = "none"; }
-  }
-  if (laundryPanel){
-    if (industryKey === "commercial_laundry"){ revealPanel(laundryPanel, "block", 100); }
-    else { laundryPanel.style.display = "none"; }
-  }
+  const assumptionPanels = [
+    [dairyPanel, industryKey === "dairy_farm"],
+    [breweryPanel, industryKey === "brewery"],
+    [hotelPanel, industryKey === "hotel"],
+    [aquaticPanel, industryKey === "aquatic_centres"],
+    [laundryPanel, industryKey === "commercial_laundry"]
+  ];
+  assumptionPanels.forEach(([panel, isActive]) => {
+    if (isActive) showIndustryPanel(panel, "block", 120, animate);
+    else hideIndustryPanel(panel);
+  });
 
   if (ui){
     if (industryKey === "hotel" || industryKey === "aquatic_centres" || industryKey === "commercial_laundry"){
@@ -4665,10 +4694,17 @@ function syncIndustrySelectionUI(industryKey, resetThroughput=false){
       }
       lbl.style.display = "";
       inp.style.display = "";
-      lbl.classList.remove("reveal"); void lbl.offsetHeight;
-      lbl.style.animationDelay = "100ms"; lbl.classList.add("reveal");
-      inp.classList.remove("reveal"); void inp.offsetHeight;
-      inp.style.animationDelay = "100ms"; inp.classList.add("reveal");
+      if (animate){
+        lbl.classList.remove("reveal"); void lbl.offsetHeight;
+        lbl.style.animationDelay = "120ms"; lbl.classList.add("reveal");
+        inp.classList.remove("reveal"); void inp.offsetHeight;
+        inp.style.animationDelay = "120ms"; inp.classList.add("reveal");
+      } else {
+        lbl.classList.remove("reveal");
+        inp.classList.remove("reveal");
+        lbl.style.removeProperty("animation-delay");
+        inp.style.removeProperty("animation-delay");
+      }
     }
   } else {
     lbl.style.display = "none";
@@ -4944,7 +4980,7 @@ function buildHowItWorksSvg(){
 
   return `<svg class="chart-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
       <defs><marker id="flowArrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" fill="#5a6e80"/></marker></defs>
-      <style>rect[data-step]{cursor:pointer;transition:opacity 0.15s,stroke-width 0.15s;}rect[data-step]:hover{opacity:0.82;}rect[data-step].active{stroke-width:2.6px;}</style>
+      <style>rect[data-step]{cursor:pointer;transition:opacity 0.12s,stroke-width 0.12s;}rect[data-step]:hover{opacity:0.92;}rect[data-step].active{stroke-width:2px;}</style>
       ${parts.join("")}
     </svg>`;
 }
@@ -4968,7 +5004,7 @@ function openHowItWorks(ev){
         openHowItWorksStep(rect.dataset.step);
       };
       if (window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) revealStep();
-      else HOW_IT_WORKS_STEP_TIMER = setTimeout(revealStep, 220);
+      else HOW_IT_WORKS_STEP_TIMER = setTimeout(revealStep, 110);
     };
     rect.addEventListener("click", activateStep);
     rect.addEventListener("keydown", event => {
@@ -5485,10 +5521,18 @@ async function calcAnnualPVT(){
     // coolant flow raises outlet temperature (with a small thermal-energy trade-off).
     const LOW_OUTLET_THRESHOLD_C = 20;
     const outletTooLow = isFiniteNumber(daytimeToutAvg) && daytimeToutAvg < LOW_OUTLET_THRESHOLD_C;
+    const suggestedFlowRate = getSuggestedFlowRate(flowRate);
+    const flowActionHtml = suggestedFlowRate < flowRate ? `
+        <button type="button" class="flow-suggestion-action" onclick="applySuggestedFlowRate(${suggestedFlowRate})">
+          Use ${suggestedFlowRate.toFixed(3)} L/s/m&sup2; and recalculate
+        </button>` : "";
     const flowSuggestionHtml = outletTooLow ? `
       <div class="flow-suggestion">
-        <b>&#10052; Winter tip:</b> average daytime outlet temperature is ${daytimeToutAvg.toFixed(1)}&deg;C - below the ${LOW_OUTLET_THRESHOLD_C}&deg;C useful threshold.
-        Try lowering the <b>flow rate</b> (currently ${flowRate} L/s/m&sup2;): slower flow raises outlet temperature, making the heat more useful for winter water heating, at the cost of a small drop in total thermal energy.
+        <div class="flow-suggestion-copy">
+          <b>&#10052; Winter tip:</b> average daytime outlet temperature is ${daytimeToutAvg.toFixed(1)}&deg;C, below the ${LOW_OUTLET_THRESHOLD_C}&deg;C useful threshold.
+          Lowering the <b>flow rate</b> from ${flowRate} L/s/m&sup2; can raise outlet temperature and make the heat more useful for winter water heating, with a small reduction in total thermal energy.
+        </div>
+        ${flowActionHtml}
       </div>` : "";
     const tempModelText = `${pvTempCorrEnable
       ? `NOCT ${pvNoctC.toFixed(1)}&deg;C, &gamma;=${(pvTempCoeffPerC*100).toFixed(2)}%/&deg;C, STC reference ${PV_STC_CELL_TEMP_C}&deg;C`
@@ -5505,7 +5549,6 @@ async function calcAnnualPVT(){
       systemLossPct: pvSystemLossPct,
       inverterEfficiencyPct: pvInverterEfficiencyPct
     });
-    const pvgisSummary = `PVGIS ERA5, ${pvgisValidation.peakPowerKw.toFixed(1)} kW DC at STC, ${tiltAngle.toFixed(0)}&deg; tilt, PVGIS azimuth ${pvgisValidation.pvgisAspect.toFixed(0)}&deg;, ${pvgisValidation.lossPct.toFixed(2)}% combined AC-delivery loss`;
     const pvtElectricityNote = pvtCoolingSensitivityEnable
       ? "Temperature-corrected cooled yield"
       : "Temperature-corrected uncooled yield";
@@ -5555,24 +5598,26 @@ async function calcAnnualPVT(){
           <strong>${fmtE(totalEnergy,1,'kWh')}</strong>
           <small>Electrical + thermal combined</small>
         </div>
-        <div class="annual-summary-item${outletTooLow ? ' annual-outlet-low' : ''}">
-          <span>Avg daytime outlet temp</span>
-          <strong>${fmtE(daytimeToutAvg,1,'&deg;C')}</strong>
-          <small>${outletTempNote}</small>
-        </div>
         <div class="annual-summary-item annual-finance ${netAnnualBenefit>=0?'':'negative'}">
-          <span>PVT supply value</span>
-          <strong>${fmtC(netAnnualBenefit)} /yr</strong>
-          <small>Upper-bound annual value (100% utilisation)</small>
+          <div class="annual-finance-grid">
+            <div class="annual-finance-metric">
+              <span>PVT supply value</span>
+              <strong>${fmtC(netAnnualBenefit)} /yr</strong>
+              <small>Upper-bound annual value (100% utilisation)</small>
+            </div>
+            <div class="annual-finance-metric${outletTooLow ? ' annual-outlet-low' : ''}">
+              <span>Avg daytime outlet temp</span>
+              <strong>${fmtE(daytimeToutAvg,1,'&deg;C')}</strong>
+              <small>${outletTempNote}</small>
+            </div>
+          </div>
         </div>
       </div>
       ${flowSuggestionHtml}
       <div class="annual-actions">
         <button type="button" class="detail-toggle" onclick="toggleAnnualDetails(this)" aria-expanded="false">Show detailed results</button>
-        <a class="validation-link" href="${pvgisValidation.url}" target="_blank" rel="noopener">Open PVGIS validation result</a>
         <a class="validation-link" href="${pvgisValidation.toolUrl}" target="_blank" rel="noopener">Open PVGIS tool</a>
       </div>
-      <p class="annual-validation-note">${pvgisSummary}<br/>Open for economics, levelised costs, and calculation detail.</p>
       <div class="annual-detail-panel" hidden>
       <h4 style="margin:4px 0 6px;color:#1a5276;">Energy Detail</h4>
       <table class="result-table">
@@ -5819,8 +5864,8 @@ async function calcAnnualPVT(){
           })}
         </div>
         <div class="industry-actions">
-          <button type="button" class="detail-toggle" onclick="toggleIndustryDetails(this)" aria-expanded="false">Show detailed industry results</button>
-          <span class="note">Open for process breakdown, balances, storage note, and charts.</span>
+          <button type="button" class="detail-toggle" onclick="toggleIndustryDetails(this)" aria-expanded="false">Show result details</button>
+          <span class="note">Process breakdown, balances and charts.</span>
         </div>
         <div class="industry-detail-panel" hidden>
         ${buildProcessBreakdown(processRows, totalThermal_kWh)}
@@ -5968,8 +6013,8 @@ async function calcAnnualPVT(){
           exportedElectricityKWh: elecExcess
         })}
         <div class="industry-actions">
-          <button type="button" class="detail-toggle" onclick="toggleIndustryDetails(this)" aria-expanded="false">Show detailed industry results</button>
-          <span class="note">Open for process breakdown, balances, storage note, and charts.</span>
+          <button type="button" class="detail-toggle" onclick="toggleIndustryDetails(this)" aria-expanded="false">Show result details</button>
+          <span class="note">Process breakdown, balances and charts.</span>
         </div>
         <div class="industry-detail-panel" hidden>
         ${buildProcessBreakdown(processRows, totalThermal_kWh)}
@@ -6172,8 +6217,8 @@ async function calcAnnualPVT(){
           exportedElectricityKWh: elecExcess
         })}
         <div class="industry-actions">
-          <button type="button" class="detail-toggle" onclick="toggleIndustryDetails(this)" aria-expanded="false">Show detailed industry results</button>
-          <span class="note">Open for process breakdown, balances, storage note, and charts.</span>
+          <button type="button" class="detail-toggle" onclick="toggleIndustryDetails(this)" aria-expanded="false">Show result details</button>
+          <span class="note">Process breakdown, balances and charts.</span>
         </div>
         <div class="industry-detail-panel" hidden>
         <p style="font-size:13px;"><b>Total available rooms:</b> ${rooms.toLocaleString(undefined,{maximumFractionDigits:0})}</p>
@@ -6352,8 +6397,8 @@ async function calcAnnualPVT(){
           exportedElectricityKWh: aquaticElecExcess
         })}
         <div class="industry-actions">
-          <button type="button" class="detail-toggle" onclick="toggleIndustryDetails(this)" aria-expanded="false">Show detailed industry results</button>
-          <span class="note">Open for process breakdown, balances, storage note, and charts.</span>
+          <button type="button" class="detail-toggle" onclick="toggleIndustryDetails(this)" aria-expanded="false">Show result details</button>
+          <span class="note">Process breakdown, balances and charts.</span>
         </div>
         <div class="industry-detail-panel" hidden>
         <p style="font-size:13px;"><b>Annual average ambient temperature:</b> ${ambientAnnualAvg.toFixed(1)}&deg;C</p>
@@ -6526,8 +6571,8 @@ async function calcAnnualPVT(){
           exportedElectricityKWh: elecExcess
         })}
         <div class="industry-actions">
-          <button type="button" class="detail-toggle" onclick="toggleIndustryDetails(this)" aria-expanded="false">Show detailed industry results</button>
-          <span class="note">Open for process breakdown, balances, storage note, and charts.</span>
+          <button type="button" class="detail-toggle" onclick="toggleIndustryDetails(this)" aria-expanded="false">Show result details</button>
+          <span class="note">Process breakdown, balances and charts.</span>
         </div>
         <div class="industry-detail-panel" hidden>
         <p style="font-size:13px;"><b>Inputs:</b> ${laundryInputs.kgPerDay.toLocaleString(undefined,{maximumFractionDigits:0})} kg/day, ${laundryInputs.operatingDaysPerWeek.toFixed(1)} days/week, ${laundryInputs.waterUseLPerKg.toFixed(2)} L/kg, hot-water fraction ${laundryInputs.hotWaterFraction.toFixed(2)}.</p>
@@ -6586,11 +6631,6 @@ async function calcAnnualPVT(){
       }
     };
 
-    const pvCheckBtn = document.getElementById("btnCheckPvScenario");
-    if (pvCheckBtn){
-      pvCheckBtn.style.display = "inline-block";
-      pvCheckBtn.disabled = false;
-    }
     const shareBtn = document.getElementById("btnShareLink");
     if (shareBtn) shareBtn.style.display = "inline-block";
 
@@ -6620,6 +6660,8 @@ async function calcAnnualPVT(){
         Tin_C: row.Tin_C,
         pvPanel_C: row.pvPanel_C,
         pvtPanel_C: row.pvtPanel_C,
+        G_Wm2: row.G,
+        Ta_C: row.ta_C,
         daytimeTempSample: row.daytimeTempSample
       });
     }
@@ -6629,6 +6671,7 @@ async function calcAnnualPVT(){
     renderMonthlyChart(monthlyAll);
     renderPvComparisonChart(monthlyAll);
     renderTemperatureChartJS(monthlyAll);
+    renderTemperatureTmyNote(monthlyAll);
     renderTemperatureTable(monthlyAll);
 
     const selectedMonth = parseInt(document.getElementById("monthSelector").value) || 1;
@@ -6947,7 +6990,6 @@ onTestingModeChange();
   if (versionLabel) versionLabel.textContent = `Version ${APP_VERSION}`;
 }
 document.getElementById("btnShareLink")?.addEventListener("click", copyShareLink);
-document.getElementById("btnCheckPvScenario")?.addEventListener("click", openCurrentPvValidation);
 document.getElementById("btnResetInputs")?.addEventListener("click", resetInputsToDefaults);
 const etaPvPercentInput = document.getElementById("etaPvPercent");
 const etaPvFractionInput = document.getElementById("etaPv");
@@ -7016,7 +7058,7 @@ document.getElementById("btnAnnual").addEventListener("click", calcAnnualPVT);
 document.getElementById("btnGeneratePdf").addEventListener("click", generatePdfTemplate);
 
 document.getElementById("industrySelect").addEventListener("change", function(){
-  syncIndustrySelectionUI(this.value, true);
+  syncIndustrySelectionUI(this.value, true, true);
 });
 document.getElementById("laundryWaterUseLPerKg")?.addEventListener("input", () => {
   const select = document.getElementById("laundryWaterScenario");
@@ -7039,4 +7081,4 @@ document.getElementById("howItWorksStepModal").addEventListener("click", ev => {
 document.getElementById("btnCloseHowItWorksStep").addEventListener("click", closeHowItWorksStep);
 document.addEventListener("keydown", ev => { if (ev.key === "Escape"){ closeHowItWorksStep(); closeMainsChart(); closeProcessDiagram(); closeProcessUsage(); } });
 updateSupplySectionVisibility();
-syncIndustrySelectionUI(document.getElementById("industrySelect").value, false);
+syncIndustrySelectionUI(document.getElementById("industrySelect").value, false, false);

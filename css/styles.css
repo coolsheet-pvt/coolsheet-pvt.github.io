@@ -41,12 +41,21 @@ h1{font-size:20px;margin:0 0 10px;}
 .validation-popover a:hover,.validation-popover a:focus-visible{background:#eef4fb;color:#0d4a86;outline:none;}
 .panel{padding:14px;border:1px solid #d0d7e2;background:#fafafa;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.06);}
 .panel,#output,#industryOutput,.output-card,.output-card-annual,.insight-hero,.dairy-result-area{max-width:100%;overflow-wrap:anywhere;}
+.panel.workflow-step{position:relative;overflow:hidden;padding:0;background:#fafafa;box-shadow:0 2px 8px rgba(0,0,0,0.06);}
+.workflow-step>.grid{padding:14px;}
+.workflow-step-site,.workflow-step-demand{border-color:#d0d7e2;}
+.workflow-step-demand{margin-top:18px;}
+.workflow-step-header{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:11px;margin:-14px -14px 8px;padding:12px 15px;border-bottom:1px solid #c5d2dd;background:#e9f0f5;}
+.workflow-step-number{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border:2px solid #1a5f9a;border-radius:50%;background:#fff;color:#1a5f9a;font-size:15px;font-weight:800;}
+.workflow-step-title{min-width:0;}
+.workflow-step-title>span{display:block;margin:0 0 2px;color:#1a5f9a;font-size:10px;font-weight:800;letter-spacing:.11em;text-transform:uppercase;}
+.workflow-step-title h2{margin:0;color:#17334a;font-size:17px;line-height:1.2;}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;align-items:center;}
 label{font-size:13px;font-weight:600;color:#2c3a4a;}
 input,select{width:100%;padding:8px 10px;box-sizing:border-box;border:1px solid #c8d0db;border-radius:5px;font-size:13px;background:#fff;transition:border-color 0.18s,box-shadow 0.18s,transform 0.18s;}
 input:focus,select:focus{outline:none;border-color:#1f6fb2;box-shadow:0 0 0 3px rgba(31,111,178,0.15);transform:translateY(-1px);}
 .btns{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0;}
-.calculator-actions{align-items:stretch;}
+.calculator-actions{align-items:stretch;margin:14px 2px 20px;}
 .calculator-actions>button{min-height:42px;margin-top:0;padding:10px 16px;line-height:1.2;}
 button{display:inline-flex;align-items:center;justify-content:center;text-align:center;padding:10px 16px;cursor:pointer;border:1px solid #1a5f9a;border-radius:6px;background:linear-gradient(180deg,#2680c2 0%,#1a5f9a 100%);color:#fff;font-size:13px;font-weight:600;transition:background 0.18s,box-shadow 0.18s,transform 0.14s;}
 button:hover{background:linear-gradient(180deg,#2d8fd4 0%,#1f6fb2 100%);box-shadow:0 4px 12px rgba(26,95,154,0.35);transform:translateY(-2px);}
@@ -77,6 +86,8 @@ button:active{background:#1a5f9a;transform:scale(0.96) translateY(0);box-shadow:
 #supplyChartsPanel{min-height:0;}
 #supplyChartsPanel h4{margin:0 0 6px;}
 #supplyChartsPanel .display-controls{margin-top:0;}
+.temperature-tmy-note{margin:10px 0;padding:9px 11px;border-left:3px solid #4f86ad;background:#f3f8fc;color:#38556b;font-size:12px;line-height:1.45;}
+.temperature-tmy-note:empty{display:none;}
 @media (max-width:780px){.grid{grid-template-columns:1fr;}.brand-hero{padding:14px 16px;}.brand-logos{justify-content:center;}.brand-logo-coolsheet{width:min(100%,420px);max-height:74px;}.brand-logo-unsw{width:120px;max-height:120px;margin-top:-40px;margin-bottom:-40px;}.brand-title{font-size:24px;text-align:center;}}
 #processChecks{display:grid;grid-template-columns:1fr;gap:8px;}
 .process-check{margin:0;font-size:13px;}
@@ -117,15 +128,20 @@ body.testing-mode .pv-testing-controls{display:grid;grid-template-columns:1fr;ga
 .annual-electricity-part small{margin-top:4px;color:#ffe1a8;}
 .annual-electricity-operator{margin:0 !important;color:#ffe1a8 !important;font-size:22px !important;font-weight:800;}
 .annual-electricity-gain strong{color:#ffe1a8;}
-.annual-summary-item.annual-finance{border-color:rgba(255,255,255,0.2);background:rgba(255,255,255,0.16);}
+.annual-summary-item.annual-finance{flex:1.55 1 330px;border-color:rgba(255,255,255,0.2);background:rgba(255,255,255,0.16);}
 .annual-summary-item.annual-finance.negative{border-color:rgba(255,255,255,0.24);background:rgba(255,255,255,0.12);}
 /* Cool-blue highlight + winter tip when daytime outlet temperature is below 20 C */
-.annual-summary-item.annual-outlet-low{border-color:rgba(120,180,255,0.55);background:rgba(90,150,230,0.18);}
-.annual-summary-item.annual-outlet-low small{color:#cfe2ff;}
-.flow-suggestion{margin:2px 0 12px;padding:11px 14px;border:1px solid rgba(120,180,255,0.5);background:rgba(90,150,230,0.18);border-radius:10px;color:#eaf2ff;font-size:13px;line-height:1.45;}
+.annual-finance-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr);gap:14px;height:100%;}
+.annual-finance-metric{display:flex;min-width:0;flex-direction:column;justify-content:center;}
+.annual-finance-metric + .annual-finance-metric{padding-left:14px;border-left:1px solid rgba(255,255,255,0.24);}
+.annual-finance-metric.annual-outlet-low strong,.annual-finance-metric.annual-outlet-low small{color:#cfe2ff;}
+.flow-suggestion{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:2px 0 12px;padding:11px 14px;border:1px solid rgba(120,180,255,0.5);background:rgba(90,150,230,0.18);border-radius:10px;color:#eaf2ff;font-size:13px;line-height:1.45;}
 .flow-suggestion b{color:#fff;}
+.flow-suggestion-copy{flex:1 1 620px;}
+.flow-suggestion-action{flex:0 0 auto;min-height:38px;padding:8px 12px;border:1px solid rgba(255,255,255,0.6);border-radius:7px;background:#fff;color:#0d5b78;font:inherit;font-weight:700;cursor:pointer;transition:background .16s,box-shadow .16s,transform .12s;}
+.flow-suggestion-action:hover{background:#eefaff;box-shadow:0 3px 10px rgba(0,0,0,0.14);transform:translateY(-1px);}
+.flow-suggestion-action:active{box-shadow:none;transform:translateY(0);}
 .annual-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.22);}
-.annual-validation-note{margin:10px 0 0;color:rgba(255,255,255,0.9);font-size:12px;line-height:1.55;}
 .output-card-annual .detail-toggle{background:#fff;color:#0d5b78;border-color:rgba(255,255,255,0.5);}
 .output-card-annual .detail-toggle:hover{background:#eefaff;color:#083d5b;box-shadow:0 4px 14px rgba(0,0,0,0.16);}
 .validation-link{display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:9px 13px;border:1px solid rgba(255,255,255,0.48);border-radius:6px;background:#fff;color:#0d5b78;text-decoration:none;font-size:13px;font-weight:700;line-height:1.2;transition:background 0.18s,box-shadow 0.18s,transform 0.14s;}
@@ -223,16 +239,18 @@ body.testing-mode .pv-testing-controls{display:grid;grid-template-columns:1fr;ga
 .chart-modal.how-it-works-open .chart-svg{animation:diagramReveal .42s ease-out .08s both;}
 .chart-modal.how-it-works-open .chart-svg line{stroke-dasharray:520;stroke-dashoffset:520;animation:connectorDraw .72s ease-out .18s forwards;}
 .chart-modal.how-it-works-open .chart-svg rect[data-step]{transform-box:fill-box;transform-origin:center;animation:flowNodeIn .34s ease-out .14s both;}
-.chart-modal.how-it-works-open .chart-svg rect[data-step].step-selecting{animation:flowNodeSelect .3s ease-out both;}
-.chart-modal.how-step-open #howItWorksStepBody>p{animation:detailContentIn .28s ease-out .08s both;}
-.chart-modal.how-step-open #howItWorksStepBody>div{animation:detailContentIn .34s ease-out .14s both;}
+.chart-modal.how-it-works-open .chart-svg rect[data-step].step-selecting{animation:flowNodeSelect .16s ease-out both;}
+.chart-modal.how-step-open>.chart-card{animation:detailModalIn .18s ease-out both;}
+.chart-modal.how-step-open #howItWorksStepBody>p{animation:detailContentIn .16s ease-out .02s both;}
+.chart-modal.how-step-open #howItWorksStepBody>div{animation:detailContentIn .18s ease-out .04s both;}
 @keyframes modalBackdropIn{from{background:rgba(0,0,0,0)}to{background:rgba(0,0,0,.45)}}
 @keyframes modalCardIn{from{opacity:0;transform:translateY(18px) scale(.975)}to{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes diagramReveal{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes connectorDraw{to{stroke-dashoffset:0}}
 @keyframes flowNodeIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
-@keyframes flowNodeSelect{0%{transform:scale(1)}50%{transform:scale(1.035);filter:drop-shadow(0 0 5px rgba(21,95,157,.38))}100%{transform:scale(1)}}
-@keyframes detailContentIn{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
+@keyframes flowNodeSelect{0%{transform:scale(1)}50%{transform:scale(1.012);filter:drop-shadow(0 0 2px rgba(21,95,157,.18))}100%{transform:scale(1)}}
+@keyframes detailModalIn{from{opacity:.96;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+@keyframes detailContentIn{from{opacity:.7;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}
 .chart-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
 .chart-close{padding:6px 10px;border:1px solid #bbb;background:#fff;border-radius:6px;cursor:pointer;color:#333;}
 .chart-close:hover{background:#eef2f6;color:#111;box-shadow:none;transform:none;}
@@ -247,7 +265,7 @@ body.testing-mode .pv-testing-controls{display:grid;grid-template-columns:1fr;ga
 .diagram-hotspot:hover,.diagram-hotspot:focus{background:rgba(211,47,47,0.16);box-shadow:0 0 0 2px rgba(211,47,47,0.15);}
 .diagram-hotspot-label{position:absolute;left:0;top:-24px;background:#d32f2f;color:#fff;font-size:11px;padding:2px 6px;border-radius:4px;white-space:nowrap;}
 @media (prefers-reduced-motion:reduce){
-  .chart-modal.motion-enter,.chart-modal.motion-enter>.chart-card,.chart-modal.how-it-works-open .chart-svg,.chart-modal.how-it-works-open .chart-svg line,.chart-modal.how-it-works-open .chart-svg rect[data-step],.chart-modal.how-it-works-open .chart-svg rect[data-step].step-selecting,.chart-modal.how-step-open #howItWorksStepBody>*{animation:none !important;transition:none !important;}
+  .chart-modal.motion-enter,.chart-modal.motion-enter>.chart-card,.chart-modal.how-it-works-open .chart-svg,.chart-modal.how-it-works-open .chart-svg line,.chart-modal.how-it-works-open .chart-svg rect[data-step],.chart-modal.how-it-works-open .chart-svg rect[data-step].step-selecting,.chart-modal.how-step-open #howItWorksStepBody>*,.percentage-bar-fill{animation:none !important;transition:none !important;}
 }
 .diagram-hotspot-note{margin-top:10px;padding:10px;border:1px solid #e3b4b4;background:#fff6f6;border-radius:6px;}
 .diagram-hotspot-note b{display:block;margin-bottom:4px;}
@@ -311,6 +329,9 @@ body.testing-mode .pv-testing-controls{display:grid;grid-template-columns:1fr;ga
 .insight-pill .eyebrow{font-size:11px;letter-spacing:.06em;text-transform:uppercase;opacity:.72;margin-bottom:4px;}
 .insight-pill .big{font-size:22px;font-weight:700;line-height:1.1;}
 .insight-pill small{display:block;margin-top:7px;color:rgba(255,255,255,0.82);line-height:1.35;}
+.percentage-bar{position:relative;height:8px;margin:10px 0 9px;overflow:hidden;border:1px solid rgba(255,255,255,0.34);border-radius:999px;background:rgba(7,54,36,0.28);box-shadow:inset 0 1px 2px rgba(5,40,27,0.16);}
+.percentage-bar-fill{display:block;height:100%;min-width:0;border-radius:inherit;background:rgba(255,255,255,0.9);transform-origin:left center;animation:percentageBarFill .45s ease-out both;}
+@keyframes percentageBarFill{from{transform:scaleX(0);}to{transform:scaleX(1);}}
 .process-chip-row{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 0;}
 .process-chip{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border-radius:999px;background:#edf7fa;border:1px solid #cfe5ee;color:#114b63;font-size:12px;font-weight:600;}
 .process-chip .dot{width:9px;height:9px;border-radius:50%;display:inline-block;box-shadow:0 0 0 3px rgba(255,255,255,0.75);}
@@ -401,7 +422,7 @@ body.testing-mode .pv-testing-controls{display:grid;grid-template-columns:1fr;ga
 .setting-group>summary span{font-size:13px;font-weight:700;}
 .setting-group>summary small{margin-left:auto;color:#667887;font-size:11px;font-weight:500;text-align:right;}
 .setting-group-body{padding:12px 14px;background:#fff;}
-.setting-group-body.inlet-block{margin:0;border:0;border-radius:0;}
+.setting-group-body.inlet-block{margin:0;border:0;border-radius:0;background:#fff;}
 .setting-group-body>.thermal-model-card{margin:0;}
 /* PV efficiency input + its note side by side (note to the right, smaller) */
 .eta-cell{display:flex;align-items:center;gap:10px;}
@@ -422,7 +443,7 @@ body.testing-mode .pv-testing-controls{display:grid;grid-template-columns:1fr;ga
 .thermal-model-option input{width:16px;height:16px;flex:0 0 16px;margin:0;}
 .thermal-model-option span{display:flex;flex-direction:column;gap:3px;min-width:0;font-size:13px;line-height:1.2;color:#173047;}
 .thermal-model-option small{font-size:11px;color:#68706f;line-height:1.25;}
-.thermal-model-option:has(input:checked) b{color:#0d6f8f;}
+.thermal-model-option:has(input:checked) b{color:#155f9d;}
 .thermal-model-option:hover b{color:#155f9d;}
 .thermal-model-params{margin-top:0;}
 .formula-details.thermal-model-details{border:0;border-radius:0;background:transparent;}
@@ -430,6 +451,10 @@ body.testing-mode .pv-testing-controls{display:grid;grid-template-columns:1fr;ga
 .formula-details.thermal-model-details>summary:hover{background:transparent;color:#0d4f83;text-decoration:underline;}
 .formula-details.thermal-model-details[open]>summary{background:transparent;color:#0d4f83;}
 .formula-details.thermal-model-details[open]>.advanced-grid{background:transparent;}
+.thermal-model-details[open]>.formula-box{margin:10px 0 4px;}
+.thermal-model-details[open]>.thermal-model-fields{grid-template-columns:minmax(150px,220px) minmax(280px,520px);gap:10px 18px;max-width:758px;margin:0;padding:12px 0 2px;}
+.thermal-model-fields label{line-height:1.3;}
+.thermal-model-reset-row{grid-column:2;display:flex;justify-content:flex-end;margin-top:2px;}
 /* Consolidated inlet / monthly-mains override card inside Advanced Settings */
 .inlet-block{margin:2px 0 6px;padding:12px 14px;background:#f3f7fb;border:1px solid #dce5ee;border-radius:8px;}
 /* PV temperature-correction toggle - keep the checkbox small so the label reads on one line */
@@ -448,13 +473,18 @@ body.testing-mode .pv-testing-controls{display:grid;grid-template-columns:1fr;ga
 .setting-chip.disabled{background:#f1f3f5;border-color:#d4d9df;color:#687380;}
 .economics-settings .setting-tags{display:none;}
 .economics-settings .setting-label{display:block;}
-.economics-intro{margin:0 0 4px;color:#5b6b78;line-height:1.45;}
-.economics-section-title{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-top:8px;padding-top:16px;border-top:1px solid #dde5ec;color:#173047;}
-.economics-intro + .economics-section-title{margin-top:0;padding-top:2px;border-top:0;}
+.economics-settings .advanced-settings-body{padding:10px 14px 12px;}
+.economics-settings .advanced-grid{row-gap:7px;}
+.economics-settings input,.economics-settings select{padding-top:6px;padding-bottom:6px;}
+.economics-intro{margin:0 0 1px;color:#5b6b78;line-height:1.35;}
+.economics-section-title{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-top:4px;padding-top:10px;border-top:1px solid #dde5ec;color:#173047;}
+.economics-intro + .economics-section-title{margin-top:0;padding-top:0;border-top:0;}
 .economics-section-title b{font-size:13px;}
 .economics-section-title span{color:#71808c;font-size:11px;text-align:right;}
+.economics-settings #gridEmissionFactorSource{margin:-2px 0 1px !important;}
 .cost-conversion-details{margin:0;border-top:1px solid #e0e7ed;border-bottom:1px solid #e0e7ed;}
 .cost-conversion-details>summary{display:flex;align-items:center;gap:7px;padding:10px 0;list-style:none;cursor:pointer;color:#155f9d;font-size:12px;font-weight:700;}
+.economics-settings .cost-conversion-details>summary{padding:7px 0;}
 .cost-conversion-details>summary::-webkit-details-marker{display:none;}
 .cost-conversion-details>summary::before{content:"▶";font-size:9px;transition:transform .15s ease;}
 .cost-conversion-details[open]>summary::before{transform:rotate(90deg);}
@@ -480,6 +510,10 @@ body.testing-mode .pv-testing-controls{display:grid;grid-template-columns:1fr;ga
 .mains-quickset label{font-weight:600;color:#4a5a6a;}
 .mains-quickset input{width:92px;padding:5px 6px;}
 @media (max-width:560px){.mains-month-grid{grid-template-columns:repeat(3,1fr);}}
+@media (max-width:700px){
+  .thermal-model-details[open]>.thermal-model-fields{grid-template-columns:1fr;gap:6px;max-width:none;}
+  .thermal-model-reset-row{grid-column:1;justify-content:flex-start;margin-top:4px;}
+}
 .formula-details{border:1px solid #b8d0e8;border-radius:8px;overflow:hidden;}
 .formula-details>summary{font-size:12px;font-weight:600;color:#155f9d;cursor:pointer;user-select:none;padding:8px 12px;list-style:none;display:flex;align-items:center;gap:6px;background:#dceaf7;transition:background 0.15s;}
 .formula-details>summary:hover{background:#c8ddf0;}
@@ -496,28 +530,39 @@ body.testing-mode .pv-testing-controls{display:grid;grid-template-columns:1fr;ga
 .mains-quickset .secondary-action,.mains-edit-actions .secondary-action{display:inline-block;}
 input:disabled{background:#eee;color:#666;cursor:not-allowed;}
 button:disabled{opacity:0.55;cursor:wait;transform:none;box-shadow:none;}
-.step-kicker{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#1a5f9a;margin:0 0 4px;}
 .how-it-works-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;min-height:36px;padding:8px 12px;border:1px solid rgba(255,255,255,0.38);border-radius:5px;background:rgba(255,255,255,0.10);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;line-height:1.2;box-sizing:border-box;text-decoration:none;letter-spacing:0;box-shadow:none;transition:background 0.18s,border-color 0.18s,transform 0.14s;}
 .how-it-works-btn:hover{background:rgba(255,255,255,0.18);border-color:rgba(255,255,255,0.68);transform:translateY(-1px);color:#fff;}
-.footer-note{margin:16px 0 0;text-align:center;font-size:11px;color:#5a6a7a;line-height:1.5;}
-.footer-fineprint{font-size:9px;line-height:1.5;}
-.footer-details{max-width:760px;margin:16px auto 0;font-size:11.5px;color:#5a6a7a;text-align:left;}
-.footer-details summary{cursor:pointer;font-weight:700;color:#3f6b8f;text-align:center;}
-.footer-details[open] summary{margin-bottom:8px;}
-.footer-details-body p{margin:0 0 8px;line-height:1.6;}
+.site-footer{margin:20px 0 4px;padding-top:14px;border-top:1px solid #d5e1ec;color:#5a6a7a;font-size:11.5px;}
+.footer-details{max-width:920px;margin:0 auto;text-align:left;}
+.footer-details summary{display:flex;align-items:center;justify-content:center;min-height:34px;cursor:pointer;font-weight:700;color:#3f6b8f;text-align:center;}
+.footer-details[open] summary{color:#164f80;}
+.footer-details-body{margin-top:8px;padding:14px 16px;border:1px solid #d5e1ec;border-radius:8px;background:#f7f9fb;}
+.footer-info-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;}
+.footer-details-body h4{margin:0 0 7px;color:#173b5d;font-size:12px;}
+.footer-details-body p{margin:0 0 7px;line-height:1.55;}
 .footer-details-body p:last-child{margin-bottom:0;}
-.footer-actions{margin:12px 0 0;text-align:center;}
-.footer-feedback-link{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:7px 14px;border:1px solid #9fbfe0;border-radius:999px;background:#eef6ff;color:#1a5f9a;text-decoration:none;font-size:12px;font-weight:700;transition:background 0.18s,border-color 0.18s,transform 0.14s,box-shadow 0.18s;}
-.footer-feedback-link:hover,.footer-feedback-link:focus{background:#dcecff;border-color:#74a9d6;color:#164f80;text-decoration:none;transform:translateY(-1px);box-shadow:0 3px 10px rgba(26,95,154,0.14);}
+.footer-sources{margin-top:12px;padding-top:12px;border-top:1px solid #d5e1ec;}
+.footer-sources dl{margin:0;}
+.footer-sources dl>div{display:grid;grid-template-columns:120px minmax(0,1fr);gap:10px;padding:4px 0;line-height:1.45;}
+.footer-sources dt{font-weight:700;color:#425a70;}
+.footer-sources dd{margin:0;}
+.site-footer a{color:#1a5f9a;}
+.footer-bottom{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;color:#6a7885;}
+.footer-bottom a{color:#5a6a7a;text-underline-offset:2px;}
 @media (max-width:780px){
   body{margin:10px;background-size:100% 600px;}
   .wrap{width:100%;max-width:none;}
   .panel{padding:12px;}
+  .panel.workflow-step{padding:0;}
+  .workflow-step>.grid{padding:12px;}
+  .workflow-step-header{margin:-12px -12px 8px;padding:12px;}
   input:not([type=checkbox]):not([type=radio]),select,button,#downloadLink,.secondary-action,.shared-scenario-link{min-height:44px;font-size:14px;}
   input[type=checkbox],input[type=radio]{width:18px;height:18px;min-width:18px;min-height:18px;max-height:18px;}
   .how-it-works-btn,.advanced-settings>summary,.setting-group>summary,.formula-details>summary,.footer-details summary{min-height:44px;}
   .brand-meta label,.tempcorr-toggle,.auto-cost-toggle,.display-controls label,.process-check label,.aquatic-process-label{min-height:44px;align-items:center;}
-  .note a,.footer-note a{display:inline-flex;align-items:center;justify-content:center;min-width:40px;min-height:32px;padding:0 4px;vertical-align:middle;}
+  .note a,.site-footer a{display:inline-flex;align-items:center;min-height:32px;padding:0 4px;vertical-align:middle;}
+  .footer-info-grid{grid-template-columns:1fr;gap:12px;}
+  .footer-sources dl>div{grid-template-columns:1fr;gap:2px;padding:6px 0;}
   .mains-quickset input,.mains-month-cell input{min-height:40px;}
   .summary-card-grid,.advanced-grid{grid-template-columns:1fr;}
   .metric-cards,.industry-summary-row,.insight-strip,.recommended-size-grid{grid-template-columns:1fr 1fr;}
@@ -557,6 +602,8 @@ button:disabled{opacity:0.55;cursor:wait;transform:none;box-shadow:none;}
   .shared-scenario-banner{align-items:stretch;flex-direction:column;}
   .shared-scenario-link{width:100%;}
   .panel{padding:12px;border-radius:8px;}
+  .panel.workflow-step{padding:0;}
+  .workflow-step-title h2{font-size:17px;}
   .brand-hero{padding:14px 12px 16px !important;border-radius:12px;}
   .brand-logos{gap:10px;}
   .brand-logo-coolsheet{width:100%;max-height:58px;}
@@ -577,6 +624,9 @@ button:disabled{opacity:0.55;cursor:wait;transform:none;box-shadow:none;}
   .annual-electricity-main{padding-right:0;padding-bottom:12px;border-right:0;border-bottom:1px solid rgba(255,255,255,0.24);}
   .annual-electricity-breakdown{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:9px;}
   .annual-electricity-part strong{font-size:15px;}
+  .annual-finance-grid{grid-template-columns:1fr;gap:10px;}
+  .annual-finance-metric + .annual-finance-metric{padding-top:10px;padding-left:0;border-top:1px solid rgba(255,255,255,0.24);border-left:0;}
+  .flow-suggestion-action{width:100%;}
   .annual-actions,.industry-actions{align-items:stretch;gap:8px;}
   .annual-actions .note,.industry-actions .note{width:100%;font-size:12px;}
   .display-controls{display:grid;grid-template-columns:1fr;gap:8px;margin-top:12px;}

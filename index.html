@@ -29,12 +29,12 @@
     <h1 class="brand-title">Annual PVT Calculator</h1>
     <div class="header-actions">
       <button id="btnHowItWorks" type="button" class="how-it-works-btn">How this calculator works</button>
-      <a href="pages/validation-hub.html" class="how-it-works-btn" title="See what has been validated, what the evidence shows, and what remains uncertain">Validation centre</a>
+      <a href="pages/validation-hub.html" class="how-it-works-btn" title="See what has been validated, what the evidence shows, and what remains uncertain">Validation</a>
       <div class="validation-orb-wrap" id="validationOrbWrap" hidden>
         <button id="btnValidationMenu" type="button" class="validation-orb" title="Validation &amp; reference pages" aria-haspopup="true" aria-expanded="false" aria-label="Validation and reference pages">&#10003;</button>
         <div id="validationPopover" class="validation-popover" role="menu" hidden>
           <div class="validation-popover-title">Validation &amp; references</div>
-          <a role="menuitem" href="pages/validation-hub.html" title="Plain-language summary of all validation evidence and limits">Validation centre - start here</a>
+          <a role="menuitem" href="pages/validation-hub.html" title="Plain-language summary of all validation evidence and limits">Validation - start here</a>
           <a role="menuitem" href="pages/validation.html" target="_blank" rel="noopener" title="BC-Aus vs CER reference, standard +6&deg;F offset">Validation 1 - CER +6&deg;F</a>
           <a role="menuitem" href="pages/validation2.html" target="_blank" rel="noopener" title="BC-Aus vs CER reference, no-offset variant">Validation 2 - CER 0&deg;F</a>
           <a role="menuitem" href="pages/validation3.html" target="_blank" rel="noopener" title="BC-Aus vs EnergyPlus 0.5 m ground temperatures">Validation 3 - ground 0.5 m</a>
@@ -56,9 +56,15 @@
   </div>
 
   <!-- Panel 1: PVT Supply Parameters -->
-  <div class="panel">
+  <div class="panel workflow-step workflow-step-site">
     <div class="grid">
-      <div class="step-kicker full-row">Step 1 &middot; Site &amp; PVT system</div>
+      <header class="workflow-step-header full-row">
+        <span class="workflow-step-number" aria-hidden="true">1</span>
+        <div class="workflow-step-title">
+          <span>Step 1</span>
+          <h2>Site and PVT system</h2>
+        </div>
+      </header>
       <label for="addressInput"><b>Address:</b></label>
       <div>
         <input id="addressInput" type="text" placeholder="e.g. 1 George St, Sydney NSW, Australia" />
@@ -82,7 +88,7 @@
             <label for="tiltAngle">Panel tilt (&deg;):</label>
             <input id="tiltAngle" type="number" step="0.01" value="30" />
 
-            <label for="azimuthAngle">Panel direction (&deg;, 0&deg; north, 180&deg; south):</label>
+            <label for="azimuthAngle">Panel direction (0&deg; north, 180&deg; south):</label>
             <input id="azimuthAngle" type="number" step="0.01" value="0" />
 
             <label for="albedo">Ground reflectivity (0&ndash;1):</label>
@@ -232,14 +238,14 @@
                     </span>
                     <span class="formula-sub">T<sub>in</sub> and T<sub>a</sub> in &deg;C, G in W/m&sup2;, and u<sub>wind</sub> in m/s.</span>
                   </div>
-                  <div class="advanced-grid" style="margin:8px 0 0;">
+                  <div class="advanced-grid thermal-model-fields">
                     <label for="pvtA0">PVT a0:</label>
                     <input id="pvtA0" type="number" step="0.000000001" value="0.279952866" />
                     <label for="pvtA1">PVT a1:</label>
                     <input id="pvtA1" type="number" step="0.000000001" value="-10.52839866" />
                     <label for="pvtA2">PVT a2:</label>
                     <input id="pvtA2" type="number" step="0.000000001" value="-0.008135537" />
-                    <div class="full-row" style="margin-top:6px;display:flex;justify-content:flex-end;"><button type="button" class="secondary-action" onclick="resetModelACoeffs()">Reset to defaults</button></div>
+                    <div class="thermal-model-reset-row"><button type="button" class="secondary-action" onclick="resetModelACoeffs()">Reset to defaults</button></div>
                   </div>
                 </details>
               </div>
@@ -254,7 +260,7 @@
                     </span>
                     <span class="formula-sub">T<sub>m</sub> = (T<sub>in</sub> + T<sub>out</sub>)/2, solved iteratively each hour. Set a<sub>3</sub>, a<sub>4</sub>, a<sub>6</sub>, and a<sub>8</sub> to 0 to ignore those terms.</span>
                   </div>
-                  <div class="advanced-grid" style="margin:8px 0 0;">
+                  <div class="advanced-grid thermal-model-fields">
                     <label for="isoEta0">&eta;<sub>0,hem</sub> &ndash; peak efficiency:</label>
                     <input id="isoEta0" type="number" step="0.0001" value="0.762" />
                     <label for="isoA1">a1 &ndash; heat loss coeff (W/m&sup2;K):</label>
@@ -273,7 +279,7 @@
                     <input id="isoTout0" type="number" step="0.1" value="40" />
                     <label for="isoIterMax">Max iterations (Newton):</label>
                     <input id="isoIterMax" type="number" min="1" max="10" step="1" value="5" />
-                    <div class="full-row" style="margin-top:6px;display:flex;justify-content:flex-end;"><button type="button" class="secondary-action" onclick="resetModelBCoeffs()">Reset to defaults</button></div>
+                    <div class="thermal-model-reset-row"><button type="button" class="secondary-action" onclick="resetModelBCoeffs()">Reset to defaults</button></div>
                   </div>
                 </details>
               </div>
@@ -295,12 +301,18 @@
   </div>
 
   <!-- Panel 2: Industry Demand + Actions -->
-  <div class="panel" style="margin-top:10px;">
+  <div class="panel workflow-step workflow-step-demand">
     <div class="grid">
 
-      <div class="step-kicker full-row">Step 2 &middot; Industry demand &amp; economics</div>
+      <header class="workflow-step-header full-row">
+        <span class="workflow-step-number" aria-hidden="true">2</span>
+        <div class="workflow-step-title">
+          <span>Step 2</span>
+          <h2>Industry demand and economics</h2>
+        </div>
+      </header>
       <div class="full-row" style="margin:0 0 6px;padding-top:0;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
-        <b style="font-size:14px;">Industry Thermal Demand (optional)</b>
+        <b style="font-size:14px;">Industry thermal demand</b>
         <button id="btnOpenProcessDiagram" type="button" style="visibility:hidden;padding:6px 10px;font-size:12px;line-height:1.2;">Process Diagram</button>
       </div>
 
@@ -325,9 +337,15 @@
         </div>
       </div>
 
+      <div id="processPanel" class="full-row" style="display:none;">
+        <div style="margin:8px 0;padding:10px;background:#f0f4f8;border-radius:6px;border:1px solid #cce;">
+          <div style="font-size:13px;font-weight:600;margin-bottom:6px;">Select thermal processes:</div>
+          <div id="processChecks"></div>
+        </div>
+      </div>
+
       <label for="throughputInput" id="throughputLabel" style="display:none;">Throughput (per year):</label>
       <input id="throughputInput" type="number" min="0" step="1000" value="5000000" style="display:none;" />
-      <div id="industryEvidenceNotice" class="note full-row" style="display:none;margin:4px 0 8px;padding:8px;border:1px solid #d8c88b;background:#fffbea;border-radius:5px;"></div>
 
       <div id="dairyAssumptionsPanel" class="full-row" style="display:none;">
         <div style="margin:8px 0;padding:10px;background:#f8fbf7;border-radius:6px;border:1px solid #cfe5c9;">
@@ -485,13 +503,6 @@
         </div>
       </div>
 
-      <div id="processPanel" class="full-row" style="display:none;">
-        <div style="margin:8px 0;padding:10px;background:#f0f4f8;border-radius:6px;border:1px solid #cce;">
-          <div style="font-size:13px;font-weight:600;margin-bottom:6px;">Select thermal processes:</div>
-          <div id="processChecks"></div>
-        </div>
-      </div>
-
       <details class="advanced-settings economics-settings full-row">
         <summary>Costs and savings assumptions</summary>
         <div class="advanced-settings-body">
@@ -577,13 +588,13 @@
         </div>
       </details>
 
-      <div class="btns calculator-actions full-row">
-        <button id="btnAnnual" type="button">Calculate results</button>
-        <span id="calcHint" style="display:none;margin-left:10px;font-size:12px;color:#666;line-height:2.5;">Calculating 8,760 hourly timesteps&hellip;</span>
-        <button id="btnResetInputs" type="button" class="secondary-action" style="display:inline-block;">Reset inputs</button>
-      </div>
-
     </div>
+  </div>
+
+  <div class="btns calculator-actions">
+    <button id="btnAnnual" type="button">Calculate results</button>
+    <span id="calcHint" style="display:none;margin-left:10px;font-size:12px;color:#666;line-height:2.5;">Calculating 8,760 hourly timesteps&hellip;</span>
+    <button id="btnResetInputs" type="button" class="secondary-action" style="display:inline-block;">Reset inputs</button>
   </div>
 
   <!-- Base PVT Results + Supply Charts -->
@@ -596,12 +607,11 @@
         <button id="btnGeneratePdf" type="button" class="secondary-action" disabled>Generate PDF report</button>
         <a id="downloadLink" href="#" target="_blank" rel="noopener">Download hourly details CSV</a>
         <button id="btnShareLink" type="button" class="secondary-action">Copy share link</button>
-        <button id="btnCheckPvScenario" type="button" class="secondary-action" disabled>Check this PV result</button>
       </div>
     </div>
 
     <!-- Supply Charts (Chart.js) -->
-    <div id="supplyChartsPanel" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid #d6dfea;">
+    <div id="supplyChartsPanel" style="display:none;margin-top:10px;padding-top:10px;">
       <h4>Monthly &amp; Daily Supply Charts</h4>
       <div class="display-controls">
         <label><input id="showMonthlySupply" type="checkbox" /> Monthly Supply</label>
@@ -636,6 +646,7 @@
       <div id="outletTemperatureBlock" class="results-block" style="display:none;">
         <h5>Daytime Panel &amp; Water Temperature</h5>
         <div class="chart-container"><canvas id="temperatureChart"></canvas></div>
+        <div id="temperatureTmyNote" class="temperature-tmy-note"></div>
         <div id="temperatureDataTable" class="data-table-container"></div>
       </div>
     </div>
@@ -644,27 +655,39 @@
   <!-- Industry Output -->
   <div id="industryOutput" class="panel" style="display:none;margin-top:10px;"></div>
 
-  <details class="footer-details">
-    <summary>Important disclaimer and privacy</summary>
-    <div class="footer-details-body">
-      <p><b>Purpose.</b> CoolSheet is an academic research prototype created for a University of New South Wales (UNSW) student thesis. It provides indicative feasibility estimates for education, research and early-stage comparison only.</p>
-      <p><b>Limitations.</b> Results depend on typical weather data, model assumptions and user-entered information. They are not a site measurement, performance guarantee, engineering design, electrical or hydraulic certification, financial quote, investment recommendation, or substitute for advice from a suitably qualified professional.</p>
-      <p><b>Responsibility.</b> Accuracy and fitness for any particular purpose are not guaranteed. Users remain responsible for independently verifying all inputs, equipment data, tariffs, costs, operating schedules, site constraints and conclusions before relying on a result.</p>
-      <p><b>Privacy.</b> When weather is loaded, the entered address is sent to OpenStreetMap's Nominatim service for geocoding. The resulting coordinates are sent to the CoolSheet weather service and PVGIS. Calculator inputs are also stored in this browser so they survive a page refresh. Do not enter confidential or personal site information.</p>
+  <footer class="site-footer">
+    <details class="footer-details">
+      <summary>About, sources and privacy</summary>
+      <div class="footer-details-body">
+        <div class="footer-info-grid">
+          <section>
+            <h4>Purpose and limits</h4>
+            <p>CoolSheet is a UNSW academic research prototype for education, research and early feasibility comparisons.</p>
+            <p>Results use typical weather, model assumptions and user inputs. They are not site measurements, guarantees, certified designs, financial quotes or professional advice.</p>
+          </section>
+          <section>
+            <h4>Responsibility and privacy</h4>
+            <p>Verify all inputs, equipment data, costs, schedules, site constraints and conclusions before relying on a result.</p>
+            <p>Calculator inputs are stored in this browser so they remain after a page refresh.</p>
+          </section>
+        </div>
+        <section class="footer-sources">
+          <h4>Data sources</h4>
+          <dl>
+            <div><dt>Weather</dt><dd><a href="https://re.jrc.ec.europa.eu/pvg_tools/en/" target="_blank" rel="noopener">PVGIS</a> typical meteorological year data from the European Union Joint Research Centre.</dd></div>
+            <div><dt>Location</dt><dd><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> geocoding and map data.</dd></div>
+            <div><dt>Water temperature</dt><dd>BC-Aus model fitted from <a href="https://www.osti.gov/biblio/981988" target="_blank" rel="noopener">Burch &amp; Christensen (NREL)</a> and legacy CER/SRES references. It is not AS/NZS 4234:2021 engineering data.</dd></div>
+            <div><dt>Emissions</dt><dd>DCCEEW <a href="https://www.dcceew.gov.au/climate-change/publications/national-greenhouse-accounts-factors-2025" target="_blank" rel="noopener">National Greenhouse Accounts Factors 2025</a>.</dd></div>
+          </dl>
+        </section>
+      </div>
+    </details>
+    <div class="footer-bottom">
+      <span>&copy; 2026 UNSW Sydney</span>
+      <span aria-hidden="true">&middot;</span>
+      <a href="https://docs.google.com/forms/d/e/1FAIpQLSce0xTcsqk8rcy5BInIdqWTnlTXhwKNfoV75qbbov0AbQ0-zA/viewform?embedded=true" target="_blank" rel="noopener">Feedback</a>
     </div>
-  </details>
-
-  <p class="footer-note footer-fineprint">
-    Weather: <a href="https://re.jrc.ec.europa.eu/pvg_tools/en/" target="_blank" rel="noopener">PVGIS</a> (&copy; European Union, Joint Research Centre) typical meteorological year<br/>
-    Geocoding &amp; map: &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL)<br/>
-    Mains water temperature: BC-Aus - <a href="https://www.osti.gov/biblio/981988" target="_blank" rel="noopener">Burch &amp; Christensen (NREL)</a> fitted to legacy CER/SRES domestic reference decks and selected by the geographically closest SWH reference location (not AS/NZS 4234:2021 engineering data)<br/>
-    Grid emission factors: DCCEEW <a href="https://www.dcceew.gov.au/climate-change/publications/national-greenhouse-accounts-factors-2025" target="_blank" rel="noopener">National Greenhouse Accounts Factors 2025</a> (defaults current as of 2025&ndash;2026)
-  </p>
-
-  <p class="footer-note" style="margin-top:10px;">
-    &copy; 2026 UNSW Sydney &nbsp;&middot;&nbsp;
-    <a href="https://docs.google.com/forms/d/e/1FAIpQLSce0xTcsqk8rcy5BInIdqWTnlTXhwKNfoV75qbbov0AbQ0-zA/viewform?embedded=true" target="_blank" rel="noopener" style="color:#5a6a7a;text-decoration:underline;">Feedback</a>
-  </p>
+  </footer>
 
 
   <!-- Modals -->
