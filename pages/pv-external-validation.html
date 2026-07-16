@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="description" content="A simple comparison of the CoolSheet PV-only result with PVGIS and PVWatts." />
+  <meta name="description" content="A five-city comparison of the CoolSheet PV-only result with PVGIS, PVWatts and an Australian CEC regional benchmark." />
   <title>Simple PV Check | CoolSheet</title>
   <script src="../assets/vendor/chart.umd.min.js"></script>
   <style>
@@ -26,7 +26,7 @@
     .steps b{display:block;margin-bottom:3px}.steps span{font-size:13px;color:var(--muted)}
     .control{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:16px 0}.control select{padding:9px 34px 9px 10px;border:1px solid #9aafbd;border-radius:5px;background:#fff;color:var(--ink);font-size:15px}
     .scenario{font-size:13px;color:var(--muted);padding:11px 13px;background:var(--wash);border:1px solid var(--line)}
-    .results{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0}
+    .results{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0}.benchmark-results{grid-template-columns:repeat(4,minmax(0,1fr))}
     .result{padding:17px;border:1px solid var(--line);border-top:5px solid var(--green);min-width:0}.result.external{border-top-color:var(--blue)}.result:last-child{border-top-color:var(--orange)}
     .result span{display:block;font-size:12px;color:var(--muted)}.result strong{display:block;font-size:27px;color:var(--navy);line-height:1.2;margin:4px 0}.result small{display:block;color:var(--muted)}
     .chart-wrap{height:270px;position:relative;min-width:0;width:100%;margin-top:10px}.chart-wrap canvas{max-width:100%}
@@ -38,7 +38,8 @@
     details{margin-top:12px;border:1px solid var(--line);padding:0 16px;background:#fff}summary{padding:13px 0;cursor:pointer;font-weight:700;color:var(--navy)}
     .details-body{padding:0 0 16px;color:var(--muted);font-size:13px}.details-body p{margin:6px 0 10px}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:var(--wash);color:var(--navy)}
     footer{padding:20px 28px;border-top:1px solid var(--line);background:var(--wash);font-size:12px;color:var(--muted);margin-top:36px}
-    @media(max-width:700px){.steps,.results{grid-template-columns:1fr}.meaning{grid-template-columns:1fr}.result strong{font-size:24px}}
+    @media(max-width:850px){.benchmark-results{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:700px){.steps,.results,.benchmark-results{grid-template-columns:1fr}.meaning{grid-template-columns:1fr}.result strong{font-size:24px}}
     @media(max-width:480px){nav{padding:12px 17px;align-items:flex-start}header{padding:28px 19px}main{padding:22px 18px}.chart-wrap{height:240px}.source-actions{flex-direction:column;gap:7px}footer{padding:18px}}
   </style>
 </head>
@@ -52,13 +53,13 @@
   <header>
     <div class="eyebrow">PV result check</div>
     <h1 id="pageTitle">Is the CoolSheet PV result reasonable?</h1>
-    <p id="pageLead">We entered the same solar-panel system into CoolSheet, PVGIS and PVWatts, then compared the yearly electricity results.</p>
+    <p id="pageLead">We checked the same 4 kW system in five Australian cities against PVGIS, PVWatts and an Australian regional benchmark.</p>
   </header>
 
   <main>
     <div class="answer" data-benchmark-only>
       <h2>Short answer: yes.</h2>
-      <p>Across Sydney, Melbourne and Perth, CoolSheet stayed within <strong>4.53%</strong> of both external calculators. The average difference was <strong>2.22%</strong>.</p>
+      <p>Across five cities, CoolSheet stayed within <strong>4.53%</strong> of the two matched-input calculators. The average matched-model difference was <strong>2.22%</strong>. The separate Australian regional benchmark was within 8.22%.</p>
     </div>
 
     <section id="scenarioValidation" aria-labelledby="scenarioTitle" hidden>
@@ -87,25 +88,27 @@
       <p class="intro">Follow these three steps. You do not need to understand the equations.</p>
       <ol class="steps">
         <li><b>Choose a city</b><span>This changes the weather used for the comparison.</span></li>
-        <li><b>Compare the three numbers</b><span>Each number is yearly electricity delivered as AC.</span></li>
+        <li><b>Compare the four numbers</b><span>Each number is yearly electricity delivered as AC.</span></li>
         <li><b>Read the conclusion</b><span>A small difference means the models broadly agree.</span></li>
       </ol>
     </section>
 
     <section aria-labelledby="checkTitle" data-benchmark-only>
       <h2 id="checkTitle">Check a location</h2>
-      <div class="control"><label for="citySelect"><b>1. Choose a city:</b></label><select id="citySelect"><option>Sydney</option><option>Melbourne</option><option>Perth</option></select><span id="stationNote" class="intro" style="margin:0"></span></div>
-      <div class="scenario"><b>Same system in every calculator:</b> 4.0 kW DC &middot; 20 m&sup2; at 20% efficiency &middot; 30&deg; north-facing &middot; fixed open rack &middot; 14% system losses &middot; 96% inverter efficiency</div>
+      <div class="control"><label for="citySelect"><b>1. Choose a city:</b></label><select id="citySelect"><option>Sydney</option><option>Melbourne</option><option>Brisbane</option><option>Perth</option><option>Adelaide</option></select><span id="stationNote" class="intro" style="margin:0"></span></div>
+      <div class="scenario"><b>Matched system in CoolSheet, PVGIS and PVWatts:</b> 4.0 kW DC &middot; 20 m&sup2; at 20% efficiency &middot; 30&deg; north-facing &middot; fixed open rack &middot; 14% system losses &middot; 96% inverter efficiency</div>
 
-      <div class="results" aria-live="polite">
+      <div class="results benchmark-results" aria-live="polite">
         <article class="result"><span>CoolSheet</span><strong id="coolSheetValue">5,656.9 kWh</strong><small>yearly net AC electricity</small></article>
         <article class="result external"><span>PVGIS</span><strong id="pvgisValue">5,913.2 kWh</strong><small id="pvgisDifference">4.53% higher than CoolSheet</small></article>
         <article class="result external"><span>PVWatts</span><strong id="pvwattsValue">5,657.3 kWh</strong><small id="pvwattsDifference">0.01% higher than CoolSheet</small></article>
+        <article class="result"><span>Australian CEC benchmark</span><strong id="cecValue">5,694.0 kWh</strong><small id="cecDifference">0.66% higher than CoolSheet</small></article>
       </div>
 
       <div class="chart-wrap"><canvas id="resultChart" role="img" aria-label="Yearly PV electricity comparison for the selected city"></canvas></div>
-      <div id="plainResult" class="plain-result"><b>Result:</b> all three Sydney estimates are close. The largest difference is 4.53%, so the CoolSheet yearly PV-only estimate is reasonable for early-stage planning.</div>
-      <div class="source-actions"><a id="pvgisResultLink" target="_blank" rel="noopener">Open this PVGIS result</a><a id="pvwattsResultLink" target="_blank" rel="noopener">Open this PVWatts result</a></div>
+      <div id="plainResult" class="plain-result"><b>Result:</b> the matched Sydney models are within 4.53% of CoolSheet. The Australian regional benchmark is within 0.66%.</div>
+      <div class="source-actions"><a id="pvgisResultLink" target="_blank" rel="noopener">Open this PVGIS result</a><a id="pvwattsResultLink" target="_blank" rel="noopener">Open this PVWatts result</a><a href="https://www.yourhome.gov.au/energy/photovoltaic-systems" target="_blank" rel="noopener">Open Australian CEC benchmark source</a></div>
+      <p class="intro" style="margin-top:12px">PVGIS and PVWatts use the matched capacity, tilt, direction and loss assumptions. The CEC figure matches the city and 4 kW capacity, but its published regional average does not provide adjustable tilt or detailed loss settings.</p>
     </section>
 
     <section aria-labelledby="meaningTitle">
@@ -121,20 +124,20 @@
       <p class="intro">Open these only if you want to check how the comparison was made.</p>
       <details>
         <summary>How the inputs were matched</summary>
-        <div class="details-body table-wrap"><table><thead><tr><th>Input</th><th>CoolSheet</th><th>PVGIS</th><th>PVWatts</th></tr></thead><tbody>
-          <tr><td>Capacity</td><td>4.0 kW DC</td><td>4.0 kW peak</td><td>4.0 kW DC</td></tr>
-          <tr><td>North-facing</td><td>0&deg;</td><td>&minus;180&deg;</td><td>0&deg;</td></tr>
-          <tr><td>Loss boundary</td><td>14% &times; 96% inverter</td><td>17.44% combined</td><td>14% + 96% inverter</td></tr>
-          <tr><td>Output compared</td><td>Net AC kWh</td><td>Net AC kWh</td><td>Net AC kWh</td></tr>
+        <div class="details-body table-wrap"><table><thead><tr><th>Input</th><th>CoolSheet</th><th>PVGIS</th><th>PVWatts</th><th>Australian CEC</th></tr></thead><tbody>
+          <tr><td>Capacity</td><td>4.0 kW DC</td><td>4.0 kW peak</td><td>4.0 kW DC</td><td>4.0 kW scaling</td></tr>
+          <tr><td>North-facing</td><td>0&deg;</td><td>&minus;180&deg;</td><td>0&deg;</td><td>Published regional average</td></tr>
+          <tr><td>Loss boundary</td><td>14% &times; 96% inverter</td><td>17.44% combined</td><td>14% + 96% inverter</td><td>Not adjustable</td></tr>
+          <tr><td>Output compared</td><td>Net AC kWh</td><td>Net AC kWh</td><td>Net AC kWh</td><td>Average daily kWh/kW scaled annually</td></tr>
         </tbody></table></div>
       </details>
       <details>
         <summary>Why the answers are not exactly identical</summary>
-        <div class="details-body"><p>Each calculator uses its own weather processing, solar-on-panel calculation and panel-temperature model. PVWatts also uses a nearby international weather station rather than the exact city coordinate. Differences of a few percent are therefore expected.</p></div>
+        <div class="details-body"><p>Each matched calculator uses its own weather processing, solar-on-panel calculation and panel-temperature model. PVWatts also uses a nearby international weather station rather than the exact city coordinate. The CEC result is broader because it is a published city average rather than a matched system simulation. Differences of a few percent are therefore expected.</p></div>
       </details>
       <details>
         <summary>Sources and saved evidence</summary>
-        <div class="details-body"><p><a href="../validation/reference/pv_external_validation.json">Saved input and result file</a> &middot; <a href="https://joint-research-centre.ec.europa.eu/photovoltaic-geographical-information-system-pvgis/using-pvgis-5/pvgis-5-tools/grid-connected-pv_en" target="_blank" rel="noopener">PVGIS method</a> &middot; <a href="https://developer.nlr.gov/docs/solar/pvwatts/v8/" target="_blank" rel="noopener">PVWatts 8</a> &middot; <a href="https://www.industry.gov.au/national-measurement-institute/australias-measurement-system" target="_blank" rel="noopener">Australian measurement system</a></p></div>
+        <div class="details-body"><p><a href="../validation/reference/pv_external_validation.json">Saved input and result file</a> &middot; <a href="https://joint-research-centre.ec.europa.eu/photovoltaic-geographical-information-system-pvgis/using-pvgis-5/pvgis-5-tools/grid-connected-pv_en" target="_blank" rel="noopener">PVGIS method</a> &middot; <a href="https://developer.nlr.gov/docs/solar/pvwatts/v8/" target="_blank" rel="noopener">PVWatts 8</a> &middot; <a href="https://www.yourhome.gov.au/energy/photovoltaic-systems" target="_blank" rel="noopener">Australian CEC regional figures</a> &middot; <a href="https://www.industry.gov.au/national-measurement-institute/australias-measurement-system" target="_blank" rel="noopener">Australian measurement system</a></p></div>
       </details>
     </section>
   </main>
@@ -146,24 +149,28 @@
 (function(){
   "use strict";
   const DATA={
-    Sydney:{values:[5656.9282,5913.19,5657.2907],station:"PVWatts station: 6.9 km away",pvgisUrl:"https://re.jrc.ec.europa.eu/api/v5_3/PVcalc?lat=-33.8698&lon=151.2083&peakpower=4&loss=17.44&angle=30&aspect=-180&mountingplace=free&pvtechchoice=crystSi&raddatabase=PVGIS-ERA5&outputformat=json",pvwattsUrl:"https://developer.nlr.gov/api/pvwatts/v8.json?api_key=DEMO_KEY&system_capacity=4&module_type=0&losses=14&array_type=0&tilt=30&azimuth=0&lat=-33.8698&lon=151.2083&dataset=intl&radius=0&dc_ac_ratio=1.2&inv_eff=96&albedo=0.2"},
-    Melbourne:{values:[5727.0243,5594.47,5490.6621],station:"PVWatts station: 20.2 km away",pvgisUrl:"https://re.jrc.ec.europa.eu/api/v5_3/PVcalc?lat=-37.8136&lon=144.9631&peakpower=4&loss=17.44&angle=30&aspect=-180&mountingplace=free&pvtechchoice=crystSi&raddatabase=PVGIS-ERA5&outputformat=json",pvwattsUrl:"https://developer.nlr.gov/api/pvwatts/v8.json?api_key=DEMO_KEY&system_capacity=4&module_type=0&losses=14&array_type=0&tilt=30&azimuth=0&lat=-37.8136&lon=144.9631&dataset=intl&radius=0&dc_ac_ratio=1.2&inv_eff=96&albedo=0.2"},
-    Perth:{values:[6466.0119,6494.4,6587.1360],station:"PVWatts station: 14.1 km away",pvgisUrl:"https://re.jrc.ec.europa.eu/api/v5_3/PVcalc?lat=-31.9505&lon=115.8605&peakpower=4&loss=17.44&angle=30&aspect=-180&mountingplace=free&pvtechchoice=crystSi&raddatabase=PVGIS-ERA5&outputformat=json",pvwattsUrl:"https://developer.nlr.gov/api/pvwatts/v8.json?api_key=DEMO_KEY&system_capacity=4&module_type=0&losses=14&array_type=0&tilt=30&azimuth=0&lat=-31.9505&lon=115.8605&dataset=intl&radius=0&dc_ac_ratio=1.2&inv_eff=96&albedo=0.2"}
+    Sydney:{values:[5656.9282,5913.19,5657.2907,5694],station:"PVWatts station: 6.9 km away",pvgisUrl:"https://re.jrc.ec.europa.eu/api/v5_3/PVcalc?lat=-33.8698&lon=151.2083&peakpower=4&loss=17.44&angle=30&aspect=-180&mountingplace=free&pvtechchoice=crystSi&raddatabase=PVGIS-ERA5&outputformat=json",pvwattsUrl:"https://developer.nlr.gov/api/pvwatts/v8.json?api_key=DEMO_KEY&system_capacity=4&module_type=0&losses=14&array_type=0&tilt=30&azimuth=0&lat=-33.8698&lon=151.2083&dataset=intl&radius=0&dc_ac_ratio=1.2&inv_eff=96&albedo=0.2"},
+    Melbourne:{values:[5727.0243,5594.47,5490.6621,5256],station:"PVWatts station: 20.2 km away",pvgisUrl:"https://re.jrc.ec.europa.eu/api/v5_3/PVcalc?lat=-37.8136&lon=144.9631&peakpower=4&loss=17.44&angle=30&aspect=-180&mountingplace=free&pvtechchoice=crystSi&raddatabase=PVGIS-ERA5&outputformat=json",pvwattsUrl:"https://developer.nlr.gov/api/pvwatts/v8.json?api_key=DEMO_KEY&system_capacity=4&module_type=0&losses=14&array_type=0&tilt=30&azimuth=0&lat=-37.8136&lon=144.9631&dataset=intl&radius=0&dc_ac_ratio=1.2&inv_eff=96&albedo=0.2"},
+    Brisbane:{values:[5829.4721,5856.5,6025.1049,6132],station:"PVWatts station: 13.7 km away",pvgisUrl:"https://re.jrc.ec.europa.eu/api/v5_3/PVcalc?lat=-27.470125&lon=153.021072&peakpower=4&loss=17.44&angle=30&aspect=-180&mountingplace=free&pvtechchoice=crystSi&raddatabase=PVGIS-ERA5&outputformat=json",pvwattsUrl:"https://developer.nlr.gov/api/pvwatts/v8.json?api_key=DEMO_KEY&system_capacity=4&module_type=0&losses=14&array_type=0&tilt=30&azimuth=0&lat=-27.470125&lon=153.021072&dataset=intl&radius=0&dc_ac_ratio=1.2&inv_eff=96&albedo=0.2"},
+    Perth:{values:[6466.0119,6494.4,6587.1360,6424],station:"PVWatts station: 14.1 km away",pvgisUrl:"https://re.jrc.ec.europa.eu/api/v5_3/PVcalc?lat=-31.9505&lon=115.8605&peakpower=4&loss=17.44&angle=30&aspect=-180&mountingplace=free&pvtechchoice=crystSi&raddatabase=PVGIS-ERA5&outputformat=json",pvwattsUrl:"https://developer.nlr.gov/api/pvwatts/v8.json?api_key=DEMO_KEY&system_capacity=4&module_type=0&losses=14&array_type=0&tilt=30&azimuth=0&lat=-31.9505&lon=115.8605&dataset=intl&radius=0&dc_ac_ratio=1.2&inv_eff=96&albedo=0.2"},
+    Adelaide:{values:[6257.7263,6135.06,6063.8654,6132],station:"PVWatts station: 3.1 km away",pvgisUrl:"https://re.jrc.ec.europa.eu/api/v5_3/PVcalc?lat=-34.928499&lon=138.600746&peakpower=4&loss=17.44&angle=30&aspect=-180&mountingplace=free&pvtechchoice=crystSi&raddatabase=PVGIS-ERA5&outputformat=json",pvwattsUrl:"https://developer.nlr.gov/api/pvwatts/v8.json?api_key=DEMO_KEY&system_capacity=4&module_type=0&losses=14&array_type=0&tilt=30&azimuth=0&lat=-34.928499&lon=138.600746&dataset=intl&radius=0&dc_ac_ratio=1.2&inv_eff=96&albedo=0.2"}
   };
   const format=value=>value.toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1})+" kWh";
   const escapeHtml=value=>String(value).replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"})[char]);
   const difference=(external,ours)=>(external/ours-1)*100;
   const describe=value=>Math.abs(value)<.005?"the same as":Math.abs(value).toFixed(2)+"% "+(value>0?"higher than":"lower than");
-  const chart=new Chart(document.getElementById("resultChart"),{type:"bar",data:{labels:["CoolSheet","PVGIS","PVWatts"],datasets:[{data:DATA.Sydney.values,backgroundColor:["#16724d","#287fbd","#d56228"],maxBarThickness:90}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>format(ctx.parsed.y)+" per year"}}},scales:{x:{grid:{display:false}},y:{beginAtZero:true,title:{display:true,text:"Yearly net AC electricity (kWh)"},grid:{color:"#d8e3e9"}}}}});
+  const chart=new Chart(document.getElementById("resultChart"),{type:"bar",data:{labels:["CoolSheet","PVGIS","PVWatts","Australian CEC"],datasets:[{data:DATA.Sydney.values,backgroundColor:["#16724d","#287fbd","#d56228","#b48a19"],maxBarThickness:90}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>format(ctx.parsed.y)+" per year"}}},scales:{x:{grid:{display:false}},y:{beginAtZero:true,title:{display:true,text:"Yearly net AC electricity (kWh)"},grid:{color:"#d8e3e9"}}}}});
   function update(){
-    const city=document.getElementById("citySelect").value,d=DATA[city],pvgisDiff=difference(d.values[1],d.values[0]),pvwattsDiff=difference(d.values[2],d.values[0]),largest=Math.max(Math.abs(pvgisDiff),Math.abs(pvwattsDiff));
+    const city=document.getElementById("citySelect").value,d=DATA[city],pvgisDiff=difference(d.values[1],d.values[0]),pvwattsDiff=difference(d.values[2],d.values[0]),cecDiff=difference(d.values[3],d.values[0]),matchedLargest=Math.max(Math.abs(pvgisDiff),Math.abs(pvwattsDiff));
     document.getElementById("coolSheetValue").textContent=format(d.values[0]);
     document.getElementById("pvgisValue").textContent=format(d.values[1]);
     document.getElementById("pvwattsValue").textContent=format(d.values[2]);
+    document.getElementById("cecValue").textContent=format(d.values[3]);
     document.getElementById("pvgisDifference").textContent=describe(pvgisDiff)+" CoolSheet";
     document.getElementById("pvwattsDifference").textContent=describe(pvwattsDiff)+" CoolSheet";
+    document.getElementById("cecDifference").textContent=describe(cecDiff)+" CoolSheet";
     document.getElementById("stationNote").textContent=d.station;
-    document.getElementById("plainResult").innerHTML="<b>Result:</b> all three "+city+" estimates are close. The largest difference is "+largest.toFixed(2)+"%, so the CoolSheet yearly PV-only estimate is reasonable for early-stage planning.";
+    document.getElementById("plainResult").innerHTML="<b>Result:</b> the matched "+city+" models are within "+matchedLargest.toFixed(2)+"% of CoolSheet. The Australian regional benchmark is within "+Math.abs(cecDiff).toFixed(2)+"%.";
     document.getElementById("pvgisResultLink").href=d.pvgisUrl;document.getElementById("pvwattsResultLink").href=d.pvwattsUrl;
     chart.data.datasets[0].data=d.values;chart.update();
   }

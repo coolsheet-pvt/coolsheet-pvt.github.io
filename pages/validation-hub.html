@@ -3,160 +3,129 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="description" content="A plain-language guide to the evidence supporting the CoolSheet PVT calculator and the results that still require validation." />
+  <meta name="description" content="A plain-language guide to the evidence supporting the CoolSheet PVT calculator." />
   <title>Validation Centre | CoolSheet</title>
   <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" />
   <style>
-    :root{
-      --ink:#173047;--muted:#5d7080;--line:#d6dfea;--navy:#083d5b;
-      --blue:#1a6baa;--green:#18734e;--orange:#b85b27;--paper:#fff;
-      --wash:#f4f8fb;--green-soft:#edf8f2;--orange-soft:#fff5ef;
-    }
+    :root{--ink:#173047;--muted:#5d7080;--line:#d6dfea;--blue:#155f9d;--green:#18734e;--orange:#a75225;--paper:#fff;--wash:#f4f7fa}
     *{box-sizing:border-box}
     html{overflow-x:hidden;overflow-y:scroll;scrollbar-gutter:stable}
-    body{
-      margin:18px;padding-bottom:70px;color:var(--ink);
-      font-family:Arial,Helvetica,sans-serif;line-height:1.5;
-      background-color:#fff;
-      background-image:linear-gradient(to bottom,#09131f 0,#10253a 80px,#1a3a55 170px,#d6e4ef 430px,#eef3f7 540px,#fff 720px);
-      background-repeat:no-repeat;background-size:100% 720px;
+    body{margin:0;padding:24px 18px 60px;background:var(--wash);color:var(--ink);font-family:Arial,Helvetica,sans-serif;line-height:1.5}
+    a{color:var(--blue)}
+    .shell{width:min(920px,100%);margin:0 auto}
+    .topbar{display:flex;align-items:center;justify-content:flex-end;padding-bottom:16px;border-bottom:1px solid var(--line)}
+    .back-link{display:inline-flex;align-items:center;min-height:38px;padding:8px 12px;border:1px solid #aac0d2;border-radius:6px;background:#fff;color:#234f72;font-size:13px;font-weight:700;text-decoration:none}
+    .back-link:hover,.back-link:focus{background:#eaf2f8;border-color:#759bb9}
+    main{margin-top:24px;padding:34px 38px 38px;border:1px solid var(--line);border-radius:10px;background:var(--paper)}
+    .eyebrow{margin:0 0 7px;color:#557086;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+    h1{margin:0;color:#083d5b;font-size:34px;line-height:1.15}
+    .intro{max-width:720px;margin:10px 0 0;color:var(--muted);font-size:15px}
+    .summary{margin-top:25px;padding:14px 16px;border-left:4px solid var(--green);background:#edf7f2}
+    .summary strong{display:block;margin-bottom:2px;color:#0d563a;font-size:16px}
+    .summary span{display:block;color:#3d5f4e;font-size:13.5px}.summary span+span{margin-top:4px}
+    section{margin-top:30px}
+    section h2{margin:0 0 6px;color:#083d5b;font-size:20px}
+    .section-copy{margin:0 0 12px;color:var(--muted);font-size:13.5px}
+    .checks{border-top:1px solid var(--line)}
+    .check-row{display:grid;grid-template-columns:190px minmax(0,1fr) auto;gap:18px;align-items:center;padding:20px 4px;border-bottom:1px solid var(--line);color:inherit;text-decoration:none}
+    .check-row:hover,.check-row:focus{background:#f7fafc;outline:none}
+    .status{font-size:11px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:var(--blue)}
+    .status.strong{color:var(--green)}.status.preliminary{color:var(--orange)}
+    .check-copy h3{margin:0 0 3px;color:#123f60;font-size:17px}
+    .check-copy p{margin:0;color:var(--muted);font-size:13.5px}
+    .check-copy .check-meta{margin-top:5px;color:#40586b;font-size:12px;font-weight:700}
+    .open-label{color:var(--blue);font-size:13px;font-weight:700;white-space:nowrap}
+    .limits{padding-top:26px;border-top:1px solid var(--line)}
+    .limits ul{margin:10px 0 0;padding-left:20px;color:#435868;font-size:13.5px}
+    .limits li{margin:7px 0}
+    details{margin-top:26px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+    summary{padding:13px 2px;cursor:pointer;color:#234f72;font-size:13.5px;font-weight:700}
+    .reference-links{display:grid;grid-template-columns:1fr 1fr;gap:9px 20px;padding:2px 2px 16px;font-size:13px}
+    .reference-links a{font-weight:700}
+    footer{max-width:760px;margin:18px auto 0;color:#6a7884;font-size:11px;text-align:center}
+    @media(max-width:700px){
+      body{padding:14px 10px 50px}
+      main{margin-top:18px;padding:24px 18px 28px}h1{font-size:28px}.check-row{grid-template-columns:1fr;gap:5px;padding:16px 2px}.open-label{margin-top:3px}.reference-links{grid-template-columns:1fr}
     }
-    a{color:#155f9d}
-    .shell{width:min(1180px,100%);margin:0 auto}
-    .brand-hero{
-      overflow:hidden;padding:20px 24px 30px;border:1px solid rgba(255,255,255,.16);
-      border-radius:14px;background:linear-gradient(130deg,#083d5b 0%,#0d607e 62%,#258fa0 100%);
-      color:#fff;box-shadow:0 14px 36px rgba(8,35,54,.18);
-    }
-    .brand-top{display:flex;align-items:flex-start;justify-content:space-between;gap:24px}
-    .brand-logos{display:flex;align-items:center;gap:12px;min-width:0}
-    .brand-logo{display:block;max-width:100%;object-fit:contain;background:#fff;border-radius:6px}
-    .brand-logo-coolsheet{width:128px;height:58px}
-    .brand-logo-unsw{width:116px;height:58px}
-    .page-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
-    .page-actions a{
-      display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:8px 12px;
-      border:1px solid rgba(255,255,255,.42);border-radius:5px;background:rgba(255,255,255,.1);
-      color:#fff;font-size:12.5px;font-weight:700;text-decoration:none;
-    }
-    .page-actions a:hover,.page-actions a:focus{background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.72)}
-    .eyebrow{margin-top:26px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#cde8ef}
-    h1{margin:7px 0 9px;font-size:clamp(31px,5vw,49px);line-height:1.08}
-    .hero-copy{max-width:830px;margin:0;color:#e3f1f5;font-size:16px}
-    main{
-      margin-top:14px;padding:26px 28px 42px;border:1px solid var(--line);border-radius:12px;
-      background:#fff;box-shadow:0 8px 24px rgba(24,55,76,.08);
-    }
-    .answer{display:grid;grid-template-columns:auto minmax(0,1fr);gap:15px;align-items:start;padding:18px 20px;border-radius:10px;background:var(--green-soft)}
-    .answer-mark{display:grid;width:34px;height:34px;place-items:center;border-radius:50%;background:var(--green);color:#fff;font-size:19px;font-weight:700}
-    .answer h2{margin:0 0 4px;color:#0d563a;font-size:21px}.answer p{margin:0;color:#345b49}
-    section{margin-top:34px}section>h2{margin:0 0 6px;color:var(--navy);font-size:23px}.intro{max-width:820px;margin:0 0 16px;color:var(--muted)}
-    .checks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
-    .check{display:flex;min-width:0;flex-direction:column;padding:18px;border:1px solid var(--line);border-radius:11px;background:#fff;box-shadow:0 4px 14px rgba(24,55,76,.06)}
-    .check::before{content:"";width:36px;height:4px;margin-bottom:13px;border-radius:999px;background:var(--blue)}
-    .check.strong::before{background:var(--green)}.check.preliminary::before{background:var(--orange)}
-    .status{align-self:flex-start;margin-bottom:9px;color:var(--navy);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
-    .strong .status{color:#0d6844}.preliminary .status{color:#914319}
-    .check h3{margin:0 0 6px;color:var(--navy);font-size:18px}.check p{margin:0 0 11px;color:var(--muted);font-size:13.5px}.check ul{margin:0 0 16px;padding-left:18px;font-size:13.5px}.check li{margin:5px 0}
-    .check a{margin-top:auto;font-size:13px;font-weight:700;text-decoration:none}.check a:hover,.check a:focus{text-decoration:underline}
-    .limits-panel{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-    .limit{padding:18px 20px}.limit+.limit{border-left:1px solid var(--line)}.limit h3{margin:0 0 7px;font-size:16px}.limit ul{margin:0;padding-left:18px}.limit li{margin:6px 0;color:#435868;font-size:13.5px}
-    details{margin-top:12px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-    summary{padding:13px 2px;cursor:pointer;color:var(--navy);font-weight:700}
-    .details-body{padding:1px 2px 16px;color:var(--muted);font-size:13.5px}.reference-links{display:grid;grid-template-columns:1fr 1fr;gap:9px 20px}.reference-links a{font-weight:700}
-    footer{max-width:820px;margin:18px auto 0;padding:0 20px;color:#5a6a7a;font-size:11.5px;text-align:center;line-height:1.55}
-    @media(max-width:820px){.checks{grid-template-columns:1fr}.brand-top{align-items:stretch;flex-direction:column}.page-actions{justify-content:flex-start}}
-    @media(max-width:620px){
-      body{margin:10px;background-size:100% 640px}.brand-hero{padding:16px 16px 25px}.brand-logo-coolsheet{width:108px;height:50px}.brand-logo-unsw{width:98px;height:50px}
-      .page-actions{display:grid;grid-template-columns:1fr 1fr}.page-actions a:first-child{grid-column:1/-1}
-      main{padding:20px 16px 34px}.answer{grid-template-columns:1fr}.limits-panel{grid-template-columns:1fr}.limit+.limit{border-top:1px solid var(--line);border-left:0}.reference-links{grid-template-columns:1fr}
-    }
-    @media(max-width:400px){.brand-logos{align-items:flex-start;flex-direction:column}.page-actions{grid-template-columns:1fr}.page-actions a:first-child{grid-column:auto}}
+    @media(max-width:430px){.back-link{width:100%;justify-content:center}}
   </style>
 </head>
 <body>
 <div class="shell">
-  <header class="brand-hero">
-    <div class="brand-top">
-      <div class="brand-logos" aria-label="CoolSheet and UNSW">
-        <img class="brand-logo brand-logo-coolsheet" src="../assets/coolsheet-logo.jpg" alt="CoolSheet logo" />
-        <img class="brand-logo brand-logo-unsw" src="../assets/unsw-logo.jpg" alt="UNSW logo" />
-      </div>
-      <nav class="page-actions" aria-label="Page navigation">
-        <a href="../index.html">Back to calculator</a>
-        <a href="pv-external-validation.html">PV check</a>
-        <a href="soac-field-validation.html">SOAC field check</a>
-      </nav>
-    </div>
-    <div class="eyebrow">CoolSheet evidence guide</div>
-    <h1>What has been validated?</h1>
-    <p class="hero-copy">A simple guide to which CoolSheet results have strong independent support, which have early field evidence and which should still be treated as scenarios.</p>
+  <header class="topbar">
+    <a class="back-link" href="../index.html">Back to calculator</a>
   </header>
 
   <main>
-    <div class="answer">
-      <div class="answer-mark" aria-hidden="true">&#10003;</div>
-      <div>
-        <h2>Suitable for early feasibility work</h2>
-        <p>The solar and PV supply calculations compare well with independent tools. Thermal field evidence is promising but limited to one monitored site and period. Industry demand, economics and PVT electrical cooling remain sensitive to assumptions.</p>
-      </div>
+    <p class="eyebrow">Validation centre</p>
+    <h1>What has been validated?</h1>
+    <p class="intro">A quick guide to the evidence behind the CoolSheet results.</p>
+
+    <div class="summary">
+      <strong>Suitable for early feasibility checks</strong>
+      <span>PV results have strong independent support. PVT thermal evidence is promising but currently limited to one monitored site.</span>
+      <span>Industry demand and financial results should still be treated as scenarios that depend on the selected assumptions.</span>
     </div>
 
     <section aria-labelledby="checksTitle">
-      <h2 id="checksTitle">Choose the result you want to check</h2>
-      <p class="intro">Each page explains the available evidence in plain language and keeps technical details optional.</p>
+      <h2 id="checksTitle">Validation checks</h2>
+      <p class="section-copy">Select a result to see the matched inputs, source data, calculation method and differences.</p>
       <div class="checks">
-        <article class="check strong">
-          <span class="status">Strong benchmark agreement</span>
-          <h3>PV electricity</h3>
-          <p>CoolSheet PV-only yearly electricity was compared with PVGIS and PVWatts using matched inputs.</p>
-          <ul><li>2.22% average absolute difference</li><li>4.53% largest difference</li><li>Sydney, Melbourne and Perth</li></ul>
-          <a href="pv-external-validation.html">View the PV check &rarr;</a>
-        </article>
-        <article class="check preliminary">
-          <span class="status">Preliminary field evidence</span>
-          <h3>PVT thermal output</h3>
-          <p>Measured CoolSheet data from Sydney Olympic Aquatic Centre was compared with the thermal models.</p>
-          <ul><li>Model A was about 6.2% low with matched field inputs</li><li>19 monitored days</li><li>One site and one season only</li></ul>
-          <a href="soac-field-validation.html">View the SOAC field check &rarr;</a>
-        </article>
-        <article class="check">
-          <span class="status">Cross-checked reference model</span>
-          <h3>Mains-water temperature</h3>
-          <p>The Australian BC-Aus inlet-water model is compared with CER reference decks and EnergyPlus ground-temperature data.</p>
-          <ul><li>Five Australian climate zones</li><li>Monthly comparison</li><li>Formula and source data are visible</li></ul>
-          <a href="cer_comparison.html">View the mains-water check &rarr;</a>
-        </article>
+        <a class="check-row" href="pv-external-validation.html">
+          <span class="status strong">Strong benchmark agreement</span>
+          <div class="check-copy">
+            <h3>PV electricity</h3>
+            <p>CoolSheet PV-only output was compared with PVGIS and PVWatts using matched inputs, plus an Australian CEC regional benchmark.</p>
+            <p class="check-meta">2.22% average matched-model difference &middot; 4.53% largest matched-model difference &middot; 5 cities</p>
+          </div>
+          <span class="open-label">Open check &rarr;</span>
+        </a>
+        <a class="check-row" href="soac-field-validation.html">
+          <span class="status preliminary">Preliminary field evidence</span>
+          <div class="check-copy">
+            <h3>PVT thermal output</h3>
+            <p>Measured SOAC weather, flow and heat output were compared with the CoolSheet thermal models.</p>
+            <p class="check-meta">Model A about 6.2% low &middot; 19 monitored days &middot; 1 site</p>
+          </div>
+          <span class="open-label">Open check &rarr;</span>
+        </a>
+        <a class="check-row" href="cer_comparison.html">
+          <span class="status">Cross-checked model</span>
+          <div class="check-copy">
+            <h3>Mains-water temperature</h3>
+            <p>The BC-Aus inlet-water model was compared with Australian reference datasets.</p>
+            <p class="check-meta">5 climate zones &middot; Monthly profiles &middot; CER and EnergyPlus references</p>
+          </div>
+          <span class="open-label">Open check &rarr;</span>
+        </a>
       </div>
     </section>
 
-    <section aria-labelledby="limitsTitle">
+    <section class="limits" aria-labelledby="limitsTitle">
       <h2 id="limitsTitle">Important limits</h2>
-      <p class="intro">These results are useful for comparison, but they are not certified forecasts.</p>
-      <div class="limits-panel">
-        <article class="limit"><h3>Not yet field validated</h3><ul><li>Extra PV electricity attributed to PVT water cooling</li><li>Full-year PVT performance and degradation</li><li>Other PVT installations, climates and collector types</li></ul></article>
-        <article class="limit"><h3>Scenario-based results</h3><ul><li>Industry demand and operating schedules</li><li>Costs, tariffs, savings, payback and NPV</li><li>Site shading, outages, controls and plant availability</li></ul></article>
-      </div>
+      <p class="section-copy">These results support comparison and early feasibility work, but they are not certified forecasts.</p>
+      <ul>
+        <li><strong>Not yet field validated:</strong> PVT cooling gain and full-year PVT performance.</li>
+        <li>Industry demand and operating schedules remain scenario based.</li>
+        <li>Costs, savings and payback depend on site-specific assumptions.</li>
+        <li>Site shading, faults, downtime and equipment ageing are not modelled directly.</li>
+      </ul>
     </section>
 
-    <section aria-labelledby="technicalTitle">
-      <h2 id="technicalTitle">Technical mains-water references</h2>
-      <p class="intro">These pages are available for reviewers who want to inspect the underlying comparisons.</p>
-      <details>
-        <summary>Open the detailed reference pages</summary>
-        <div class="details-body reference-links">
-          <a href="validation.html">CER comparison: standard offset</a>
-          <a href="validation2.html">CER comparison: zero-offset sensitivity</a>
-          <a href="validation3.html">EnergyPlus comparison: 0.5 m ground</a>
-          <a href="validation4.html">EnergyPlus comparison: 2.0 m ground</a>
-          <a href="validation5.html">BC-Aus formula explained</a>
-          <a href="../docs/validation-report.md">Validation report</a>
-        </div>
-      </details>
-    </section>
+    <details>
+      <summary>Technical mains-water reference pages</summary>
+      <div class="reference-links">
+        <a href="validation.html">CER comparison: standard offset</a>
+        <a href="validation2.html">CER comparison: zero-offset sensitivity</a>
+        <a href="validation3.html">EnergyPlus comparison: 0.5 m ground</a>
+        <a href="validation4.html">EnergyPlus comparison: 2.0 m ground</a>
+        <a href="validation5.html">BC-Aus formula explained</a>
+        <a href="../docs/validation-report.md">Validation report</a>
+      </div>
+    </details>
   </main>
 
-  <footer>Validation applies only to the stated datasets, locations, periods and model boundaries. It is not certification of a particular installation or a performance guarantee.</footer>
+  <footer>Validation applies only to the stated datasets, locations, periods and model boundaries.</footer>
 </div>
 </body>
 </html>

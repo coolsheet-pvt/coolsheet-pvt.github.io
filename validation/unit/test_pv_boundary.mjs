@@ -23,6 +23,12 @@ assert.match(app,/data\.pvtCoolingSensitivityEnable\s*=\s*true/,
   "Old saved inputs must not keep the PVT cooling effect disabled by accident");
 assert.match(html,/id="pvSystemLossPct"[^>]*value="14"/);
 assert.match(html,/id="pvInverterEfficiencyPct"[^>]*value="96"/);
+assert.match(html,/id="etaPvPercent"[^>]*value="20"/,
+  "Panel efficiency should be presented as a familiar percentage");
+assert.match(html,/pv-technical-details/,
+  "Technical PV inputs should stay available in a collapsed section");
+assert.match(app,/if \(!testingMode\)[^]*?temperatureToggle\.checked = true[^]*?coolingToggle\.checked = true/,
+  "Normal mode should keep the recommended temperature and cooling models enabled");
 assert.match(app,/const pvtPanelTempC = pvtCoolingSensitivityEnable \? exploratoryPvtPanelTempC : pvPanelTempC/);
 assert.match(app,/E_pvt_dc_kWh/);
 assert.match(app,/const pvt_ac_kWh = pvt_dc_kWh \* pvAcDeliveryFactor/,

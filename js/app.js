@@ -3,7 +3,7 @@
 
 // Single source of truth for the app version shown in the header + PDF/report.
 // Keep in sync with the ?v= cache-bust query on css/js in index.html.
-const APP_VERSION = "13.41";
+const APP_VERSION = "13.42";
 
 // ================================================================
 //  DETAILS ANIMATION - replay slideDown every time a panel opens
@@ -4374,6 +4374,13 @@ function onTestingModeChange(){
   const testingMode = isTestingMode();
   document.body.classList.toggle("testing-mode", testingMode);
 
+  if (!testingMode){
+    const temperatureToggle = document.getElementById("pvTempCorrEnable");
+    const coolingToggle = document.getElementById("pvtCoolingSensitivityEnable");
+    if (temperatureToggle) temperatureToggle.checked = true;
+    if (coolingToggle) coolingToggle.checked = true;
+  }
+
   // Validation & references orb (next to "How this calculator works") is testing-only.
   const orbWrap = document.getElementById("validationOrbWrap");
   if (orbWrap){
@@ -5084,6 +5091,7 @@ const DEFAULT_SITE_SETTINGS = {
   albedo: "0.2",
   flowRate: "0.02",
   etaPv: "0.20",
+  etaPvPercent: "20",
   pvTempCoeff: "-0.40",
   pvNoct: "45",
   pvSystemLossPct: "14",
@@ -5091,6 +5099,7 @@ const DEFAULT_SITE_SETTINGS = {
   tankVolume: "0"
 };
 const DEFAULT_CHECKBOX_SETTINGS = {
+  pvTempCorrEnable: true,
   pvtCoolingSensitivityEnable: true
 };
 const PV_STC_CELL_TEMP_C = 25;
@@ -6690,6 +6699,11 @@ function applyInputState(data){
     if (el.type === "checkbox" || el.type === "radio") el.checked = !!value;
     else el.value = value;
   }
+  if (Object.prototype.hasOwnProperty.call(data || {}, "etaPv") && !Object.prototype.hasOwnProperty.call(data || {}, "etaPvPercent")){
+    const fraction = Number(data.etaPv);
+    const percentInput = document.getElementById("etaPvPercent");
+    if (percentInput && Number.isFinite(fraction)) percentInput.value = String(fraction * 100);
+  }
 }
 
 function saveInputsToStorage(){
@@ -6935,6 +6949,17 @@ onTestingModeChange();
 document.getElementById("btnShareLink")?.addEventListener("click", copyShareLink);
 document.getElementById("btnCheckPvScenario")?.addEventListener("click", openCurrentPvValidation);
 document.getElementById("btnResetInputs")?.addEventListener("click", resetInputsToDefaults);
+const etaPvPercentInput = document.getElementById("etaPvPercent");
+const etaPvFractionInput = document.getElementById("etaPv");
+function syncPvEfficiencyFraction(){
+  if (!etaPvPercentInput || !etaPvFractionInput) return;
+  const percent = clamp(Number(etaPvPercentInput.value), 0, 100);
+  etaPvFractionInput.value = Number.isFinite(percent) ? String(percent / 100) : "0.20";
+  syncInstalledCostInputs();
+}
+etaPvPercentInput?.addEventListener("input", syncPvEfficiencyFraction);
+etaPvPercentInput?.addEventListener("change", syncPvEfficiencyFraction);
+syncPvEfficiencyFraction();
 document.querySelectorAll('input[name="thermalModel"]').forEach(radio => {
   radio.addEventListener('change', function(){
     const isA = this.value === 'A';

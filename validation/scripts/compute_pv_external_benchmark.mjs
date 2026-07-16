@@ -1,6 +1,6 @@
 import fs from "node:fs";
 
-const CITIES = ["sydney", "melbourne", "perth"];
+const CITIES = ["sydney", "melbourne", "brisbane", "perth", "adelaide"];
 const AREA_M2 = 20;
 const ETA_STC = 0.20;
 const TEMP_COEFF_PER_C = -0.004;
@@ -68,7 +68,10 @@ const monthFromDayN = dayN => {
 };
 
 export function computeCoolSheetPvOnly(city) {
-  const fixture = JSON.parse(fs.readFileSync(`validation/fixtures/backend/backend_${city}.json`, "utf8"));
+  const backendPath = `validation/fixtures/backend/backend_${city}.json`;
+  const weatherPath = `validation/fixtures/weather/${city}.json`;
+  const fixturePath = fs.existsSync(backendPath) ? backendPath : weatherPath;
+  const fixture = JSON.parse(fs.readFileSync(fixturePath, "utf8"));
   const radiation = new TiltedSurfaceRadiation(fixture.lat, fixture.lon, 30, 0, 0.2);
   const monthlyDc = Array(12).fill(0);
   const monthlyAc = Array(12).fill(0);
