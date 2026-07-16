@@ -33,10 +33,16 @@ assert.match(app,/const pvtPanelTempC = pvtCoolingSensitivityEnable \? explorato
 assert.match(app,/E_pvt_dc_kWh/);
 assert.match(app,/const pvt_ac_kWh = pvt_dc_kWh \* pvAcDeliveryFactor/,
   "Estimated net AC should remain available as a separate detailed value");
-assert.match(app,/const pv_kWh = pvt_dc_kWh;/,
-  "Headline PVT electricity should reproduce the original gross module-yield result");
+assert.match(app,/const pv_kWh = pvt_ac_kWh;/,
+  "Headline PVT electricity should use estimated usable net AC");
+assert.match(app,/const pv_only_kWh = pv_only_ac_kWh;/,
+  "PV-only baseline should use the same estimated net AC boundary");
+assert.match(app,/pvElectricHourly\.push\(pv_kWh\)/,
+  "Industry electricity matching should use estimated net AC");
+assert.match(app,/const annualSavingPV\s+= E_pv_kWh \* electricityPrice/,
+  "Electricity savings should use the net AC headline boundary");
 assert.match(app,/pvtNetAcKWh: E_pvt_ac_kWh/,
-  "Export state should keep the net AC boundary separate from headline electricity");
+  "Export state should retain the explicit net AC field");
 assert.match(app,/PVT estimated net AC electricity/);
 assert.match(app,/annual-summary-item annual-electricity-summary/,
   "Related electricity results should share one annual summary card");

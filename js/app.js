@@ -667,6 +667,12 @@ function generatePdfTemplate(){
 }
 function clamp(x, lo, hi){ return Math.min(hi, Math.max(lo, x)); }
 function isFiniteNumber(x){ return typeof x === "number" && Number.isFinite(x); }
+function finiteNumberOr(value, fallback){
+  if (value == null || (typeof value === "string" && value.trim() === "")) return fallback;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+const STEFAN_BOLTZMANN_W_M2_K4 = 5.67e-8;
 
 function getSuggestedFlowRate(flowRate){
   const current = Number(flowRate);
@@ -828,17 +834,17 @@ function calculatePvtThermalSample(record, calculator, options){
       th_W = etaTh * G * areaM2;
     }
   } else {
-    const isoEta0 = Number(options?.isoEta0) || 0.762;
-    const isoA1 = Number(options?.isoA1) || 3.93;
-    const isoA2 = Number(options?.isoA2) || 0.0095;
-    const isoA3 = Number(options?.isoA3) || 0;
-    const isoA4 = Number(options?.isoA4) || 0;
-    const isoA6 = Number(options?.isoA6) || 0;
-    const isoA8 = Number(options?.isoA8) || 0;
-    const isoTout0 = Number(options?.isoTout0) || 40;
-    const isoIterMax = Math.max(1, Number(options?.isoIterMax) || 5);
+    const isoEta0 = finiteNumberOr(options?.isoEta0, 0.762);
+    const isoA1 = finiteNumberOr(options?.isoA1, 3.93);
+    const isoA2 = finiteNumberOr(options?.isoA2, 0.0095);
+    const isoA3 = finiteNumberOr(options?.isoA3, 0);
+    const isoA4 = finiteNumberOr(options?.isoA4, 0);
+    const isoA6 = finiteNumberOr(options?.isoA6, 0);
+    const isoA8 = finiteNumberOr(options?.isoA8, 0);
+    const isoTout0 = finiteNumberOr(options?.isoTout0, 40);
+    const isoIterMax = Math.max(1, Math.floor(finiteNumberOr(options?.isoIterMax, 5)));
     const Ta_K = ta + 273.15;
-    const Ta4 = SIGMA * Math.pow(Ta_K, 4);
+    const Ta4 = STEFAN_BOLTZMANN_W_M2_K4 * Math.pow(Ta_K, 4);
     const EL = 5.31e-13 * Math.pow(Ta_K, 6);
     if (G > 1e-6 && totalFlowKgHr > 1e-12) {
       const mdot_cp = (totalFlowKgHr / 3600) * 4184;
@@ -5492,16 +5498,22 @@ function openHowItWorks(ev){
 //  set used by every industry, so wording and maths can't drift
 //  between branches.
 // ================================================================
-const NATURAL_GAS_KG_CO2E_PER_GJ = 51.4; // NGA Factors 2025, scope 1 stationary energy
+// NGA Factors 2025, scope 1 stationary energy. The CO2-e total includes
+// 51.4 kg CO2, 0.1 kg CO2-e methane and 0.03 kg CO2-e nitrous oxide per GJ.
+const NATURAL_GAS_KG_CO2E_PER_GJ = 51.53;
+
+function calculateAvoidedEmissionsTonnes(opts){
+  const boilerEfficiency = Math.max(1e-9, finiteNumberOr(opts?.boilerEff, 1));
+  const gasGJ = (Math.max(0, finiteNumberOr(opts?.solarHeatUsedKWh, 0)) * 3.6 / boilerEfficiency) / 1000;
+  const electricityKg = Math.max(0, finiteNumberOr(opts?.solarElecUsedKWh, 0))
+    * Math.max(0, finiteNumberOr(opts?.gridEmissionFactor, 0));
+  return (electricityKg + gasGJ * NATURAL_GAS_KG_CO2E_PER_GJ) / 1000;
+}
 
 function buildSavingsTable(opts){
   // CO2 avoided = on-site solar electricity x grid factor, plus the gas the
   // boiler no longer burns (heat / boiler efficiency) x gas factor.
-  const gasGJ = (Math.max(0, opts.solarHeatUsedKWh || 0) * 3.6 / (opts.boilerEff || 1)) / 1000;
-  const co2Tonnes = (
-    Math.max(0, opts.solarElecUsedKWh || 0) * (opts.gridEmissionFactor || 0) +
-    gasGJ * NATURAL_GAS_KG_CO2E_PER_GJ
-  ) / 1000;
+  const co2Tonnes = calculateAvoidedEmissionsTonnes(opts);
   return `
         <table class="result-table" style="margin-bottom:12px;">
           <tr><th colspan="2">Savings (Current Estimate)</th></tr>
@@ -5747,17 +5759,15 @@ async function calcAnnualPVT(){
     const systemLife   = Math.max(1, Math.floor(getInputNumber("systemLifeInput", 25)));
     const discountRate = (Math.max(0, getInputNumber("discountRateInput", 6))) / 100;
     const thermalModel = document.querySelector('input[name="thermalModel"]:checked')?.value || 'A';
-    const isoEta0    = parseFloat(document.getElementById("isoEta0").value) || 0.762;
-    const isoA1      = parseFloat(document.getElementById("isoA1").value) || 3.93;
-    const isoA2      = parseFloat(document.getElementById("isoA2").value) || 0.0095;
-    const isoA3      = parseFloat(document.getElementById("isoA3").value) || 0;
-    const isoA4      = parseFloat(document.getElementById("isoA4").value) || 0;
-    const isoA6      = parseFloat(document.getElementById("isoA6").value) || 0;
-    const isoA8      = parseFloat(document.getElementById("isoA8").value) || 0;
-    const isoTout0   = parseFloat(document.getElementById("isoTout0").value) || 40;
-    const isoIterMax = Math.max(1, parseInt(document.getElementById("isoIterMax").value) || 5);
-    const SIGMA = 5.67e-8;
-
+    const isoEta0    = getInputNumber("isoEta0", 0.762);
+    const isoA1      = getInputNumber("isoA1", 3.93);
+    const isoA2      = getInputNumber("isoA2", 0.0095);
+    const isoA3      = getInputNumber("isoA3", 0);
+    const isoA4      = getInputNumber("isoA4", 0);
+    const isoA6      = getInputNumber("isoA6", 0);
+    const isoA8      = getInputNumber("isoA8", 0);
+    const isoTout0   = getInputNumber("isoTout0", 40);
+    const isoIterMax = Math.max(1, Math.floor(getInputNumber("isoIterMax", 5)));
     const needed = [tiltAngle, azimuthAngle, albedo, A, flowRate, etaPv, a0, a1, a2];
     if (needed.some(v => !isFiniteNumber(v))){ setOutput("Please fill in all inputs with valid numbers.", true); return; }
     if (A <= 0){ setOutput("Collector / PV area must be greater than 0 m\u00b2.", true); return; }
@@ -5840,8 +5850,11 @@ async function calcAnnualPVT(){
       const pvt_dc_kWh = pv_stc_kWh * pvtFactor;
       const pv_only_ac_kWh = pv_only_dc_kWh * pvAcDeliveryFactor;
       const pvt_ac_kWh = pvt_dc_kWh * pvAcDeliveryFactor;
-      const pv_only_kWh = pv_only_dc_kWh;
-      const pv_kWh = pvt_dc_kWh;
+      // Site loads, savings and headline electricity use the estimated AC
+      // delivered after non-inverter losses and inverter efficiency. Gross DC
+      // remains available in the detailed results and CSV export.
+      const pv_only_kWh = pv_only_ac_kWh;
+      const pv_kWh = pvt_ac_kWh;
       const daytimeTempSample = isDaytimePanelTempSample(r, G);
 
       pvtThermalHourly.push(th_kWh);
@@ -5927,8 +5940,6 @@ async function calcAnnualPVT(){
     const pvtElectricGainKWh = E_pv_kWh - E_pv_standalone_kWh;
     const pvtElectricGainPct = E_pv_standalone_kWh > 1e-9 ? (pvtElectricGainKWh / E_pv_standalone_kWh) * 100 : 0;
     const gainSign = pvtElectricGainKWh >= 0 ? '+' : '-';
-    const stcLossPct = E_pv_stc_kWh > 1e-9 ? (E_pv_standalone_kWh / E_pv_stc_kWh - 1) * 100 : 0;
-    const pvtTempDeltaPct = E_pv_stc_kWh > 1e-9 ? (E_pv_kWh / E_pv_stc_kWh - 1) * 100 : 0;
     const pvtAcDeliveryDeltaPct = E_pvt_dc_kWh > 1e-9 ? (E_pvt_ac_kWh / E_pvt_dc_kWh - 1) * 100 : 0;
     const pvOnlyAcDeliveryDeltaPct = E_pv_standalone_dc_kWh > 1e-9 ? (E_pv_standalone_ac_kWh / E_pv_standalone_dc_kWh - 1) * 100 : 0;
     const avgOf = (rows, key) => {
@@ -5963,7 +5974,7 @@ async function calcAnnualPVT(){
       ? `NOCT ${pvNoctC.toFixed(1)}&deg;C, &gamma;=${(pvTempCoeffPerC*100).toFixed(2)}%/&deg;C, STC reference ${PV_STC_CELL_TEMP_C}&deg;C`
       : `Temperature correction disabled; DC electricity uses constant &eta;<sub>STC</sub>`}; ` +
       `${pvtCoolingSensitivityEnable ? "PVT cooling effect included" : "PVT cooling effect disabled"}; ` +
-      `annual cards use gross module yield; estimated net AC detail factor ${pvAcDeliveryFactor.toFixed(3)} = (1-${pvSystemLossPct.toFixed(1)}% system loss) &times; ${pvInverterEfficiencyPct.toFixed(1)}% inverter.`;
+      `annual cards, savings and site matching use estimated net AC; gross DC remains in detail. AC factor ${pvAcDeliveryFactor.toFixed(3)} = (1-${pvSystemLossPct.toFixed(1)}% system loss) &times; ${pvInverterEfficiencyPct.toFixed(1)}% inverter.`;
     const pvgisValidation = buildPvgisValidationLink({
       latitude,
       longitude,
@@ -5975,8 +5986,8 @@ async function calcAnnualPVT(){
       inverterEfficiencyPct: pvInverterEfficiencyPct
     });
     const pvtElectricityNote = pvtCoolingSensitivityEnable
-      ? "Temperature-corrected cooled yield"
-      : "Temperature-corrected uncooled yield";
+      ? "Estimated net AC, cooled yield"
+      : "Estimated net AC, uncooled yield";
     const coolingNote = pvtCoolingSensitivityEnable
       ? `${gainSign}${pvtElectricGainPct.toFixed(1)}% vs PV-only`
       : "Cooling effect disabled";
@@ -6003,7 +6014,7 @@ async function calcAnnualPVT(){
             <div class="annual-electricity-part">
               <span>PV-only baseline</span>
               <strong>${fmtE(E_pv_standalone_kWh,1,'kWh')}</strong>
-              <small>Same area, uncooled</small>
+              <small>Net AC, same area, uncooled</small>
             </div>
             <span class="annual-electricity-operator" aria-hidden="true">+</span>
             <div class="annual-electricity-part annual-electricity-gain">
@@ -6021,7 +6032,7 @@ async function calcAnnualPVT(){
         <div class="annual-summary-item">
           <span>Total output</span>
           <strong>${fmtE(totalEnergy,1,'kWh')}</strong>
-          <small>Electrical + thermal combined</small>
+          <small>Net AC electrical + thermal</small>
         </div>
         <div class="annual-summary-item annual-finance ${netAnnualBenefit>=0?'':'negative'}">
           <div class="annual-finance-grid">
@@ -6068,7 +6079,7 @@ async function calcAnnualPVT(){
       <table class="result-table">
         <tr><td><b>CAPEX</b> (${fmtE(capexPerM2,0,'AUD/m\u00B2')} &times; ${fmtE(A,1,'m\u00B2')})</td><td class="num">${fmtC(capex)}</td></tr>
         <tr><td><b>OPEX (annual)</b></td><td class="num">${fmtC(opexAnnual)} /yr</td></tr>
-        <tr><td><b>Annual PVT Electricity Saving</b></td><td class="num"><span class="ok">${fmtC(annualSavingPV)} /yr</span></td></tr>
+        <tr><td><b>Annual PVT Electricity Saving</b> (estimated net AC)</td><td class="num"><span class="ok">${fmtC(annualSavingPV)} /yr</span></td></tr>
         <tr><td><b>Annual Heat Saving</b> (gas displaced @ ${(boilerEff*100).toFixed(0)}% boiler)</td><td class="num"><span class="ok">${fmtC(annualSavingHeat)} /yr</span></td></tr>
         <tr><td><b>Annual Net Benefit</b></td><td class="num"><span class="${netAnnualBenefit>=0?'ok':'err'}">${fmtC(netAnnualBenefit)} /yr</span></td></tr>
         <tr><td><b>Simple Payback Period (SPP)</b></td><td class="num">${spp != null ? fmtE(spp,1,'years') : '-'}</td></tr>
@@ -6076,7 +6087,7 @@ async function calcAnnualPVT(){
       </table>
       <h4 style="margin:14px 0 6px;color:#1a5276;">Levelised Cost</h4>
       <table class="result-table">
-        <tr><td><b>LCOE</b> (electricity only)</td><td class="num">${lcoe != null ? fmtC(lcoe)+' /kWh_e' : '-'}</td></tr>
+        <tr><td><b>LCOE</b> (estimated net AC electricity)</td><td class="num">${lcoe != null ? fmtC(lcoe)+' /kWh_e' : '-'}</td></tr>
         <tr><td><b>LCOH</b> (heat only)</td><td class="num">${lcoh != null ? fmtC(lcoh)+' /kWh_th' : '-'}</td></tr>
         <tr><td><b>Combined LCOE</b> (heat&rarr;electricity equiv.)</td><td class="num">${lcoeCombo != null ? fmtC(lcoeCombo)+' /kWh_eq' : '-'}</td></tr>
         <tr style="background:#fffbe6;"><td style="font-size:11px;color:#888;" colspan="2">
@@ -6087,9 +6098,9 @@ async function calcAnnualPVT(){
       </div>
       </div>`;
     const annualMetrics = [
-      exportMetric("PVT electricity", E_pv_kWh, "kWh", 1, `Temperature-corrected gross module yield; estimated net AC ${formatExportNumber(E_pvt_ac_kWh,1)} kWh`),
+      exportMetric("PVT electricity", E_pv_kWh, "kWh AC", 1, `Estimated net AC; temperature-corrected gross DC ${formatExportNumber(E_pvt_dc_kWh,1)} kWh`),
       exportMetric("PVT thermal", E_th_kWh, "kWh", 1, "Annual thermal yield"),
-      exportMetric("PV-only baseline", E_pv_standalone_kWh, "kWh", 1, `Temperature-corrected gross module yield; estimated net AC ${formatExportNumber(E_pv_standalone_ac_kWh,1)} kWh`),
+      exportMetric("PV-only baseline", E_pv_standalone_kWh, "kWh AC", 1, `Estimated net AC; temperature-corrected gross DC ${formatExportNumber(E_pv_standalone_dc_kWh,1)} kWh`),
       exportMetricText("Electricity from cooling", `${gainSign}${formatExportNumber(Math.abs(pvtElectricGainKWh), 1)} kWh`, coolingNote),
       exportMetric("Total output", totalEnergy, "kWh", 1, "Electrical + thermal combined"),
       exportMetric("Avg daytime outlet temp", daytimeToutAvg, "degC", 1, `Avg daytime air ${formatExportValue(exportMetric("", daytimeAmbientAvg, "degC", 1))}`),

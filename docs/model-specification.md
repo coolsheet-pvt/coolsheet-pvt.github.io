@@ -74,7 +74,7 @@ estimated_net_AC = gross_DC * (1 - non_inverter_system_loss) * inverter_efficien
 
 The editable defaults are 14% non-inverter system losses and 96% inverter efficiency, consistent with the boundary used in NREL PVWatts examples. Temperature loss is modelled separately and is not included again in the 14% input.
 
-The annual PVT result reports the original temperature-corrected gross module yield in the headline cards, economics, charts and industry matching. Estimated net AC after editable non-inverter losses and inverter efficiency is retained in detailed results, CSV columns and exports as a separate boundary. The PVT cooling-temperature heuristic has not been independently validated against paired field measurements, but is enabled by default to reproduce the original annual PVT result; turning it off makes PVT and standalone PV use the same NOCT module temperature, so no cooling electricity gain enters the headline energy, economics or industry matching.
+The annual PVT headline cards, economics, charts and industry demand matching use estimated net AC after editable non-inverter losses and inverter efficiency. Temperature-corrected gross DC remains visible in detailed results and CSV exports. This keeps site demand, grid prices and electricity savings on the usable AC boundary. The PVT cooling-temperature heuristic has not been independently validated against paired field measurements, but is enabled by default; turning it off makes PVT and standalone PV use the same NOCT module temperature, so no cooling electricity gain enters the headline energy, economics or industry matching.
 
 - [NREL PVWatts V8 API](https://developer.nrel.gov/docs/solar/pvwatts/v8/)
 

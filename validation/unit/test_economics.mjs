@@ -3,6 +3,8 @@
 // and the heat-saving unit conversion. Verifies correctness + self-consistency.
 // Run: node validation/unit/test_economics.mjs
 
+import fs from "node:fs";
+
 let pass=0, fail=0;
 const ok=(n,c,d="")=>{ c?pass++:fail++; console.log(`  ${c?"PASS":"FAIL"}  ${n}${c?"":"  "+d}`); };
 const near=(n,g,e,tol)=>ok(n, Math.abs(g-e)<=tol, `got ${g} exp ${e} (+-${tol})`);
@@ -11,6 +13,17 @@ const near=(n,g,e,tol)=>ok(n, Math.abs(g-e)<=tol, `got ${g} exp ${e} (+-${tol})`
 const CRF = (i,N) => i>1e-9 ? i*Math.pow(1+i,N)/(Math.pow(1+i,N)-1) : 1/N;
 const NPV = (capex,benefit,i,N) => i>1e-9 ? -capex + benefit*(1-Math.pow(1+i,-N))/i : -capex + benefit*N;
 const annualSavingHeat = (th_kWh,boilerEff,gasPricePerMJ) => (th_kWh*3.6/boilerEff)*gasPricePerMJ;
+const NATURAL_GAS_KG_CO2E_PER_GJ = 51.53;
+const avoidedEmissionsTonnes = (heatKWh,elecKWh,boilerEff,gridFactor) => {
+  const gasGJ = (heatKWh * 3.6 / boilerEff) / 1000;
+  return (elecKWh * gridFactor + gasGJ * NATURAL_GAS_KG_CO2E_PER_GJ) / 1000;
+};
+
+const appSource = fs.readFileSync(new URL("../../js/app.js", import.meta.url), "utf8");
+ok(
+  "production code uses the verified natural-gas emissions factor",
+  appSource.includes("const NATURAL_GAS_KG_CO2E_PER_GJ = 51.53;")
+);
 
 console.log("\n# CAPITAL RECOVERY FACTOR");
 near("CRF(6%,25yr) = 0.078227 (textbook)", CRF(0.06,25), 0.078227, 1e-5);
@@ -47,6 +60,15 @@ console.log("\n# LCOE energy-weighted split (pv + thermal reconcile to combined)
 console.log("\n# HEAT SAVING unit conversion (kWh -> MJ / boiler eff x $/MJ)");
 near("1000 kWh th, 85% boiler, $0.03/MJ = $127.06", annualSavingHeat(1000,0.85,0.03), 1000*3.6/0.85*0.03, 1e-6);
 ok("Lower boiler efficiency => more gas displaced (more saving)", annualSavingHeat(1000,0.7,0.03) > annualSavingHeat(1000,0.9,0.03));
+
+console.log("\n# AVOIDED EMISSIONS (NGA Factors 2025)");
+near(
+  "1000 kWh PV plus 1000 kWh heat at 85% boiler efficiency",
+  avoidedEmissionsTonnes(1000,1000,0.85,0.62),
+  (620 + (1000*3.6/0.85/1000)*51.53) / 1000,
+  1e-12
+);
+ok("natural-gas factor includes CO2, methane and nitrous oxide", NATURAL_GAS_KG_CO2E_PER_GJ === 51.53);
 
 console.log("\n# SIMPLE PAYBACK");
 near("payback = capex / net annual benefit", 16000/2000, 8, 1e-9);

@@ -5,6 +5,12 @@ import fs from "node:fs";
 
 const APP = fs.readFileSync(new URL("../../js/app.js", import.meta.url), "utf8");
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const isFiniteNumber = value => typeof value === "number" && Number.isFinite(value);
+const finiteNumberOr = (value, fallback) => {
+  if (value == null || (typeof value === "string" && value.trim() === "")) return fallback;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
 let pass = 0, fail = 0;
 function ok(name, cond, detail=""){
   if (cond){ pass++; console.log(`  PASS  ${name}`); }
@@ -13,6 +19,29 @@ function ok(name, cond, detail=""){
 function near(name, got, exp, tol){
   ok(name, Math.abs(got - exp) <= tol, `got ${got}, expected ${exp} +/- ${tol}`);
 }
+
+function extractFunction(name){
+  const match = new RegExp(`function\\s+${name}\\s*\\(`).exec(APP);
+  if (!match) throw new Error(`Function not found: ${name}`);
+  let index = APP.indexOf("{", match.index);
+  let depth = 0;
+  for (; index < APP.length; index++){
+    if (APP[index] === "{") depth += 1;
+    if (APP[index] === "}"){
+      depth -= 1;
+      if (depth === 0) return APP.slice(match.index, index + 1);
+    }
+  }
+  throw new Error(`Function is incomplete: ${name}`);
+}
+
+const calculatePvtThermalSample = new Function(
+  "clamp",
+  "isFiniteNumber",
+  "finiteNumberOr",
+  "STEFAN_BOLTZMANN_W_M2_K4",
+  `${extractFunction("calculatePvtThermalSample")}; return calculatePvtThermalSample;`
+)(clamp, isFiniteNumber, finiteNumberOr, 5.67e-8);
 
 function modelA({G, A, Tin, ta, vwind, a0, a1, a2}){
   let etaTh = 0;
@@ -68,6 +97,7 @@ console.log("\n# PVT MODEL EQUATION LOCKS");
 ok("Model A production path uses the shared thermal helper", APP.includes("calculatePvtThermalSample(r, calculator") && APP.includes("etaTh = clamp(a0 + a1 * ((Tin - ta) / G) + a2 * vwind"));
 ok("Model B source keeps the ISO 9806 Newton branch", APP.includes("const Q_model = areaM2 * (isoEta0 * G") && APP.includes("const denominator = mdot_cp - dQm_dTout"));
 ok("Model B source keeps Swinbank long-wave constant", APP.includes("5.31e-13 * Math.pow(Ta_K, 6)"));
+ok("shared Model B helper uses a defined Stefan-Boltzmann constant", APP.includes("STEFAN_BOLTZMANN_W_M2_K4 * Math.pow(Ta_K, 4)"));
 
 console.log("\n# MODEL A NUMERIC CASE");
 {
@@ -87,6 +117,17 @@ console.log("\n# MODEL B NUMERIC CASE");
   near("Model B locked thermal power", got.th_W, 11515.064590968854, 1e-9);
   near("Model B locked eta_th", got.etaTh, 0.7196915369355533, 1e-12);
   near("zero irradiance gives zero heat", modelB({ G:0, A:20, Tin:25, ta:20, vwind:3, totalFlow_kg_hr:1440, isoEta0:0.762, isoA1:3.93, isoA2:0.0095, isoA3:0, isoA4:0, isoA6:0, isoA8:0, isoTout0:40, isoIterMax:5 }).th_W, 0, 1e-12);
+
+  const shared = calculatePvtThermalSample(
+    { dayN:1, hourN:12, solarHour:12, dni:800, dhi:0, ta:20, vwind:3 },
+    { calculate:() => ({ totalIrradiance:800 }) },
+    {
+      areaM2:20, totalFlowKgHr:0.02 * 20 * 3600, thermalModel:"B",
+      mains:{ annualAvgC:25 }, isoEta0:0.762, isoA1:3.93, isoA2:0.0095,
+      isoA3:0, isoA4:0, isoA6:0, isoA8:0, isoTout0:40, isoIterMax:5
+    }
+  );
+  near("shared Model B helper executes the locked equation", shared.th_W, got.th_W, 1e-9);
 }
 
 console.log(`\n=== ${pass} passed, ${fail} failed ===`);

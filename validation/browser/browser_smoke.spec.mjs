@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -7,6 +8,7 @@ const modernPageUrl = `${pageUrl}?ui=modern`;
 const soacValidationUrl = pathToFileURL(path.resolve("pages/soac-field-validation.html")).href;
 const pvValidationUrl = pathToFileURL(path.resolve("pages/pv-external-validation.html")).href;
 const validationHubUrl = pathToFileURL(path.resolve("pages/validation-hub.html")).href;
+const sydneyWeatherFixture = JSON.parse(fs.readFileSync(path.resolve("validation/fixtures/backend/backend_sydney.json"), "utf8"));
 
 test("calculator UI loads without console errors", async ({ page }) => {
   const errors = [];
@@ -146,6 +148,95 @@ test("calculator UI loads without console errors", async ({ page }) => {
   ]);
   await expect(page.locator("#area")).toHaveValue("250");
   expect(errors).toEqual([]);
+});
+
+test("calculator and validation pages fit common phone, tablet and desktop widths", async ({ page }) => {
+  const pages = [pageUrl, validationHubUrl, soacValidationUrl, pvValidationUrl];
+  const viewports = [
+    { width:320, height:568 },
+    { width:390, height:844 },
+    { width:768, height:1024 },
+    { width:1280, height:800 }
+  ];
+
+  for (const url of pages){
+    await page.goto(url);
+    for (const viewport of viewports){
+      await page.setViewportSize(viewport);
+      const layout = await page.evaluate(() => ({
+        viewportWidth:window.innerWidth,
+        documentWidth:document.documentElement.scrollWidth,
+        clippedVisibleControls:[...document.querySelectorAll("button, input, select, summary, a")]
+          .filter(element => {
+            const rect = element.getBoundingClientRect();
+            const style = getComputedStyle(element);
+            return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0
+              && (rect.left < -1 || rect.right > window.innerWidth + 1);
+          })
+          .slice(0, 8)
+          .map(element => element.id || element.textContent?.trim().slice(0, 35) || element.tagName)
+      }));
+      expect(layout.documentWidth, `${url} overflows at ${viewport.width}px`).toBeLessThanOrEqual(layout.viewportWidth + 1);
+      expect(layout.clippedVisibleControls, `${url} clips controls at ${viewport.width}px`).toEqual([]);
+    }
+  }
+});
+
+test("phone layouts keep expandable calculator controls touchable", async ({ page }) => {
+  await page.setViewportSize({ width:390, height:844 });
+  await page.goto(pageUrl);
+  const visibleSummaryHeights = await page.evaluate(() => [...document.querySelectorAll("summary")]
+    .filter(element => {
+      const rect = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
+    })
+    .map(element => ({ label:element.textContent?.trim().slice(0, 50), height:element.getBoundingClientRect().height })));
+  expect(visibleSummaryHeights.length).toBeGreaterThan(0);
+  for (const summary of visibleSummaryHeights){
+    expect(summary.height, `${summary.label} is too short for touch`).toBeGreaterThanOrEqual(44);
+  }
+});
+
+test("full Sydney fixture calculation uses net AC and fits a phone", async ({ page }) => {
+  await page.goto(pageUrl);
+  await page.evaluate(fixture => {
+    CURRENT_LOC = { name:"Sydney fixture", lat:fixture.lat, lon:fixture.lon };
+    CURRENT_TZ = { timeZone:fixture.tz, gmtOffset:10 };
+    CURRENT_MET = normalizeWeatherRecords(fixture.records);
+    CURRENT_MAINS = null;
+    CURRENT_MAINS_MODEL = null;
+    CURRENT_WEATHER_PROVENANCE = { source:"PVGIS fixture", sourceUrl:"", endpoint:"offline" };
+    document.getElementById("area").value = String(fixture.area);
+    document.getElementById("tiltAngle").value = String(fixture.tilt);
+    document.getElementById("albedo").value = String(fixture.albedo);
+    document.getElementById("etaPvPercent").value = String(fixture.eta * 100);
+    document.getElementById("etaPv").value = String(fixture.eta);
+    document.getElementById("industrySelect").value = "none";
+  }, sydneyWeatherFixture);
+
+  await page.evaluate(() => calcAnnualPVT());
+  await expect(page.locator("#output")).toBeVisible();
+  await expect(page.locator("#resultActions")).toBeVisible();
+  await expect(page.locator("#annualOutput")).toContainText("Estimated net AC");
+  const boundary = await page.evaluate(() => ({
+    headline:CURRENT_CALC_RESULT?.annualRaw?.pvtElectricKWh,
+    netAc:CURRENT_CALC_RESULT?.annualRaw?.pvtNetAcKWh,
+    grossDc:CURRENT_CALC_RESULT?.annualRaw?.pvtGrossDcKWh
+  }));
+  expect(boundary.headline).toBeCloseTo(boundary.netAc, 9);
+  expect(boundary.netAc).toBeLessThan(boundary.grossDc);
+
+  await page.evaluate(() => {
+    document.getElementById("modelB").checked = true;
+    return calcAnnualPVT();
+  });
+  await expect(page.locator("#output")).not.toContainText("SIGMA is not defined");
+  const modelBThermalKWh = await page.evaluate(() => CURRENT_CALC_RESULT?.annualRaw?.pvtThermalKWh);
+  expect(modelBThermalKWh).toBeGreaterThan(0);
+
+  await page.setViewportSize({ width:320, height:568 });
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
 });
 
 test("how-it-works diagram animates and opens step details", async ({ page }) => {

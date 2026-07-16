@@ -3,8 +3,8 @@
 // Regression for the `parseFloat(x) || fallback` pattern (fixed in v13.12) that
 // treated 0 as falsy and silently substituted defaults (CAPEX 0 -> 800 AUD/m2,
 // OPEX 0% -> 1.5%/yr, discount 0% -> 6%).
-// Model A/B coefficient reads are intentionally NOT covered here: their parsing
-// is part of the frozen model behaviour and is documented in the audit report.
+// Model coefficients use the same semantics: an explicit zero is a valid
+// coefficient, while blank or invalid values fall back to the documented default.
 // Run: node validation/unit/test_input_parsing.mjs
 import fs from "node:fs";
 
@@ -26,6 +26,7 @@ function extract(name){
 const FIELDS = {};
 const mockDocument = { getElementById: id => (id in FIELDS ? { value: FIELDS[id] } : null) };
 const getInputNumber = new Function("document", extract("getInputNumber") + "\nreturn getInputNumber;")(mockDocument);
+const finiteNumberOr = new Function(extract("finiteNumberOr") + "\nreturn finiteNumberOr;")();
 
 console.log("\n# getInputNumber semantics");
 {
@@ -35,6 +36,14 @@ console.log("\n# getInputNumber semantics");
   FIELDS.f = "12.5";   near("normal value parses", getInputNumber("f", 0), 12.5, 1e-12);
   FIELDS.f = "-3";     near("negative parses (range clamps happen at call sites)", getInputNumber("f", 0), -3, 1e-12);
   near("missing element falls back to default", getInputNumber("missing", 6), 6, 1e-12);
+}
+
+console.log("\n# finiteNumberOr semantics");
+{
+  near("numeric zero is preserved", finiteNumberOr(0, 3.93), 0, 1e-12);
+  near("string zero is preserved", finiteNumberOr("0", 3.93), 0, 1e-12);
+  near("blank falls back", finiteNumberOr("", 3.93), 3.93, 1e-12);
+  near("invalid text falls back", finiteNumberOr("not-a-number", 0.762), 0.762, 1e-12);
 }
 
 console.log("\n# economics semantics at the call sites (0 honoured after clamps)");
@@ -64,9 +73,10 @@ for (const [id, def] of [
 ok("no remaining `parseFloat(...capexInput...) || 800` pattern",
   !/parseFloat\(document\.getElementById\("capexInput"\)\.value\)\s*\|\|\s*800/.test(SRC));
 
-console.log("\n# frozen zone untouched: Model A/B coefficient reads unchanged");
+console.log("\n# model coefficient parsing");
 ok("Model A a0 still plain parseFloat", SRC.includes(`const a0           = parseFloat(document.getElementById("pvtA0").value);`));
-ok("Model B isoA1 read unchanged (documented behaviour lock)", SRC.includes(`parseFloat(document.getElementById("isoA1").value) || 3.93`));
+ok("Model B isoA1 uses zero-safe parsing", SRC.includes(`getInputNumber("isoA1", 3.93)`));
+ok("shared Model B helper preserves a zero isoA1", SRC.includes(`finiteNumberOr(options?.isoA1, 3.93)`));
 
 console.log("\n# recovery controls");
 ok("reset removes the persisted input state", SRC.includes("localStorage.removeItem(INPUT_STORE_KEY)"));

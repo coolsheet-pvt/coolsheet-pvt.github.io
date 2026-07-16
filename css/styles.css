@@ -612,7 +612,7 @@ button:disabled{opacity:0.55;cursor:wait;transform:none;box-shadow:none;}
   .workflow-step-header{margin:-12px -12px 8px;padding:12px;}
   input:not([type=checkbox]):not([type=radio]),select,button,#downloadLink,.secondary-action,.shared-scenario-link{min-height:44px;font-size:14px;}
   input[type=checkbox],input[type=radio]{width:18px;height:18px;min-width:18px;min-height:18px;max-height:18px;}
-  .how-it-works-btn,.advanced-settings>summary,.setting-group>summary,.formula-details>summary,.footer-details summary{min-height:44px;}
+  .how-it-works-btn,.advanced-settings>summary,.setting-group>summary,.formula-details>summary,.cost-conversion-details>summary,.footer-details summary{min-height:44px;}
   .brand-meta label,.tempcorr-toggle,.auto-cost-toggle,.display-controls label,.process-check label,.aquatic-process-label{min-height:44px;align-items:center;}
   .note a,.site-footer a{display:inline-flex;align-items:center;min-height:32px;padding:0 4px;vertical-align:middle;}
   .footer-info-grid{grid-template-columns:1fr;gap:12px;}
