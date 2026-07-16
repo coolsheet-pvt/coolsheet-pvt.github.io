@@ -206,6 +206,26 @@ body.testing-mode .pv-testing-controls{display:grid;grid-template-columns:1fr;ga
 .design-explorer-month>strong{font-size:11px;color:#287451;font-variant-numeric:tabular-nums;}
 .design-explorer-month-track{display:flex;align-items:flex-end;justify-content:center;height:88px;padding:2px;border-radius:5px;background:#edf4ef;overflow:hidden;}
 .design-explorer-month-track i{display:block;width:0;height:100%;min-height:2px;border-radius:3px 3px 2px 2px;background:linear-gradient(180deg,#54b878 0%,#27865b 100%);transition:height .18s ease,width .18s ease;}
+.design-explorer-heatmap{margin-top:12px;padding:12px;border:1px solid #d9e4de;border-radius:8px;background:#fff;}
+.design-explorer-heatmap-grid{display:grid;grid-template-columns:32px minmax(0,1fr);gap:8px;align-items:stretch;}
+.design-explorer-heatmap-y{position:relative;min-height:260px;color:#6b7d73;font-size:10px;font-weight:700;}
+.design-explorer-heatmap-y span{position:absolute;right:0;transform:translateY(-50%);}
+.design-explorer-heatmap-stage{position:relative;min-width:0;border:1px solid #d5e5dc;border-radius:6px;background:#f5f8f5;overflow:visible;}
+.design-explorer-heatmap-stage canvas{display:block;width:100%;height:clamp(260px,58vw,520px);border-radius:5px;image-rendering:pixelated;cursor:crosshair;}
+.design-explorer-heatmap-tooltip{position:absolute;z-index:5;min-width:154px;padding:8px 10px;border:1px solid rgba(255,255,255,.28);border-radius:6px;background:#173b29;color:#fff;box-shadow:0 5px 16px rgba(12,42,25,.22);pointer-events:none;font-size:10px;line-height:1.35;}
+.design-explorer-heatmap-tooltip b{display:block;margin-bottom:4px;color:#fff;font-size:11px;}
+.design-explorer-heatmap-tooltip span{display:block;color:#dcefe3;}
+.design-explorer-heatmap-x{display:grid;grid-template-columns:repeat(5,1fr);margin:4px 0 0 40px;color:#6b7d73;font-size:10px;font-weight:700;}
+.design-explorer-heatmap-x span{text-align:center;}
+.design-explorer-heatmap-x span:first-child{text-align:left;}
+.design-explorer-heatmap-x span:last-child{text-align:right;}
+.design-explorer-heatmap-legend{display:flex;flex-wrap:wrap;gap:7px 14px;margin:10px 0 0 40px;color:#526a5d;font-size:10px;line-height:1.3;}
+.design-explorer-heatmap-legend span{display:inline-flex;align-items:center;gap:5px;}
+.design-explorer-legend-swatch{display:inline-block;width:11px;height:11px;border-radius:3px;border:1px solid rgba(20,70,52,.16);}
+.design-explorer-legend-swatch.useful{background:#27865b;}
+.design-explorer-legend-swatch.backup{background:#da7027;}
+.design-explorer-legend-swatch.excess{background:#287aa6;}
+.design-explorer-legend-swatch.none{background:#eef3ef;}
 .energy-flow-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0;}
 .energy-flow-group{padding:13px;border:1px solid #d4e1dc;border-radius:10px;background:rgba(255,255,255,0.72);}
 .energy-flow-group.thermal{border-color:#efb17f;background:#fff1e6;}
@@ -716,4 +736,9 @@ button:disabled{opacity:0.55;cursor:wait;transform:none;box-shadow:none;}
   .design-explorer-head h3{font-size:18px;}
   .design-explorer-bars{gap:4px;}
   .design-explorer-month-track{height:76px;}
+  .design-explorer-heatmap{padding:10px;}
+  .design-explorer-heatmap-grid{grid-template-columns:25px minmax(0,1fr);gap:5px;}
+  .design-explorer-heatmap-y{font-size:9px;}
+  .design-explorer-heatmap-x,.design-explorer-heatmap-legend{margin-left:30px;}
+  .design-explorer-heatmap-legend{gap:6px 9px;}
 }

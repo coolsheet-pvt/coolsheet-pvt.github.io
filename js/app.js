@@ -3842,16 +3842,56 @@ function designExplorerEnergy(value){
   return isFiniteNumber(value) ? `${designExplorerNumber(value)} kWh/yr` : "-";
 }
 
-function calculateDesignExplorerScenario(areaM2, state=CURRENT_DESIGN_EXPLORER){
+function designExplorerHourlyEnergy(value){
+  return isFiniteNumber(value) ? `${designExplorerNumber(value)} kWh` : "-";
+}
+
+function buildDesignExplorerHourlySeries(supplyHourly, demandHourly, met, storageResult=null){
+  const n = Math.min(
+    Array.isArray(supplyHourly) ? supplyHourly.length : 0,
+    Array.isArray(demandHourly) ? demandHourly.length : 0,
+    Array.isArray(met) ? met.length : 0
+  );
+  const series = {
+    supply: new Array(n),
+    demand: new Array(n),
+    matched: new Array(n),
+    unmet: new Array(n),
+    excess: new Array(n),
+    storageSoc: new Array(n).fill(0)
+  };
+  for (let i = 0; i < n; i++){
+    const supply = Math.max(0, Number(supplyHourly[i]) || 0);
+    const demand = Math.max(0, Number(demandHourly[i]) || 0);
+    const unmet = storageResult
+      ? Math.min(demand, Math.max(0, Number(storageResult.unmet_demand_kwh?.[i]) || 0))
+      : Math.max(0, demand - supply);
+    const matched = Math.max(0, demand - unmet);
+    const excess = storageResult
+      ? Math.max(0, Number(storageResult.excess_pvt_kwh?.[i]) || 0)
+      : Math.max(0, supply - matched);
+    series.supply[i] = supply;
+    series.demand[i] = demand;
+    series.matched[i] = matched;
+    series.unmet[i] = unmet;
+    series.excess[i] = excess;
+    series.storageSoc[i] = Math.max(0, Number(storageResult?.tank_soc_kwh?.[i]) || 0);
+  }
+  return series;
+}
+
+function calculateDesignExplorerScenario(areaM2, state=CURRENT_DESIGN_EXPLORER, options=null){
   const area = Number(areaM2);
   if (!state || !isFiniteNumber(area) || area <= 0 || !state.demandHourly.length) return null;
-  const cacheKey = area.toFixed(4);
+  const includeHourly = options?.includeHourly === true;
+  const cacheKey = `${area.toFixed(4)}:${includeHourly ? "hourly" : "summary"}`;
   if (state.cache?.has(cacheKey)) return state.cache.get(cacheKey);
 
   const supply = calculatePvtThermalHourly({ ...state, areaM2: area });
   let balance;
+  let storageResult = null;
   if (state.storageVolumeLitres > 0){
-    const storage = calculateThermalStorage({
+    storageResult = calculateThermalStorage({
       tank_volume_litres: state.storageVolumeLitres,
       pvt_supply_array: supply.hourly,
       hotel_demand_array: state.demandHourly,
@@ -3859,10 +3899,10 @@ function calculateDesignExplorerScenario(areaM2, state=CURRENT_DESIGN_EXPLORER){
       mains_temp_array: state.mainsTempArray
     });
     const demandMonthly = aggregateMonthly(state.demandHourly, state.met);
-    const storageMonthly = calculateStorageMonthlyEnergyBalance(storage, state.demandHourly, state.met);
+    const storageMonthly = calculateStorageMonthlyEnergyBalance(storageResult, state.demandHourly, state.met);
     const totalDemand = demandMonthly.reduce((sum, value) => sum + (value || 0), 0);
-    const unmet = Number(storage.total_unmet_demand_kwh) || 0;
-    const excess = Number(storage.total_excess_pvt_kwh) || 0;
+    const unmet = Number(storageResult.total_unmet_demand_kwh) || 0;
+    const excess = Number(storageResult.total_excess_pvt_kwh) || 0;
     balance = {
       demandMonthly,
       matchedMonthly: storageMonthly.matchedMonthly,
@@ -3882,6 +3922,7 @@ function calculateDesignExplorerScenario(areaM2, state=CURRENT_DESIGN_EXPLORER){
     thermalKWh: supply.annualKWh,
     peakKW: supply.peakKW,
     balance,
+    hourly: includeHourly ? buildDesignExplorerHourlySeries(supply.hourly, state.demandHourly, state.met, storageResult) : null,
     coverage: balance.solarFraction
   };
   state.cache?.set(cacheKey, scenario);
@@ -3933,8 +3974,153 @@ function buildDesignExplorerMonthlyBars(scenario){
     const demandKWh = Math.max(0, Number(demand[index]) || 0);
     const matchedKWh = Math.min(demandKWh, Math.max(0, Number(matched[index]) || 0));
     const percent = demandKWh > 1e-9 ? clamp((matchedKWh / demandKWh) * 100, 0, 100) : 0;
-    return `<div class="design-explorer-month"><span>${month.slice(0,3)}</span><div class="design-explorer-month-track"><i style="width:${percent.toFixed(2)}%"></i></div><strong>${percent.toFixed(0)}%</strong></div>`;
+    return `<div class="design-explorer-month"><span>${month.slice(0,3)}</span><div class="design-explorer-month-track"><i style="height:${percent.toFixed(2)}%;width:100%" title="${percent.toFixed(0)}% useful heat coverage"></i></div><strong>${percent.toFixed(0)}%</strong></div>`;
   }).join("");
+}
+
+function designExplorerHeatmapMix(from, to, amount){
+  const parse = hex => [
+    parseInt(hex.slice(1, 3), 16),
+    parseInt(hex.slice(3, 5), 16),
+    parseInt(hex.slice(5, 7), 16)
+  ];
+  const a = parse(from);
+  const b = parse(to);
+  const t = clamp(Number(amount) || 0, 0, 1);
+  return `rgb(${a.map((value, index) => Math.round(value + (b[index] - value) * t)).join(",")})`;
+}
+
+function designExplorerHeatmapColor(point){
+  const supply = Math.max(0, Number(point?.supply) || 0);
+  const demand = Math.max(0, Number(point?.demand) || 0);
+  const matched = Math.max(0, Number(point?.matched) || 0);
+  const unmet = Math.max(0, Number(point?.unmet) || 0);
+  const excess = Math.max(0, Number(point?.excess) || 0);
+  if (supply <= 1e-9 && demand <= 1e-9) return "#eef3ef";
+  if (unmet > 1e-9){
+    return designExplorerHeatmapMix("#fff1d8", "#da7027", clamp(unmet / Math.max(demand, 1), 0.12, 1));
+  }
+  if (excess > 1e-9){
+    return designExplorerHeatmapMix("#d9edf4", "#287aa6", clamp(excess / Math.max(supply, 1), 0.12, 1));
+  }
+  return designExplorerHeatmapMix("#d9efdf", "#27865b", demand > 0 ? clamp(matched / demand, 0.15, 1) : 0.35);
+}
+
+function buildDesignExplorerHeatmap(scenario){
+  const count = Number(scenario?.hourly?.supply?.length) || 0;
+  let dayCursor = 0;
+  const monthLabels = MONTH_NAMES.map((month, index) => {
+    const top = (dayCursor / 365) * 100;
+    dayCursor += MONTH_DAYS[index];
+    return `<span style="top:${top.toFixed(2)}%">${month}</span>`;
+  }).join("");
+  return `
+    <div class="design-explorer-heatmap" data-explorer-heatmap-panel>
+      <div class="design-explorer-chart-head">
+        <div><b>8,760-hour energy map</b><small>Each cell is one hour. Hover over a cell for the exact hourly balance.</small></div>
+        <span data-explorer-heatmap-summary>${designExplorerNumber(count)} aligned points</span>
+      </div>
+      <div class="design-explorer-heatmap-grid">
+        <div class="design-explorer-heatmap-y" aria-hidden="true">${monthLabels}</div>
+        <div class="design-explorer-heatmap-stage">
+          <canvas data-explorer-heatmap width="960" height="520" role="img" aria-label="Hourly PVT energy balance heatmap"></canvas>
+          <div class="design-explorer-heatmap-tooltip" data-explorer-heatmap-tooltip hidden></div>
+        </div>
+      </div>
+      <div class="design-explorer-heatmap-x" aria-hidden="true"><span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span></div>
+      <div class="design-explorer-heatmap-legend" aria-label="Heatmap legend">
+        <span><i class="design-explorer-legend-swatch useful"></i>Useful heat delivered</span>
+        <span><i class="design-explorer-legend-swatch backup"></i>Backup heat needed</span>
+        <span><i class="design-explorer-legend-swatch excess"></i>Excess PVT heat</span>
+        <span><i class="design-explorer-legend-swatch none"></i>No active energy</span>
+      </div>
+    </div>`;
+}
+
+function renderDesignExplorerHeatmap(scenario){
+  const root = document.getElementById("designExplorer");
+  const canvas = root?.querySelector?.("[data-explorer-heatmap]");
+  const state = CURRENT_DESIGN_EXPLORER;
+  const series = scenario?.hourly;
+  if (!root || !canvas || !state?.met?.length || !series?.supply?.length || typeof canvas.getContext !== "function") return;
+  const context = canvas.getContext("2d");
+  if (!context) return;
+
+  const width = 960;
+  const height = 520;
+  const columns = 24;
+  const rows = 365;
+  const cellWidth = width / columns;
+  const cellHeight = height / rows;
+  const indexByDayHour = new Int32Array(rows * columns);
+  indexByDayHour.fill(-1);
+  canvas.width = width;
+  canvas.height = height;
+  context.clearRect(0, 0, width, height);
+  context.fillStyle = "#eef3ef";
+  context.fillRect(0, 0, width, height);
+
+  for (let i = 0; i < Math.min(state.met.length, series.supply.length); i++){
+    const day = Number(state.met[i]?.dayN) - 1;
+    const hour = Number(state.met[i]?.hourN);
+    if (!Number.isInteger(day) || day < 0 || day >= rows || !Number.isInteger(hour) || hour < 0 || hour >= columns) continue;
+    indexByDayHour[day * columns + hour] = i;
+    const point = {
+      supply: series.supply[i],
+      demand: series.demand[i],
+      matched: series.matched[i],
+      unmet: series.unmet[i],
+      excess: series.excess[i]
+    };
+    context.fillStyle = designExplorerHeatmapColor(point);
+    context.fillRect(hour * cellWidth + 0.5, day * cellHeight + 0.2, cellWidth - 1, Math.max(1, cellHeight - 0.35));
+  }
+
+  context.strokeStyle = "rgba(25, 75, 48, 0.28)";
+  context.lineWidth = 1;
+  let dayCursor = 0;
+  for (let month = 0; month < MONTH_DAYS.length; month++){
+    const y = Math.round(dayCursor * cellHeight) + 0.5;
+    context.beginPath();
+    context.moveTo(0, y);
+    context.lineTo(width, y);
+    context.stroke();
+    dayCursor += MONTH_DAYS[month];
+  }
+
+  const tooltip = root.querySelector("[data-explorer-heatmap-tooltip]");
+  const hideTooltip = () => {
+    if (tooltip) tooltip.hidden = true;
+  };
+  canvas.onmousemove = event => {
+    if (!tooltip) return;
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const hour = clamp(Math.floor(((event.clientX - rect.left) / rect.width) * columns), 0, columns - 1);
+    const day = clamp(Math.floor(((event.clientY - rect.top) / rect.height) * rows), 0, rows - 1);
+    const index = indexByDayHour[day * columns + hour];
+    if (index < 0) { hideTooltip(); return; }
+    const date = monthDayFromDayN(day + 1);
+    const point = {
+      supply: series.supply[index],
+      demand: series.demand[index],
+      matched: series.matched[index],
+      unmet: series.unmet[index],
+      excess: series.excess[index],
+      storageSoc: series.storageSoc[index]
+    };
+    tooltip.innerHTML = `<b>${MONTH_NAMES[date.month - 1]} ${date.day}, ${String(hour).padStart(2, "0")}:00</b><span>Useful heat: ${designExplorerHourlyEnergy(point.matched)}</span><span>Backup heat: ${designExplorerHourlyEnergy(point.unmet)}</span><span>Excess heat: ${designExplorerHourlyEnergy(point.excess)}</span>${state.storageVolumeLitres > 0 ? `<span>Tank state: ${designExplorerHourlyEnergy(point.storageSoc)}</span>` : ""}`;
+    tooltip.hidden = false;
+    const shell = root.querySelector(".design-explorer-heatmap-stage");
+    const shellRect = shell?.getBoundingClientRect?.();
+    if (shellRect){
+      const left = Math.min(Math.max(event.clientX - shellRect.left + 12, 8), Math.max(8, shellRect.width - tooltip.offsetWidth - 8));
+      const top = Math.min(Math.max(event.clientY - shellRect.top - 48, 8), Math.max(8, shellRect.height - tooltip.offsetHeight - 8));
+      tooltip.style.left = `${left}px`;
+      tooltip.style.top = `${top}px`;
+    }
+  };
+  canvas.onmouseleave = hideTooltip;
 }
 
 function getDesignExplorerMessage(scenario, targetPct, recommendation, state){
@@ -3952,7 +4138,7 @@ function buildRecommendedSystemSizeBox(opts){
   if (!CURRENT_DESIGN_EXPLORER) return "";
   const state = CURRENT_DESIGN_EXPLORER;
   const initialTargetPct = 50;
-  const scenario = calculateDesignExplorerScenario(state.areaM2, state);
+  const scenario = calculateDesignExplorerScenario(state.areaM2, state, { includeHourly:true });
   const recommendation = findDesignExplorerTargetArea(initialTargetPct, state);
   const currentArea = Math.max(1, state.areaM2);
   const minArea = Math.max(1, Math.floor(currentArea * 0.25));
@@ -4001,6 +4187,7 @@ function buildRecommendedSystemSizeBox(opts){
         <div class="design-explorer-chart-head"><div><b>Monthly useful heat coverage</b><small>Same-hour demand matching by month</small></div><span data-explorer-output="thermal">${designExplorerEnergy(scenario.thermalKWh)} PVT thermal output</span></div>
         <div class="design-explorer-bars" data-explorer-bars>${buildDesignExplorerMonthlyBars(scenario)}</div>
       </div>
+      ${buildDesignExplorerHeatmap(scenario)}
     </section>`;
 }
 
@@ -4022,7 +4209,7 @@ function updateDesignExplorer(source = ""){
   if (targetInput) targetInput.value = targetPct.toFixed(0);
   if (targetRange) targetRange.value = clamp(targetPct, Number(targetRange.min), Number(targetRange.max)).toFixed(0);
 
-  const scenario = calculateDesignExplorerScenario(area, state);
+  const scenario = calculateDesignExplorerScenario(area, state, { includeHourly:true });
   const recommendation = findDesignExplorerTargetArea(targetPct, state);
   const output = key => root.querySelector(`[data-explorer-output="${key}"]`);
   if (!scenario) return;
@@ -4037,6 +4224,7 @@ function updateDesignExplorer(source = ""){
   if (message) message.textContent = getDesignExplorerMessage(scenario, targetPct, recommendation, state);
   const bars = root.querySelector("[data-explorer-bars]");
   if (bars) bars.innerHTML = buildDesignExplorerMonthlyBars(scenario);
+  renderDesignExplorerHeatmap(scenario);
 }
 
 function applyDesignExplorerTarget(){
@@ -6891,6 +7079,7 @@ async function calcAnnualPVT(){
 
     setOutput(html);
     setIndustryOutput(industryHtml);
+    renderDesignExplorerHeatmap(calculateDesignExplorerScenario(CURRENT_DESIGN_EXPLORER?.areaM2, CURRENT_DESIGN_EXPLORER, { includeHourly:true }));
 
     // 6) Chart.js supply charts
     const BASE_YEAR = new Date().getFullYear() - 1;

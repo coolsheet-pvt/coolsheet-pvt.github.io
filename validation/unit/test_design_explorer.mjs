@@ -40,6 +40,7 @@ const code = [
   extract("aggregateMonthly"),
   extract("calculateHourlyEnergyBalance"),
   extract("calculateStorageMonthlyEnergyBalance"),
+  extract("buildDesignExplorerHourlySeries"),
   extract("calculateDesignExplorerScenario"),
   extract("findDesignExplorerTargetArea")
 ].join("\n");
@@ -71,15 +72,27 @@ const state = {
   cache:new Map()
 };
 
-const result = mod.calculateDesignExplorerScenario(100, state);
+const result = mod.calculateDesignExplorerScenario(100, state, { includeHourly:true });
 assert.equal(result.thermalKWh, 640);
 assert.equal(result.balance.metBySupply, 640);
 assert.equal(result.balance.unmet, 160);
 assert.equal(result.coverage, 0.8);
+assert.equal(result.hourly.supply.length, 48);
+assert.equal(result.hourly.supply[8], 40);
+assert.equal(result.hourly.matched[8], 40);
+assert.equal(result.hourly.unmet[8], 10);
+assert.equal(result.hourly.excess[8], 0);
 
 const recommendation = mod.findDesignExplorerTargetArea(50, state);
 assert.equal(recommendation.achievable, true);
 assert.ok(Math.abs(recommendation.scenario.areaM2 - 62.5) < 0.1, `expected about 62.5 m2, got ${recommendation.scenario.areaM2}`);
 assert.ok(recommendation.scenario.coverage >= 0.5);
+
+const storageState = { ...state, storageVolumeLitres:1000, cache:new Map() };
+const storageResult = mod.calculateDesignExplorerScenario(100, storageState, { includeHourly:true });
+assert.equal(storageResult.coverage, 0.8);
+assert.equal(storageResult.hourly.storageSoc.length, 48);
+assert.match(APP, /function buildDesignExplorerHeatmap\(/);
+assert.match(APP, /function renderDesignExplorerHeatmap\(/);
 
 console.log("PVT design explorer hourly recalculation and target-area search passed.");
