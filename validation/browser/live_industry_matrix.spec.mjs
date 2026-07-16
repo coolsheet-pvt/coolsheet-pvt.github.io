@@ -368,10 +368,10 @@ async function collectScenarioOutputs(page, city, industry, target, options = {}
     const weather = typeof buildWeatherExportMetadata === "function" ? buildWeatherExportMetadata() : {};
     const location = CURRENT_LOC ? { name: CURRENT_LOC.name, lat: CURRENT_LOC.lat, lon: CURRENT_LOC.lon } : null;
     const heatDemandKWh = energyCards["Heat demand consumed"]?.value;
-    const solarHeatUsedKWh = energyCards["Solar heat used"]?.value;
+    const solarHeatUsedKWh = energyCards["Solar heat delivered to process"]?.value;
     const backupHeatKWh = energyCards["Backup heat needed"]?.value;
     const electricDemandKWh = energyCards["Electric demand consumed"]?.value;
-    const solarHeatCoveragePct = insightPairs["Solar Heat"]?.value;
+    const solarHeatCoveragePct = insightPairs["Direct-use heat coverage"]?.value;
     const savingsAud = insightPairs["Yearly Savings"]?.value;
     const processTotalText = document.querySelector("#industryOutput .process-breakdown-total .process-kwh")?.textContent || "";
 
@@ -498,9 +498,9 @@ function validateScenario(row) {
     ["PVT electricity", o.pvtElectricKWh],
     ["PVT thermal output", o.pvtThermalKWh],
     ["industry demand", o.heatDemandKWh],
-    ["solar heat used", o.solarHeatUsedKWh],
+    ["solar heat delivered to process", o.solarHeatUsedKWh],
     ["backup heat", o.backupHeatKWh],
-    ["solar coverage", o.solarHeatCoveragePct],
+    ["direct-use heat coverage", o.solarHeatCoveragePct],
     ["savings", o.savingsAud],
     ["payback", o.paybackYears],
     ["NPV", o.npvAud],
@@ -515,9 +515,9 @@ function validateScenario(row) {
   if (Number.isFinite(o.pvtThermalKWh) && o.pvtThermalKWh <= 0) failures.push("PVT thermal output is not positive");
   if (Number.isFinite(o.heatDemandKWh) && o.heatDemandKWh <= 0) failures.push("industry heat demand is not positive");
   if (Number.isFinite(o.backupHeatKWh) && o.backupHeatKWh < -0.1) failures.push("backup heat is negative");
-  if (Number.isFinite(o.solarHeatCoveragePct) && (o.solarHeatCoveragePct < -0.1 || o.solarHeatCoveragePct > 100.1)) failures.push("solar coverage outside 0-100%");
-  if (Number.isFinite(o.solarHeatUsedKWh) && Number.isFinite(o.heatDemandKWh) && o.solarHeatUsedKWh > o.heatDemandKWh + 1) failures.push("solar heat used exceeds heat demand");
-  if (Number.isFinite(o.solarHeatUsedKWh) && Number.isFinite(o.pvtThermalKWh) && o.solarHeatUsedKWh > o.pvtThermalKWh + 1) failures.push("solar heat used exceeds PVT thermal output");
+  if (Number.isFinite(o.solarHeatCoveragePct) && (o.solarHeatCoveragePct < -0.1 || o.solarHeatCoveragePct > 100.1)) failures.push("direct-use heat coverage outside 0-100%");
+  if (Number.isFinite(o.solarHeatUsedKWh) && Number.isFinite(o.heatDemandKWh) && o.solarHeatUsedKWh > o.heatDemandKWh + 1) failures.push("solar heat delivered to process exceeds heat demand");
+  if (Number.isFinite(o.solarHeatUsedKWh) && Number.isFinite(o.pvtThermalKWh) && o.solarHeatUsedKWh > o.pvtThermalKWh + 1) failures.push("solar heat delivered to process exceeds PVT thermal output");
   if (!row.ui.noNaN) failures.push("page text contains NaN");
   if (!row.ui.noInfinity) failures.push("page text contains Infinity");
   if (!row.ui.noUndefined) failures.push("page text contains undefined");

@@ -96,7 +96,7 @@
     <div class="modern-assumptions-body"><ul>
       <li>Weather is a PVGIS <b>typical meteorological year</b> — a representative year, not a forecast.</li>
       <li>Inlet water uses the <b>BC-Aus mains-water model</b> (editable monthly overrides above).</li>
-      <li>PV headline output is estimated <b>net AC</b> after editable non-inverter system losses and inverter efficiency; the exploratory PVT cooling sensitivity is off by default.</li>
+      <li>PV headline output is the temperature-corrected gross module yield used in the original annual PVT result; estimated net AC is retained in the detailed results. The PVT cooling effect is on by default.</li>
       <li>Industry matching is <b>hourly direct-use with no storage tank</b> (except the hotel tank input); the supply-only value card assumes 100% utilisation and is an upper bound.</li>
       <li>Prices, boiler efficiency, CAPEX/OPEX, lifetime and discount rate are <b>editable estimates</b>, not quotes.</li>
     </ul></div>`;
@@ -279,18 +279,11 @@
       setTextIfChanged(anchorNote, "No industry demand is selected, so these are supply totals rather than site-matched savings.");
     }
 
-    const annualKicker = annualCard.querySelector(".annual-kicker");
-    const annualTitle = annualCard.querySelector("h3");
-    setTextIfChanged(annualKicker, "Technical supply summary");
-    setTextIfChanged(annualTitle, "System yield");
     annualCard.querySelectorAll(".annual-summary-item").forEach(item => {
       const label = item.querySelector("span")?.textContent?.trim() || "";
-      const alwaysSecondary = label.startsWith("PV-only baseline") || label.startsWith("Cooling sensitivity") || label === "Total output";
+      const alwaysSecondary = label.startsWith("PV-only baseline") || label.startsWith("Electricity from cooling") || label === "Total output";
       const matchedFinance = hasIndustry && label === "PVT supply value";
       item.classList.toggle("modern-secondary-result", alwaysSecondary || matchedFinance);
-      if (label === "PVT electricity (net AC)") setTextIfChanged(item.querySelector("span"), "Electricity generated (net AC)");
-      if (label === "PVT thermal") setTextIfChanged(item.querySelector("span"), "Thermal energy generated");
-      if (label === "Avg daytime outlet temp") setTextIfChanged(item.querySelector("span"), "Average daytime outlet");
     });
 
     const hero = industryPanel?.querySelector(".insight-hero");
@@ -305,7 +298,7 @@
       if (sub) setTextIfChanged(sub, sub.textContent.replace(/^Based on\s+/i, "Hourly demand matching · "));
       const pills = Array.from(hero.querySelectorAll(".insight-pill"));
       setTextIfChanged(pills[0]?.querySelector(".eyebrow"), "Electricity supplied by solar");
-      setTextIfChanged(pills[1]?.querySelector(".eyebrow"), "Heat supplied by solar");
+      setTextIfChanged(pills[1]?.querySelector(".eyebrow"), "Direct-use heat coverage");
       setTextIfChanged(pills[2]?.querySelector(".eyebrow"), "Estimated annual saving");
       addCoverageBar(pills[0]);
       addCoverageBar(pills[1]);
@@ -315,7 +308,7 @@
       if (electricCoverage && heatCoverage){
         const takeaway = document.createElement("p");
         takeaway.className = "modern-decision-note";
-        takeaway.innerHTML = `<b>At this size:</b> solar supplies ${heatCoverage} of modelled heat demand and ${electricCoverage} of modelled electricity demand. Backup heat and the grid supply the remainder.`;
+        takeaway.innerHTML = `<b>At this size:</b> same-hour PVT heat supplies ${heatCoverage} of modelled heat demand and solar electricity supplies ${electricCoverage} of modelled electricity demand. Backup heat and the grid supply the remainder.`;
         hero.appendChild(takeaway);
       }
     }

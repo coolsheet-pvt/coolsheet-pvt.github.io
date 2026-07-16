@@ -67,10 +67,10 @@ test("modern results prioritise matched decisions without changing values", asyn
       <div class="output-card output-card-annual">
         <div class="annual-kicker">Hourly annual summary</div><h3>Annual PVT Results</h3>
         <div class="annual-summary-grid">
-          ${metric("PVT electricity (net AC)", "100,000 kWh")}
+          ${metric("PVT electricity", "100,000 kWh")}
           ${metric("PVT thermal", "400,000 kWh")}
-          ${metric("PV-only baseline (net AC)", "100,000 kWh")}
-          ${metric("Cooling sensitivity (off)", "+0 kWh")}
+          ${metric("PV-only baseline", "100,000 kWh")}
+          ${metric("Electricity from cooling", "+0 kWh")}
           ${metric("Total output", "500,000 kWh")}
           ${metric("Avg daytime outlet temp", "32 °C")}
           ${metric("PVT supply value", "$50 /yr")}
@@ -92,11 +92,11 @@ test("modern results prioritise matched decisions without changing values", asyn
       <div class="output-card output-card-industry">
         <div class="insight-hero">
           <div class="insight-kicker">Solar Performance Summary</div>
-          <div class="insight-title">You save $20,000 AUD/yr with 60.0% solar heat coverage</div>
+          <div class="insight-title">You save $20,000 AUD/yr with 60.0% direct-use heat coverage</div>
           <div class="insight-sub">Based on 250 m² PVT collector area at Test Site</div>
           <div class="insight-strip">
             <div class="insight-pill"><div class="eyebrow">Solar Electricity</div><div class="big">20.0%</div></div>
-            <div class="insight-pill"><div class="eyebrow">Solar Heat</div><div class="big">60.0%</div></div>
+            <div class="insight-pill"><div class="eyebrow">Direct-use heat coverage</div><div class="big">60.0%</div></div>
             <div class="insight-pill"><div class="eyebrow">Yearly Savings</div><div class="big">$20,000 /yr</div></div>
             <div class="insight-pill"><div class="big">50 kWh</div></div>
           </div>
@@ -115,7 +115,7 @@ test("modern results prioritise matched decisions without changing values", asyn
   await expect(page.locator("#industryOutput .modern-coverage-track")).toHaveCount(2);
   await expect(page.locator("#industryOutput .modern-decision-note")).toContainText("60.0% of modelled heat demand");
   await expect(page.locator("#industryOutput .energy-flow-group .modern-flow-context-card")).toHaveCount(4);
-  await expect(page.locator("#annualOutput .annual-summary-item").filter({ hasText:"Electricity generated (net AC)" }).locator("strong")).toHaveText("100.0 MWh");
+  await expect(page.locator("#annualOutput .annual-summary-item").filter({ hasText:"PVT electricity" }).locator("strong")).toHaveText("100.0 MWh");
   await expect(page.locator("#industryOutput .modern-flow-total strong")).toHaveText(["1.0 MWh/yr", "1.0 MWh/yr"]);
   await expect(page.locator("#showMonthlySupply")).toBeChecked();
   await expect(page.locator("#monthlyDataTable").locator(".." )).toHaveClass(/modern-data-details/);

@@ -137,8 +137,8 @@
             </div>
             <div class="full-row" style="margin:2px 0 6px;">
               <label class="tempcorr-toggle">
-                <input type="checkbox" id="pvtCoolingSensitivityEnable" />
-                <span><b>Exploratory PVT electrical cooling sensitivity</b> <span style="color:#8a5a00;font-weight:400;">(opt-in; not independently validated)</span></span>
+                <input type="checkbox" id="pvtCoolingSensitivityEnable" checked />
+                <span><b>Include PVT electrical cooling effect</b> <span style="color:#6b6b6b;font-weight:400;">(cooled PVT vs PV-only baseline)</span></span>
               </label>
             </div>
             <label for="pvTempCoeff">PV temperature loss (%/&deg;C):</label>
@@ -150,7 +150,7 @@
             <label for="pvInverterEfficiencyPct">Inverter efficiency (%):</label>
             <input id="pvInverterEfficiencyPct" type="number" min="1" max="100" step="0.1" value="96" />
             <div class="note full-row noct-explainer">
-              NOCT estimates module temperature and its DC power derate. Net AC then applies editable non-inverter losses and inverter efficiency. The optional PVT cooling benefit is a sensitivity only and is excluded by default from headline results.
+              NOCT estimates module temperature and its DC power derate. The annual card shows the original temperature-corrected gross module yield; detailed results also show estimated net AC after editable non-inverter losses and inverter efficiency. The PVT electricity card includes the water-loop cooling effect by default, and the PV-only baseline keeps the uncooled NOCT temperature.
             </div>
 
             <details class="formula-details full-row">
@@ -357,7 +357,7 @@
             <input id="hotelOccupancyInput" type="number" min="0" max="100" step="0.1" value="70" />
 
             <label for="tankVolume"><b>Thermal storage tank volume (L):</b></label>
-            <input id="tankVolume" type="number" min="0" step="100" value="5000" />
+            <input id="tankVolume" type="number" min="0" step="100" value="0" />
 
             <label for="hotelDhwKWh"><b>DHW assumption (kWh/occupied room-night):</b></label>
             <input id="hotelDhwKWh" type="number" min="0" step="0.1" value="4.5" />

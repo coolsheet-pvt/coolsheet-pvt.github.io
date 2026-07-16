@@ -238,11 +238,11 @@ function buildIndustryExportSummary(performanceOpts, energyOpts){
     : "\u2014";
   const energyValue = value => isFiniteNumber(value) ? `${formatSummaryWhole(value)} kWh/yr` : "\u2014";
   return {
-    headline: `You save $${formatSummaryWhole(savingsAud)} AUD/yr with ${formatSummaryPercent(heatCoverage)} solar heat coverage`,
+    headline: `You save $${formatSummaryWhole(savingsAud)} AUD/yr with ${formatSummaryPercent(heatCoverage)} direct-use heat coverage`,
     subhead: `Based on ${areaText} PVT collector area at ${performanceOpts.locationName || "selected location"}`,
     metrics: [
       exportMetricText("Solar Electricity", formatSummaryPercent(elecCoverage), "Share of site electricity covered by PV."),
-      exportMetricText("Solar Heat", formatSummaryPercent(heatCoverage), "Share of process heat covered by PVT heat."),
+      exportMetricText("Direct-use heat coverage", formatSummaryPercent(heatCoverage), "Share of process heat covered by same-hour PVT heat."),
       exportMetricText("Yearly Savings", `$${formatSummaryWhole(savingsAud)} /yr`, "Thermal fuel plus electricity value counted for this industry each year."),
       exportMetricText("Unused heat energy", energyValue(performanceOpts.unusedHeatKWh), "PVT heat above hourly process demand."),
       exportMetricText("Unused electrical energy", energyValue(performanceOpts.unusedElectricityKWh), "PV electricity above hourly site demand.")
@@ -253,7 +253,7 @@ function buildIndustryExportSummary(performanceOpts, energyOpts){
       exportMetricText("Grid electricity needed", energyValue(energyOpts.gridElectricityNeededKWh), "Remaining electricity imported from grid."),
       exportMetricText("PV exported", energyValue(energyOpts.exportedElectricityKWh), "PV electricity above hourly site demand, exported to the grid."),
       exportMetricText("Heat demand consumed", energyValue(energyOpts.thermalDemandKWh), "Total process heat required."),
-      exportMetricText("Solar heat used", energyValue(energyOpts.solarHeatUsedKWh), "Demand supplied directly by PVT heat."),
+      exportMetricText("Solar heat delivered to process", energyValue(energyOpts.solarHeatUsedKWh), "Same-hour process demand supplied by PVT heat."),
       exportMetricText("Backup heat needed", energyValue(energyOpts.backupHeatNeededKWh), "Remaining heat from boiler or backup."),
       exportMetricText("Solar heat unused", energyValue(energyOpts.unusedHeatKWh), energyOpts.unusedHeatNote || "PVT heat above hourly process demand.")
     ]
@@ -413,7 +413,7 @@ function buildPdfTemplateDocument(){
     ["Coordinates", CURRENT_LOC ? `${CURRENT_LOC.lat.toFixed(6)}, ${CURRENT_LOC.lon.toFixed(6)} (${timezoneText})` : "N/A"],
     ["System", `${area || "N/A"} m2 collector/PV area; tilt ${getReportFieldValue("tiltAngle", "N/A")} deg; azimuth ${getReportFieldValue("azimuthAngle", "N/A")} deg`],
     ["Models", `${getCheckedThermalModelLabel()}; PV efficiency ${getReportFieldValue("etaPv", "N/A")}; flow ${getReportFieldValue("flowRate", "N/A")} L/s/m2`],
-    ["PV electrical boundary", `Gross DC module model to estimated net AC: ${getReportFieldValue("pvSystemLossPct","14")}% non-inverter losses, ${getReportFieldValue("pvInverterEfficiencyPct","96")}% inverter; exploratory PVT cooling ${document.getElementById("pvtCoolingSensitivityEnable")?.checked ? "enabled" : "disabled"}`],
+    ["PV electrical boundary", `Gross DC module model to estimated net AC: ${getReportFieldValue("pvSystemLossPct","14")}% non-inverter losses, ${getReportFieldValue("pvInverterEfficiencyPct","96")}% inverter; PVT cooling effect ${document.getElementById("pvtCoolingSensitivityEnable")?.checked ? "included" : "disabled"}`],
     ["Weather and mains", `${weatherRecords ? weatherRecords.toLocaleString() : "N/A"} PVGIS TMY hourly records; BC-Aus mains model, ${mainsText}`],
     ["Demand case", `${industryLabel}; ${profileLabel}`],
     ["Industry evidence status", industryEvidenceText(industryKey) || "No industry demand selected"],
@@ -3478,11 +3478,12 @@ function buildIndustryPerformanceSummary(opts){
   return `
     <div class="insight-hero" style="margin-bottom:16px;">
       <div class="insight-kicker">Solar Performance Summary</div>
-      <div class="insight-title">You save $${formatSummaryWhole(savingsAud)} AUD/yr with ${heatCoverage} solar heat coverage</div>
+      <div class="insight-title">You save $${formatSummaryWhole(savingsAud)} AUD/yr with ${heatCoverage} direct-use heat coverage</div>
       <div class="insight-sub">Based on ${areaText} PVT collector area at ${locationText}</div>
+      <p class="coverage-definition-note">Coverage = same-hour PVT heat delivered to process / total annual process heat demand. Excess heat is not counted unless storage is enabled.</p>
       <div class="insight-strip">
         <div class="insight-pill"><div class="eyebrow">Solar Electricity</div><div class="big">${electricCoverage}</div><small>Share of site electricity covered by PV.</small></div>
-        <div class="insight-pill"><div class="eyebrow">Solar Heat</div><div class="big">${heatCoverage}</div><small>Share of process heat covered by PVT heat.</small></div>
+        <div class="insight-pill"><div class="eyebrow">Direct-use heat coverage</div><div class="big">${heatCoverage}</div><small>Share of process heat covered by same-hour PVT heat.</small></div>
         <div class="insight-pill"><div class="eyebrow">Yearly Savings</div><div class="big">$${formatSummaryWhole(savingsAud)} /yr</div><small>Thermal fuel plus electricity value counted for this industry each year.</small></div>
         <div class="insight-pill"><div class="eyebrow">Unused heat energy</div><div class="big">${unusedHeat}</div><div class="eyebrow" style="margin-top:12px;">Unused electrical energy</div><div class="big">${unusedElectricity}</div></div>
       </div>
@@ -3513,7 +3514,7 @@ function buildRecommendedSystemSizeBox(opts){
       <div class="recommended-size-head">
         <div>
           <span>Rough system-size guide</span>
-          <small>Pick a target heat coverage for a ballpark collector area</small>
+          <small>Pick a target direct-use heat coverage for a ballpark collector area</small>
         </div>
       </div>
       <div class="recommended-size-grid">
@@ -3522,11 +3523,11 @@ function buildRecommendedSystemSizeBox(opts){
           <strong>${areaText}</strong>
         </div>
         <div class="recommended-size-row">
-          <span>Current heat coverage</span>
+          <span>Current direct-use heat coverage</span>
           <strong>${coverageText}</strong>
         </div>
         <label class="recommended-size-target">
-          <span>Target heat coverage</span>
+          <span>Target direct-use heat coverage</span>
           <div class="recommended-size-input-row">
             <input type="number" min="1" max="100" step="1" value="${defaultTargetPct.toFixed(0)}"
               data-current-area="${isFiniteNumber(areaM2) ? areaM2 : ""}"
@@ -3606,9 +3607,9 @@ function buildIndustryEnergyFlowSummary(opts){
             <small>Total process heat required.</small>
           </div>
           <div class="energy-flow-card">
-            <span>Solar heat used</span>
+            <span>Solar heat delivered to process</span>
             <strong>${energyValue(opts.solarHeatUsedKWh)}</strong>
-            <small>Demand supplied directly by PVT heat.</small>
+            <small>Same-hour process demand supplied by PVT heat.</small>
           </div>
           <div class="energy-flow-card">
             <span>Backup heat needed</span>
@@ -3823,19 +3824,18 @@ function renderMonthlyChart(monthlyData){
   if (monthlyChartInstance) monthlyChartInstance.destroy();
   const showCoolingComparison = !!document.getElementById("pvtCoolingSensitivityEnable")?.checked;
   const datasets = [
-    {label:'PVT Electricity (MWh AC)',data:pvtData,backgroundColor:'rgba(8,61,91,0.72)',borderColor:'rgba(8,61,91,1)',borderWidth:1},
+    {label:'PVT Electricity (MWh)',data:pvtData,backgroundColor:'rgba(8,61,91,0.72)',borderColor:'rgba(8,61,91,1)',borderWidth:1},
     {label:'PVT Thermal (MWh)',data:thData,backgroundColor:'rgba(13,111,143,0.58)',borderColor:'rgba(13,111,143,1)',borderWidth:1}
   ];
-  // With cooling sensitivity disabled, PVT and PV-only electricity are
-  // intentionally identical; plotting both would imply a difference that is
-  // not in the headline model and produces two overlapping bars.
+  // When the cooling effect is disabled, PVT and PV-only electricity are
+  // intentionally identical; plotting both would produce two overlapping bars.
   if (showCoolingComparison){
-    datasets.splice(1,0,{label:'PV-only Electricity (MWh AC)',data:pvOnlyData,backgroundColor:'rgba(245,166,35,0.58)',borderColor:'rgba(190,111,0,1)',borderWidth:1});
+    datasets.splice(1,0,{label:'PV-only Electricity (MWh)',data:pvOnlyData,backgroundColor:'rgba(245,166,35,0.58)',borderColor:'rgba(190,111,0,1)',borderWidth:1});
   }
   monthlyChartInstance = new Chart(ctx.getContext('2d'), {
     type:'bar',
     data:{labels,datasets},
-    options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,title:{display:true,text:'Monthly energy (MWh)'}}},plugins:{title:{display:true,text:showCoolingComparison?'Monthly system output with cooling sensitivity':'Monthly system output'}}}
+    options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,title:{display:true,text:'Monthly energy (MWh)'}}},plugins:{title:{display:true,text:showCoolingComparison?'Monthly system output with PVT cooling effect':'Monthly system output'}}}
   });
 }
 
@@ -3856,8 +3856,8 @@ function renderPvComparisonChart(monthlyData){
   pvComparisonChartInstance = new Chart(ctx.getContext('2d'), {
     type:'line',
     data:{labels, datasets:[
-      {label:'PVT Electricity (MWh AC)',data:pvtData,borderColor:'rgba(8,61,91,1)',backgroundColor:'rgba(8,61,91,0.12)',borderWidth:3,pointRadius:4,pointHoverRadius:5,fill:false,tension:0.3},
-      {label:'PV-only Electricity (MWh AC)',data:pvOnlyData,borderColor:'rgba(190,111,0,1)',backgroundColor:'rgba(245,166,35,0.12)',borderWidth:3,pointRadius:4,pointHoverRadius:5,fill:false,tension:0.3},
+      {label:'PVT Electricity (MWh)',data:pvtData,borderColor:'rgba(8,61,91,1)',backgroundColor:'rgba(8,61,91,0.12)',borderWidth:3,pointRadius:4,pointHoverRadius:5,fill:false,tension:0.3},
+      {label:'PV-only Electricity (MWh)',data:pvOnlyData,borderColor:'rgba(190,111,0,1)',backgroundColor:'rgba(245,166,35,0.12)',borderWidth:3,pointRadius:4,pointHoverRadius:5,fill:false,tension:0.3},
       {label:'PVT gain from cooling (MWh)',data:gainData,type:'bar',backgroundColor:'rgba(67,160,71,0.32)',borderColor:'rgba(45,125,50,0.85)',borderWidth:1,yAxisID:'gain'}
     ]},
     options:{
@@ -3886,16 +3886,16 @@ function renderDailyChart(dailyData){
   if (dailyChartInstance) dailyChartInstance.destroy();
   const showCoolingComparison = !!document.getElementById("pvtCoolingSensitivityEnable")?.checked;
   const datasets = [
-    {label:'PVT Electricity (kWh AC)',data:pvtData,backgroundColor:'rgba(8,61,91,0.72)',borderColor:'rgba(8,61,91,1)',borderWidth:1},
+    {label:'PVT Electricity (kWh)',data:pvtData,backgroundColor:'rgba(8,61,91,0.72)',borderColor:'rgba(8,61,91,1)',borderWidth:1},
     {label:'PVT Thermal (kWh)',data:thData,backgroundColor:'rgba(13,111,143,0.58)',borderColor:'rgba(13,111,143,1)',borderWidth:1}
   ];
   if (showCoolingComparison){
-    datasets.splice(1,0,{label:'PV-only Electricity (kWh AC)',data:pvOnlyData,backgroundColor:'rgba(245,166,35,0.58)',borderColor:'rgba(190,111,0,1)',borderWidth:1});
+    datasets.splice(1,0,{label:'PV-only Electricity (kWh)',data:pvOnlyData,backgroundColor:'rgba(245,166,35,0.58)',borderColor:'rgba(190,111,0,1)',borderWidth:1});
   }
   dailyChartInstance = new Chart(ctx.getContext('2d'), {
     type:'bar',
     data:{labels,datasets},
-    options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true}},plugins:{title:{display:true,text:showCoolingComparison?'Daily system output with cooling sensitivity':'Daily system output'}}}
+    options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true}},plugins:{title:{display:true,text:showCoolingComparison?'Daily system output with PVT cooling effect':'Daily system output'}}}
   });
 }
 
@@ -4501,7 +4501,7 @@ const HOW_IT_WORKS_DETAIL = {
     title: "6. Hour-by-hour energy matching",
     body: "Each of the 8,760 hours is balanced independently. PVT thermal output covers heat demand first — any shortfall is met by the gas boiler. PV electricity covers electrical demand first — any surplus is exported to the grid. Hourly matching captures the real mismatch between solar availability and demand rather than masking it with annual averages.",
     inputs: ["Hourly PVT thermal output (kWh)", "Hourly PV electrical output (kWh)", "Hourly heat demand (kWh)", "Hourly electricity demand (kWh)"],
-    outputs: ["Solar heat used on-site (kWh/yr)", "Gas boiler top-up (kWh/yr)", "PV self-consumed (kWh/yr)", "Grid export / import (kWh/yr)"],
+    outputs: ["Solar heat delivered to process (kWh/yr)", "Gas boiler top-up (kWh/yr)", "PV self-consumed (kWh/yr)", "Grid export / import (kWh/yr)"],
     buildMiniSvg: () => buildMiniSvg_matching()
   },
   results: {
@@ -4837,7 +4837,11 @@ const DEFAULT_SITE_SETTINGS = {
   pvTempCoeff: "-0.40",
   pvNoct: "45",
   pvSystemLossPct: "14",
-  pvInverterEfficiencyPct: "96"
+  pvInverterEfficiencyPct: "96",
+  tankVolume: "0"
+};
+const DEFAULT_CHECKBOX_SETTINGS = {
+  pvtCoolingSensitivityEnable: true
 };
 const PV_STC_CELL_TEMP_C = 25;
 const PV_DEFAULT_NOCT_C = 45;
@@ -4851,9 +4855,9 @@ const PV_DAYTIME_TEMP_END_HOUR = 16;
 //   Part 1 (calcNoctPanelTempC):  bare-panel NOCT temperature.
 //   Part 2 (calcPvtPanelTempC):   subtract heat removed by the coolant loop.
 //   getPvtPanelHeatLossCoeff supplies U_L (from Model A/B a1, read-only).
-//   The cooling term is an opt-in sensitivity only. By default PVT and PV use
-//   the same NOCT module temperature, so no unvalidated cooling gain enters
-//   headline electricity, savings, payback, NPV or industry matching.
+//   The cooling term is included by default for the annual PVT result:
+  //   PVT electricity uses the cooled PVT panel temperature, while PV-only
+  //   baseline uses the uncooled NOCT module temperature.
 // ============================================================================
 function calcNoctPanelTempC(ambientC, irradianceWm2, noctC = PV_DEFAULT_NOCT_C){
   if (!isFiniteNumber(ambientC)) return null;
@@ -4924,6 +4928,13 @@ function resetSiteDefaults(){
       el.dispatchEvent(new Event("change", { bubbles: true }));
     }
   });
+  Object.entries(DEFAULT_CHECKBOX_SETTINGS).forEach(([id, checked]) => {
+    const el = document.getElementById(id);
+    if (el){
+      el.checked = !!checked;
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  });
 }
 
 // ================================================================
@@ -4944,7 +4955,7 @@ async function calcAnnualPVT(){
     const A            = parseFloat(document.getElementById("area").value);
     const flowRate     = parseFloat(document.getElementById("flowRate").value);
     const etaPv        = parseFloat(document.getElementById("etaPv").value);
-    // Module-temperature correction is independent from the opt-in PVT cooling sensitivity.
+    // Module-temperature correction is independent from the PVT cooling-effect toggle.
     const pvTempCorrEnable = document.getElementById("pvTempCorrEnable")?.checked !== false;
     const pvtCoolingSensitivityEnable = document.getElementById("pvtCoolingSensitivityEnable")?.checked === true;
     const pvTempCoeffInput = parseFloat(document.getElementById("pvTempCoeff")?.value);
@@ -5016,6 +5027,7 @@ async function calcAnnualPVT(){
     const calculator = new TiltedSurfaceRadiation(latitude, longitude, tiltAngle, azimuthAngle, albedo);
     let E_pv_kWh = 0, E_th_kWh = 0, E_pv_standalone_kWh = 0, E_pv_stc_kWh = 0;
     let E_pvt_dc_kWh = 0, E_pv_standalone_dc_kWh = 0;
+    let E_pvt_ac_kWh = 0, E_pv_standalone_ac_kWh = 0;
     const out = [];
     out.push(["dayN","hourN","gtilt_Wm2","eta_th","pvt_dc_kWh","pvt_ac_kWh","pv_only_dc_kWh","pv_only_ac_kWh","th_kWh","totalFlow_kg_hr","Tin_C","Tout_C","pv_panel_C","pvt_panel_C","pv_factor","pvt_factor","ac_delivery_factor","daytime_temp_sample"].join(","));
     let used = 0;
@@ -5106,8 +5118,10 @@ async function calcAnnualPVT(){
       const pvtFactor = pvTempCorrEnable ? calcPvTemperatureFactor(pvTempCoeffPerC, pvtPanelTempC) : 1;
       const pv_only_dc_kWh = pv_stc_kWh * pvFactor;
       const pvt_dc_kWh = pv_stc_kWh * pvtFactor;
-      const pv_only_kWh = pv_only_dc_kWh * pvAcDeliveryFactor;
-      const pv_kWh = pvt_dc_kWh * pvAcDeliveryFactor;
+      const pv_only_ac_kWh = pv_only_dc_kWh * pvAcDeliveryFactor;
+      const pvt_ac_kWh = pvt_dc_kWh * pvAcDeliveryFactor;
+      const pv_only_kWh = pv_only_dc_kWh;
+      const pv_kWh = pvt_dc_kWh;
       const daytimeTempSample = isDaytimePanelTempSample(r, G);
 
       pvtThermalHourly.push(th_kWh);
@@ -5117,6 +5131,8 @@ async function calcAnnualPVT(){
       E_pv_standalone_kWh += pv_only_kWh;
       E_pvt_dc_kWh += pvt_dc_kWh;
       E_pv_standalone_dc_kWh += pv_only_dc_kWh;
+      E_pvt_ac_kWh += pvt_ac_kWh;
+      E_pv_standalone_ac_kWh += pv_only_ac_kWh;
       E_pv_stc_kWh += pv_stc_kWh;
       E_th_kWh += th_kWh;
 
@@ -5129,6 +5145,8 @@ async function calcAnnualPVT(){
         pvOnly_kWh: pv_only_kWh,
         pvtDc_kWh: pvt_dc_kWh,
         pvOnlyDc_kWh: pv_only_dc_kWh,
+        pvtAc_kWh: pvt_ac_kWh,
+        pvOnlyAc_kWh: pv_only_ac_kWh,
         pvStc_kWh: pv_stc_kWh,
         th_kWh,
         Tin_C: Tin,
@@ -5139,7 +5157,7 @@ async function calcAnnualPVT(){
         daytimeTempSample
       });
 
-      out.push([r.dayN, r.hourN + 1, G.toFixed(2), etaTh.toFixed(2), pvt_dc_kWh.toFixed(2), pv_kWh.toFixed(2), pv_only_dc_kWh.toFixed(2), pv_only_kWh.toFixed(2), th_kWh.toFixed(2),
+      out.push([r.dayN, r.hourN + 1, G.toFixed(2), etaTh.toFixed(2), pvt_dc_kWh.toFixed(2), pvt_ac_kWh.toFixed(2), pv_only_dc_kWh.toFixed(2), pv_only_ac_kWh.toFixed(2), th_kWh.toFixed(2),
         (hourlyFlow === "" ? "" : (+hourlyFlow).toFixed(2)),
         Tin.toFixed(2),
         (Tout_C === "" ? "" : (+Tout_C).toFixed(2)),
@@ -5191,6 +5209,8 @@ async function calcAnnualPVT(){
     const gainSign = pvtElectricGainKWh >= 0 ? '+' : '-';
     const stcLossPct = E_pv_stc_kWh > 1e-9 ? (E_pv_standalone_kWh / E_pv_stc_kWh - 1) * 100 : 0;
     const pvtTempDeltaPct = E_pv_stc_kWh > 1e-9 ? (E_pv_kWh / E_pv_stc_kWh - 1) * 100 : 0;
+    const pvtAcDeliveryDeltaPct = E_pvt_dc_kWh > 1e-9 ? (E_pvt_ac_kWh / E_pvt_dc_kWh - 1) * 100 : 0;
+    const pvOnlyAcDeliveryDeltaPct = E_pv_standalone_dc_kWh > 1e-9 ? (E_pv_standalone_ac_kWh / E_pv_standalone_dc_kWh - 1) * 100 : 0;
     const avgOf = (rows, key) => {
       const vals = rows.map(r => r[key]).filter(isFiniteNumber);
       return vals.length ? vals.reduce((s,v)=>s+v,0) / vals.length : null;
@@ -5208,14 +5228,14 @@ async function calcAnnualPVT(){
     const outletTooLow = isFiniteNumber(daytimeToutAvg) && daytimeToutAvg < LOW_OUTLET_THRESHOLD_C;
     const flowSuggestionHtml = outletTooLow ? `
       <div class="flow-suggestion">
-        <b>&#10052; Winter tip:</b> outlet ${daytimeToutAvg.toFixed(1)}&deg;C &lt; ${LOW_OUTLET_THRESHOLD_C}&deg;C.
-        Try &darr; <b>flow rate</b> (now ${flowRate} L/s/m&sup2;) &rarr; &uarr; outlet temp, small &darr; in total heat.
+        <b>&#10052; Winter tip:</b> average daytime outlet temperature is ${daytimeToutAvg.toFixed(1)}&deg;C &mdash; below the ${LOW_OUTLET_THRESHOLD_C}&deg;C useful threshold.
+        Try lowering the <b>flow rate</b> (currently ${flowRate} L/s/m&sup2;): slower flow raises outlet temperature, making the heat more useful for winter water heating, at the cost of a small drop in total thermal energy.
       </div>` : "";
     const tempModelText = `${pvTempCorrEnable
       ? `NOCT ${pvNoctC.toFixed(1)}&deg;C, &gamma;=${(pvTempCoeffPerC*100).toFixed(2)}%/&deg;C, STC reference ${PV_STC_CELL_TEMP_C}&deg;C`
       : `Temperature correction disabled; DC electricity uses constant &eta;<sub>STC</sub>`}; ` +
-      `${pvtCoolingSensitivityEnable ? "exploratory PVT cooling sensitivity enabled" : "PVT cooling sensitivity disabled (default)"}; ` +
-      `net AC factor ${pvAcDeliveryFactor.toFixed(3)} = (1-${pvSystemLossPct.toFixed(1)}% system loss) &times; ${pvInverterEfficiencyPct.toFixed(1)}% inverter.`;
+      `${pvtCoolingSensitivityEnable ? "PVT cooling effect included" : "PVT cooling effect disabled"}; ` +
+      `annual cards use gross module yield; estimated net AC detail factor ${pvAcDeliveryFactor.toFixed(3)} = (1-${pvSystemLossPct.toFixed(1)}% system loss) &times; ${pvInverterEfficiencyPct.toFixed(1)}% inverter.`;
     const pvgisValidation = buildPvgisValidationLink({
       latitude,
       longitude,
@@ -5224,6 +5244,16 @@ async function calcAnnualPVT(){
       tiltAngle,
       surfaceAzimuth: azimuthAngle
     });
+    const pvgisSummary = `PVGIS ERA5, ${pvgisValidation.peakPowerKw.toFixed(1)} kWp, ${tiltAngle.toFixed(0)}&deg; tilt, PVGIS azimuth ${pvgisValidation.pvgisAspect.toFixed(0)}&deg;, ${pvgisValidation.lossPct}% loss`;
+    const pvtElectricityNote = pvtCoolingSensitivityEnable
+      ? "Temperature-corrected cooled yield"
+      : "Temperature-corrected uncooled yield";
+    const coolingNote = pvtCoolingSensitivityEnable
+      ? `${gainSign}${pvtElectricGainPct.toFixed(1)}% vs PV-only`
+      : "Cooling effect disabled";
+    const outletTempNote = isFiniteNumber(daytimeToutAvg)
+      ? `Avg daytime air ${isFiniteNumber(daytimeAmbientAvg) ? daytimeAmbientAvg.toFixed(1) : "&mdash;"}&deg;C${outletTooLow ? " - below 20&deg;C" : ""}`
+      : "";
     let html = `
       <div class="output-card output-card-annual" style="position:relative;">
       <div class="annual-card-head">
@@ -5235,8 +5265,9 @@ async function calcAnnualPVT(){
       </div>
       <div class="annual-summary-grid">
         <div class="annual-summary-item">
-          <span>PVT electricity (net AC)</span>
+          <span>PVT electricity</span>
           <strong>${fmtE(E_pv_kWh,1,'kWh')}</strong>
+          <small>${pvtElectricityNote}</small>
         </div>
         <div class="annual-summary-item">
           <span>PVT thermal</span>
@@ -5244,14 +5275,14 @@ async function calcAnnualPVT(){
           <small>Annual thermal yield</small>
         </div>
         <div class="annual-summary-item annual-tempcorr">
-          <span>PV-only baseline (net AC)</span>
+          <span>PV-only baseline</span>
           <strong>${fmtE(E_pv_standalone_kWh,1,'kWh')}</strong>
-          <small>Same area and AC loss boundary</small>
+          <small>Same area, uncooled NOCT model</small>
         </div>
         <div class="annual-summary-item annual-tempcorr">
-          <span>Cooling sensitivity${pvtCoolingSensitivityEnable ? '' : ' (off)'}</span>
+          <span>Electricity from cooling</span>
           <strong>${gainSign}${fmtE(Math.abs(pvtElectricGainKWh),1,'kWh')}</strong>
-          <small>${pvtCoolingSensitivityEnable ? `${gainSign}${pvtElectricGainPct.toFixed(1)}% vs PV-only; exploratory only` : 'Excluded from headline results'}</small>
+          <small>${coolingNote}</small>
         </div>
         <div class="annual-summary-item">
           <span>Total output</span>
@@ -5261,6 +5292,7 @@ async function calcAnnualPVT(){
         <div class="annual-summary-item${outletTooLow ? ' annual-outlet-low' : ''}">
           <span>Avg daytime outlet temp</span>
           <strong>${fmtE(daytimeToutAvg,1,'&deg;C')}</strong>
+          <small>${outletTempNote}</small>
         </div>
         <div class="annual-summary-item annual-finance ${netAnnualBenefit>=0?'':'negative'}">
           <span>PVT supply value</span>
@@ -5271,16 +5303,18 @@ async function calcAnnualPVT(){
       ${flowSuggestionHtml}
       <div class="annual-actions">
         <button type="button" class="detail-toggle" onclick="toggleAnnualDetails(this)" aria-expanded="false">Show detailed results</button>
+        <a class="validation-link" href="${pvgisValidation.url}" target="_blank" rel="noopener">Open PVGIS validation result</a>
         <a class="validation-link" href="${pvgisValidation.toolUrl}" target="_blank" rel="noopener">Open PVGIS tool</a>
       </div>
+      <p class="annual-validation-note">${pvgisSummary}<br/>Open for economics, levelised costs, and calculation detail.</p>
       <div class="annual-detail-panel" hidden>
       <h4 style="margin:4px 0 6px;color:#1a5276;">Energy Detail</h4>
       <table class="result-table">
         <tr><td><b>PVT gross DC electricity</b></td><td class="num">${fmtE(E_pvt_dc_kWh,1,'kWh DC')}</td></tr>
-        <tr><td><b>PVT estimated net AC electricity</b></td><td class="num"><span class="ok">${fmtE(E_pv_kWh,1,'kWh AC')}</span> <span style="color:#6b6b6b;">(${pvtTempDeltaPct >= 0 ? '+' : ''}${pvtTempDeltaPct.toFixed(1)}% vs gross STC DC)</span></td></tr>
+        <tr><td><b>PVT estimated net AC electricity</b></td><td class="num"><span class="ok">${fmtE(E_pvt_ac_kWh,1,'kWh AC')}</span> <span style="color:#6b6b6b;">(${pvtAcDeliveryDeltaPct >= 0 ? '+' : ''}${pvtAcDeliveryDeltaPct.toFixed(1)}% vs gross PVT)</span></td></tr>
         <tr><td><b>PV-only gross DC electricity</b></td><td class="num">${fmtE(E_pv_standalone_dc_kWh,1,'kWh DC')}</td></tr>
-        <tr><td><b>PV-only estimated net AC electricity</b></td><td class="num"><span class="ok">${fmtE(E_pv_standalone_kWh,1,'kWh AC')}</span> <span style="color:#6b6b6b;">(${stcLossPct >= 0 ? '+' : ''}${stcLossPct.toFixed(1)}% vs gross STC DC)</span></td></tr>
-        <tr><td><b>Exploratory electricity from PVT cooling</b></td><td class="num">${pvtCoolingSensitivityEnable ? `<span class="${pvtElectricGainKWh>=0?'ok':'err'}">${gainSign}${fmtE(Math.abs(pvtElectricGainKWh),1,'kWh AC')} (${gainSign}${pvtElectricGainPct.toFixed(1)}%)</span>` : 'Disabled; 0 kWh included'}</td></tr>
+        <tr><td><b>PV-only estimated net AC electricity</b></td><td class="num"><span class="ok">${fmtE(E_pv_standalone_ac_kWh,1,'kWh AC')}</span> <span style="color:#6b6b6b;">(${pvOnlyAcDeliveryDeltaPct >= 0 ? '+' : ''}${pvOnlyAcDeliveryDeltaPct.toFixed(1)}% vs gross PV-only)</span></td></tr>
+        <tr><td><b>Electricity from PVT cooling</b></td><td class="num">${pvtCoolingSensitivityEnable ? `<span class="${pvtElectricGainKWh>=0?'ok':'err'}">${gainSign}${fmtE(Math.abs(pvtElectricGainKWh),1,'kWh')} (${gainSign}${pvtElectricGainPct.toFixed(1)}%)</span>` : 'Disabled; 0 kWh included'}</td></tr>
         <tr><td><b>Thermal Energy (PVT model)</b></td><td class="num"><span class="ok">${fmtE(E_th_kWh,1,'kWh')}</span></td></tr>
         <tr><td><b>Total Energy</b></td><td class="num"><span class="ok">${fmtE(totalEnergy,1,'kWh')}</span></td></tr>
       </table>
@@ -5317,10 +5351,10 @@ async function calcAnnualPVT(){
       </div>
       </div>`;
     const annualMetrics = [
-      exportMetric("PVT electricity (net AC)", E_pv_kWh, "kWh AC", 1, `Gross DC ${formatExportNumber(E_pvt_dc_kWh,1)} kWh; delivery factor ${pvAcDeliveryFactor.toFixed(3)}`),
+      exportMetric("PVT electricity", E_pv_kWh, "kWh", 1, `Temperature-corrected gross module yield; estimated net AC ${formatExportNumber(E_pvt_ac_kWh,1)} kWh`),
       exportMetric("PVT thermal", E_th_kWh, "kWh", 1, "Annual thermal yield"),
-      exportMetric("PV-only baseline (net AC)", E_pv_standalone_kWh, "kWh AC", 1, `Gross DC ${formatExportNumber(E_pv_standalone_dc_kWh,1)} kWh`),
-      exportMetricText("Exploratory electricity from cooling", pvtCoolingSensitivityEnable ? `${gainSign}${formatExportNumber(Math.abs(pvtElectricGainKWh), 1)} kWh AC` : "Disabled", pvtCoolingSensitivityEnable ? `${gainSign}${pvtElectricGainPct.toFixed(1)}% vs PV-only; sensitivity only` : "Excluded by default"),
+      exportMetric("PV-only baseline", E_pv_standalone_kWh, "kWh", 1, `Temperature-corrected gross module yield; estimated net AC ${formatExportNumber(E_pv_standalone_ac_kWh,1)} kWh`),
+      exportMetricText("Electricity from cooling", `${gainSign}${formatExportNumber(Math.abs(pvtElectricGainKWh), 1)} kWh`, coolingNote),
       exportMetric("Total output", totalEnergy, "kWh", 1, "Electrical + thermal combined"),
       exportMetric("Avg daytime outlet temp", daytimeToutAvg, "degC", 1, `Avg daytime air ${formatExportValue(exportMetric("", daytimeAmbientAvg, "degC", 1))}`),
       exportMetric("PVT supply value", netAnnualBenefit, "", 2, "Upper-bound annual value (100% utilisation)", { prefix:"$", suffix:" /yr" })
@@ -5330,10 +5364,10 @@ async function calcAnnualPVT(){
         title: "Energy Detail",
         rows: [
           ["PVT gross DC electricity", formatExportValue(exportMetric("", E_pvt_dc_kWh, "kWh DC", 1))],
-          ["PVT estimated net AC electricity", formatExportValue(exportMetric("", E_pv_kWh, "kWh AC", 1))],
+          ["PVT estimated net AC electricity", formatExportValue(exportMetric("", E_pvt_ac_kWh, "kWh AC", 1))],
           ["PV-only gross DC electricity", formatExportValue(exportMetric("", E_pv_standalone_dc_kWh, "kWh DC", 1))],
-          ["PV-only estimated net AC electricity", formatExportValue(exportMetric("", E_pv_standalone_kWh, "kWh AC", 1))],
-          ["Exploratory electricity from PVT cooling", pvtCoolingSensitivityEnable ? `${gainSign}${formatExportNumber(Math.abs(pvtElectricGainKWh), 1)} kWh AC (${gainSign}${pvtElectricGainPct.toFixed(1)}%)` : "Disabled; excluded"],
+          ["PV-only estimated net AC electricity", formatExportValue(exportMetric("", E_pv_standalone_ac_kWh, "kWh AC", 1))],
+          ["Electricity from PVT cooling", pvtCoolingSensitivityEnable ? `${gainSign}${formatExportNumber(Math.abs(pvtElectricGainKWh), 1)} kWh (${gainSign}${pvtElectricGainPct.toFixed(1)}%)` : "Disabled; excluded"],
           ["AC delivery boundary", `${pvSystemLossPct.toFixed(1)}% non-inverter DC losses; ${pvInverterEfficiencyPct.toFixed(1)}% inverter efficiency`],
           ["Thermal Energy (PVT model)", formatExportValue(exportMetric("", E_th_kWh, "kWh", 1))],
           ["Total Energy", formatExportValue(exportMetric("", totalEnergy, "kWh", 1))]
@@ -5773,6 +5807,9 @@ async function calcAnnualPVT(){
       const exportSavingsAud = elecExcess * feedInTariff;
       const thermalFuelSavingsAud = (demandMet * 3.6 / boilerEff) * gasPrice;
       const totalSavingsAud = electricalSavingsAud + exportSavingsAud + thermalFuelSavingsAud;
+      const hotelUnusedHeatNote = tankVolumeLitres > 0
+        ? "Excess PVT thermal after storage matching."
+        : "PVT heat above hourly process demand, with no storage counted.";
 
       const procLabels = {};
       for (const key of selectedKeys) procLabels[key] = (processes[key]?.label || HOTEL_PROCESS_SHORT_LABELS[key] || key);
@@ -5825,7 +5862,7 @@ async function calcAnnualPVT(){
         solarHeatUsedKWh: demandMet,
         backupHeatNeededKWh: unmet,
         unusedHeatKWh: excess,
-        unusedHeatNote: "Excess PVT thermal after storage matching.",
+        unusedHeatNote: hotelUnusedHeatNote,
         electricDemandKWh: totalElecDemandKWh,
         solarElectricUsedKWh: elecMetByPv,
         gridElectricityNeededKWh: elecUnmet,
@@ -5850,7 +5887,7 @@ async function calcAnnualPVT(){
           solarHeatUsedKWh: demandMet,
           backupHeatNeededKWh: unmet,
           unusedHeatKWh: excess,
-          unusedHeatNote: "Excess PVT thermal after storage matching.",
+          unusedHeatNote: hotelUnusedHeatNote,
           electricDemandKWh: totalElecDemandKWh,
           solarElectricUsedKWh: elecMetByPv,
           gridElectricityNeededKWh: elecUnmet,
@@ -6245,9 +6282,11 @@ async function calcAnnualPVT(){
       annualRaw: {
         pvtElectricKWh: E_pv_kWh,
         pvtGrossDcKWh: E_pvt_dc_kWh,
+        pvtNetAcKWh: E_pvt_ac_kWh,
         pvtThermalKWh: E_th_kWh,
         pvOnlyKWh: E_pv_standalone_kWh,
         pvOnlyGrossDcKWh: E_pv_standalone_dc_kWh,
+        pvOnlyNetAcKWh: E_pv_standalone_ac_kWh,
         pvStcKWh: E_pv_stc_kWh,
         pvSystemLossPct,
         pvInverterEfficiencyPct,
@@ -6349,6 +6388,8 @@ async function calcAnnualPVT(){
 //  INPUT PERSISTENCE — inputs survive page reloads (localStorage)
 // ================================================================
 const INPUT_STORE_KEY = "pvtCalcInputs.v1";
+const INPUT_DEFAULTS_VERSION_KEY = "pvtCalcInputs.defaultsVersion";
+const INPUT_DEFAULTS_VERSION = "2026-07-pvt-cooling-default-on";
 
 // Serialize every user-set input/select.
 function collectInputState(){
@@ -6377,7 +6418,13 @@ function saveInputsToStorage(){
 
 function restoreInputsFromStorage(){
   try {
-    applyInputState(JSON.parse(localStorage.getItem(INPUT_STORE_KEY) || "{}"));
+    const data = JSON.parse(localStorage.getItem(INPUT_STORE_KEY) || "{}");
+    if (localStorage.getItem(INPUT_DEFAULTS_VERSION_KEY) !== INPUT_DEFAULTS_VERSION){
+      data.pvtCoolingSensitivityEnable = true;
+      localStorage.setItem(INPUT_DEFAULTS_VERSION_KEY, INPUT_DEFAULTS_VERSION);
+      localStorage.setItem(INPUT_STORE_KEY, JSON.stringify(data));
+    }
+    applyInputState(data);
   } catch(_e){}
 }
 

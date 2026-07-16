@@ -210,7 +210,7 @@ All verified unreferenced by grep across app, pages, and the whole test suite:
 | dayN = 1 is a Monday (Mon–Fri & laundry schedules) | `isMonToFriDay`, hotel, laundry | Arbitrary but harmless (TMY has no weekday) | no | add note to profile selector |
 | Hotel tank: lossless, 35 °C usable target | `calculateThermalStorage` | simplification | yes ("usable storage to 35 °C") | fine for prototype |
 | Fixed design RH per pool type (50–62 %) | aquatic evaporation | standard practice | **fixed this audit** (C4) | done |
-| No thermal storage in headline matching | all industries except hotel | conservative & honest | yes (storage note banner) | fine |
+| No thermal storage in headline matching by default | all industries; hotel only uses storage when tank volume > 0 | conservative & honest | yes (storage note banner + hotel tank field) | fine |
 | f_th2e = 1 (heat kWh = elec kWh for CAPEX split only) | LCOE/LCOH | simplification, not exergy | yes (explicit UI note) | fine |
 | Grid EF defaults (0.62 national etc., NGA 2025) | emissions | plausible | yes + DCCEEW link | 🔍 needs external validation against published tables |
 | Gas EF 51.4 kg CO₂-e/GJ scope 1 | emissions | plausible (NGA ~51.5) | cited in table row | 🔍 verify against NGA 2025 |
