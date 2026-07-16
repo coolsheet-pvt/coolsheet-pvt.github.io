@@ -1,4 +1,4 @@
-# Field vs Website — PVT energy comparison (method & numbers)
+# Field vs Website - PVT energy comparison (method & numbers)
 
 Records exactly how the numbers in `SOAC_field_vs_website_energy.docx` were
 produced, so they are reproducible and traceable for the thesis.
@@ -14,7 +14,7 @@ website and the field cover the same calendar span. Annual website figures are
 From `soac_daily_energy.csv` / `soac_meta.json`:
 
 - PVT thermal, 19-day total: **5,888.4 kWh**
-- PVT electricity: **not measured** — the field dataset has no PV-electricity
+- PVT electricity: **not measured** - the field dataset has no PV-electricity
   sensor (timeseries columns are thermal only: flow, temperatures, `P_kW = flow·cₚ·ΔT`).
 - Context: the array generated for only ~110.8 h over the 19 days; median field
   thermal efficiency 0.196 vs certified η₀ 0.4112 (≈0.63× realised).
@@ -32,7 +32,7 @@ day-of-year 61–79 from the hourly-details CSV the calculator generates.
 | **SOAC collector** (Model B, ISO η₀=0.4112, a₁=10.358, a₂=0) | 22,915.1 kWh | 10,168.7 kWh | 450,786 kWh | 216,874 kWh |
 
 Model B input coefficients were entered through the existing UI fields
-(`isoEta0`, `isoA1`, `isoA2`) — the thermal models themselves were not modified.
+(`isoEta0`, `isoA1`, `isoA2`) - the thermal models themselves were not modified.
 
 ## Result
 
@@ -47,7 +47,7 @@ The website estimates **modelled supply potential** (typical weather, steady-sta
 efficiency, collector harvesting whenever the sun is up); the field is **actual
 delivered heat** from an intermittently-operated array in one specific autumn.
 They measure different things, so the ~2.7–3.9× gap is expected and is driven by
-operating time, real-world derating (~0.63×), and TMY-vs-actual weather — **not**
+operating time, real-world derating (~0.63×), and TMY-vs-actual weather - **not**
 by a website error, and **not** resolved by using the collector's own
 coefficients (which actually raise the estimate, because pool inlet water sits
 near ambient so the loss term stays small). This is a *modelled-potential vs

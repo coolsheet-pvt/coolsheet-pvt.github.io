@@ -1,6 +1,6 @@
 // Flow-rate sweep: does slowing the coolant flow raise the outlet water temperature?
 // Exercises the REAL supply loop (Model A linear + Model B ISO 9806) copied VERBATIM
-// from app.js. Read/test only — the thermal models are not modified.
+// from app.js. Read/test only - the thermal models are not modified.
 // Run: node validation/scripts/flow_rate_test.mjs
 import fs from "node:fs";
 
@@ -119,7 +119,7 @@ function runYear(model, flowRate){
 const flows=[0.005,0.0075,0.01,0.02,0.04,0.08];
 const pad=(s,n)=>String(s).padStart(n);
 for(const model of ["A","B"]){
-  console.log(`\n=== Model ${model} ${model==="A"?"(simple linear)":"(ISO 9806)"} — Sydney, A=${A} m2, tilt 30 N ===`);
+  console.log(`\n=== Model ${model} ${model==="A"?"(simple linear)":"(ISO 9806)"} - Sydney, A=${A} m2, tilt 30 N ===`);
   console.log("flow(L/s/m2)  E_th(kWh)  E_pv(kWh)  meanTout  maxTout  hrs>60  hrs>90  hrs>100");
   for(const f of flows){
     const x=runYear(model,f);

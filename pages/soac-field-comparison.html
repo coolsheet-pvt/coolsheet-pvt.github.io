@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>SOAC Field Data — Modelled vs Measured</title>
+  <title>SOAC Field Data - Modelled vs Measured</title>
   <style>
     body{font-family:Arial,Helvetica,sans-serif;margin:18px;color:#111;background:#fff;}
     .wrap{max-width:1020px;margin:0 auto;}
@@ -36,9 +36,9 @@
 <body>
 <div class="wrap">
   <a class="back" href="../index.html">&larr; Back to calculator</a> &middot; <a class="back" href="validation-hub.html">Validation centre</a>
-  <h1>SOAC Field Data — Modelled vs Measured</h1>
+  <h1>SOAC Field Data - Modelled vs Measured</h1>
   <p class="sub">Sydney Olympic Aquatic Centre &middot; 534.7 m² PVT array (207 modules) &middot; 2&ndash;20 March 2026 &middot; aquatic (pool) preset</p>
-  <div class="notice"><b>Not a validation:</b> the calculator models supply potential under typical weather; the field data is delivered heat from one real, intermittently-run array. The gap below is expected &mdash; its size and causes are the finding.</div>
+  <div class="notice"><b>Not a validation:</b> the calculator models supply potential under typical weather; the field data is delivered heat from one real, intermittently-run array. The gap below is expected - its size and causes are the finding.</div>
 
   <div class="tiles">
     <div class="tile field"><span>Field measured</span><strong>5,888 kWh</strong><small>thermal, 19 days</small></div>
@@ -49,40 +49,40 @@
 
   <div class="grid2">
     <div class="card wide">
-      <h2>PVT thermal energy — same 19-day window (kWh)</h2>
+      <h2>PVT thermal energy - same 19-day window (kWh)</h2>
       <div class="chart"><canvas id="cmpChart"></canvas></div>
       <div class="cap">PVT electricity is not compared: the field dataset has no PV-electricity sensor (thermal-only monitoring). Website electricity estimate for the window: ~10,000 kWh.</div>
     </div>
 
     <div class="card wide">
-      <h2>Measured daily thermal energy — the real 19 days (kWh/day)</h2>
+      <h2>Measured daily thermal energy - the real 19 days (kWh/day)</h2>
       <div class="chart"><canvas id="dailyChart"></canvas></div>
       <div class="cap">Real weather and operation: best day 685.7 kWh (11 Mar), five days at or near zero. The model's typical-year window has no such outages.</div>
     </div>
 
     <div class="card">
-      <h2>Thermal efficiency — certified vs delivered</h2>
+      <h2>Thermal efficiency - certified vs delivered</h2>
       <div class="chart"><canvas id="etaChart"></canvas></div>
       <div class="cap">Bright-sun field median vs the ISO first-order model at the same conditions, and the certified optical maximum &eta;&#8320;.</div>
     </div>
 
     <div class="card">
-      <h2>Generating vs idle — 19-day window</h2>
+      <h2>Generating vs idle - 19-day window</h2>
       <div class="chart"><canvas id="hoursChart"></canvas></div>
       <div class="cap">The array generated for ~111 h of the 456-hour window (~24%); the model assumes harvest whenever the sun is up.</div>
     </div>
 
     <div class="card wide">
-      <h2>Every operating point — efficiency vs irradiance (5,511 samples)</h2>
+      <h2>Every operating point - efficiency vs irradiance (5,511 samples)</h2>
       <div class="chart tall"><canvas id="scatterChart"></canvas></div>
-      <div class="cap">Raw field operating cloud. Most points sit well below the certified optical maximum (dashed) — start-ups, transients and part-load pull the delivered median (solid) to 0.196.</div>
+      <div class="cap">Raw field operating cloud. Most points sit well below the certified optical maximum (dashed) - start-ups, transients and part-load pull the delivered median (solid) to 0.196.</div>
     </div>
   </div>
 
   <div class="fine">
     Field values extracted verbatim from the SOAC monitoring dashboard
     (<code>validation/field-data/soac-mar-2026/</code>); website values from this calculator run for the same
-    site, window, area and preset &mdash; method in <code>energy_comparison_method.md</code>.
+    site, window, area and preset - method in <code>energy_comparison_method.md</code>.
   </div>
 </div>
 
@@ -93,7 +93,7 @@
   // 1) Window comparison
   new Chart(document.getElementById('cmpChart'), {
     type:'bar',
-    data:{ labels:['Field measured','Website — default','Website — SOAC coefficients'],
+    data:{ labels:['Field measured','Website - default','Website - SOAC coefficients'],
       datasets:[{ data:[5888,15996,22915], backgroundColor:[GREEN,BLUE,ORANGE], maxBarThickness:150 }]},
     options:{ responsive:true, maintainAspectRatio:false, indexAxis:'y',
       plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>c.parsed.x.toLocaleString()+' kWh'}} },

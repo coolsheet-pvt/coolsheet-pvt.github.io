@@ -11,7 +11,7 @@ for (const industry of ["dairy_farm","brewery","hotel","aquatic_centres","commer
   assert.match(app, new RegExp(`${industry}: \\{ evidenceClass:`), `${industry} evidence class missing`);
 }
 for (const value of [10,12,15,17,22]){
-  assert.match(html, new RegExp(`— ${value} L/kg`), `laundry ${value} L/kg scenario missing`);
+  assert.match(html, new RegExp(`- ${value} L/kg`), `laundry ${value} L/kg scenario missing`);
 }
 for (const id of ["hotelDhwKWh","hotelKitchenKWh","hotelLaundryKWh","hotelPoolKWh","hotelElectricKWh"]){
   assert.match(html, new RegExp(`id="${id}"`), `${id} must be editable`);

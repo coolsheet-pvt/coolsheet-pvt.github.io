@@ -1,4 +1,4 @@
-=== COOLSHEET — QUICK CONTEXT FOR A NEW CHAT ===
+=== COOLSHEET - QUICK CONTEXT FOR A NEW CHAT ===
 
 WHAT: CoolSheet, a PVT (photovoltaic-thermal) solar calculator for an Australian
 UNSW thesis. Plain HTML/CSS/JS, no build step. Estimates annual electrical +
@@ -27,13 +27,13 @@ LOCAL DEV: static server on port 8091 -> http://127.0.0.1:8091/index.html
    (Pushing updates the website automatically. DO NOT push to old m-lorusso/PVT-Calculator.)
 
 --- HARD RULES ---
-- DO NOT modify the thermal "Model A" (simple linear) or "Model B" (ISO 9806) —
+- DO NOT modify the thermal "Model A" (simple linear) or "Model B" (ISO 9806) -
   another student's work. Read/test only.
 - The PV/irradiance "supply side" (geometry, transposition, PV electrical) is fine to change.
 - Azimuth convention: 0 deg = NORTH-facing, 180 = SOUTH. Default tilt 30, azimuth 0.
 
 --- GOTCHA ---
-After editing app.js/styles.css, hard-refresh the browser (Ctrl+Shift+R) — a plain
+After editing app.js/styles.css, hard-refresh the browser (Ctrl+Shift+R) - a plain
 reload keeps the cached old version.
 
 --- STATUS ---

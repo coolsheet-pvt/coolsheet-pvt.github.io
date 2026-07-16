@@ -4,7 +4,7 @@
 //  Reads the embedded `const DATA = {...}` object from the CoolSheet SOAC
 //  dashboard HTML and writes clean, machine-readable copies of the raw arrays.
 //
-//  It does NOT alter, round, or recompute any values — every number written is
+//  It does NOT alter, round, or recompute any values - every number written is
 //  exactly the value found in the dashboard's DATA object. Derived analysis is
 //  kept out of this file on purpose (see analysis_report.md).
 //

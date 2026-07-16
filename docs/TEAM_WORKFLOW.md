@@ -1,4 +1,4 @@
-# CoolSheet PVT — Team Git Workflow
+# CoolSheet PVT - Team Git Workflow
 
 How the two of us pull, push, and work on this repo together without breaking each other's work.
 
@@ -28,7 +28,7 @@ This alone prevents 90% of problems.
 
 ---
 
-## Everyday workflow (different files — the easy case)
+## Everyday workflow (different files - the easy case)
 
 If you're confident you're not editing the same file as the other person at the same time:
 
@@ -78,7 +78,7 @@ Branch naming: `yourname/short-description` (e.g. `mike/edit-mains-temp`, `dan/f
 
 ### Merging a branch into main
 1. Go to the repo on GitHub.
-2. You'll see a yellow banner — click **"Compare & pull request"**.
+2. You'll see a yellow banner - click **"Compare & pull request"**.
 3. Click **"Merge pull request"**.
 4. Everyone updates their local main afterwards:
    ```bash
@@ -102,7 +102,7 @@ A conflict happens when you both change the **same lines** of the same file. Git
 
 **The plan: Mike resolves all conflicts in Claude Code.**
 
-If you hit a conflict on your machine and you're not sure, **don't force it** — just tell Mike, and he'll pull the branches together and have Claude Code resolve it cleanly.
+If you hit a conflict on your machine and you're not sure, **don't force it** - just tell Mike, and he'll pull the branches together and have Claude Code resolve it cleanly.
 
 ### How Mike resolves a conflict
 ```bash
@@ -135,7 +135,7 @@ git push
 
 ## Important rules for this project
 
-- **Do NOT edit** the thermal **Model A** (simple linear) or **Model B** (ISO 9806) — another student's work. Read/test only.
+- **Do NOT edit** the thermal **Model A** (simple linear) or **Model B** (ISO 9806) - another student's work. Read/test only.
 - The PV/irradiance "supply side" (geometry, transposition, PV electrical) **is** fine to change.
 - Azimuth convention: **0° = NORTH-facing**, 180° = SOUTH. Default tilt 30, azimuth 0.
 - When unsure about a conflict, **stop and ask Mike** rather than guessing.

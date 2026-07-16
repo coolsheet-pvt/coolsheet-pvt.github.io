@@ -3,10 +3,10 @@
 
 // Single source of truth for the app version shown in the header + PDF/report.
 // Keep in sync with the ?v= cache-bust query on css/js in index.html.
-const APP_VERSION = "13.36";
+const APP_VERSION = "13.38";
 
 // ================================================================
-//  DETAILS ANIMATION — replay slideDown every time a panel opens
+//  DETAILS ANIMATION - replay slideDown every time a panel opens
 // ================================================================
 document.querySelectorAll('.advanced-settings').forEach(details => {
   details.addEventListener('toggle', () => {
@@ -249,7 +249,7 @@ function formatExportNumber(value, decimals=1){
 function formatExportValue(item){
   if (!item) return "";
   if (item.text != null) return String(item.text);
-  if (!isFiniteNumber(item.value)) return item.fallback || "\u2014";
+  if (!isFiniteNumber(item.value)) return item.fallback || "-";
   const decimals = Number.isInteger(item.decimals) ? item.decimals : 1;
   const unit = item.unit ? ` ${item.unit}` : "";
   return `${item.prefix || ""}${formatExportNumber(item.value, decimals)}${unit}${item.suffix || ""}`;
@@ -293,8 +293,8 @@ function buildIndustryExportSummary(performanceOpts, energyOpts){
   const elecCoverage = isFiniteNumber(performanceOpts.solarElecFraction) ? performanceOpts.solarElecFraction : null;
   const areaText = isFiniteNumber(performanceOpts.areaM2)
     ? `${Number(performanceOpts.areaM2).toLocaleString(undefined, { maximumFractionDigits: 1 })} m2`
-    : "\u2014";
-  const energyValue = value => isFiniteNumber(value) ? `${formatSummaryWhole(value)} kWh/yr` : "\u2014";
+    : "-";
+  const energyValue = value => isFiniteNumber(value) ? `${formatSummaryWhole(value)} kWh/yr` : "-";
   return {
     headline: `You save $${formatSummaryWhole(savingsAud)} AUD/yr with ${formatSummaryPercent(heatCoverage)} direct-use heat coverage`,
     subhead: `Based on ${areaText} PVT collector area at ${performanceOpts.locationName || "selected location"}`,
@@ -966,7 +966,7 @@ async function geocodeAddress(address){
   return loc;
 }
 
-// The timezone comes back with the TMY response — the API derives it from the
+// The timezone comes back with the TMY response - the API derives it from the
 // coordinates server-side (timezonefinder), so no separate timezone service is used.
 
 function parseGmtOffset(raw){
@@ -1099,7 +1099,7 @@ async function fetchTMY(lat, lon){
       try {
         await requireWeatherServiceHealth(endpoint);
         if (/hosted/i.test(endpoint.label)){
-          setTmyLoadStatus("Contacting the hosted weather service — this can take up to ~1 minute if it is waking up…", true);
+          setTmyLoadStatus("Contacting the hosted weather service - this can take up to ~1 minute if it is waking up…", true);
         }
         const resp = await fetchWithTimeout(endpoint.url + query, { headers:{"Accept":"application/json"} }, endpoint.timeoutMs);
         if (!resp.ok){
@@ -1376,7 +1376,7 @@ function populateMainsInputsFromModel(model, force = false){
     const el = document.getElementById(MAINS_MONTH_INPUT_IDS[i]);
     if (!el || m?.avgC == null) return;
     // Only overwrite when the model is in charge (custom off), the field is empty,
-    // or the user explicitly reset — never silently clobber custom values on reload.
+    // or the user explicitly reset - never silently clobber custom values on reload.
     if (force || !custom || el.value === "") el.value = m.avgC.toFixed(1);
   });
   syncMainsCustomUI();
@@ -2804,7 +2804,7 @@ function buildDairyModelBasisHtml(){
   const ausAuditHref = "https://extensionaus.com.au/energysmartfarming/saving-energy-on-dairy-farms/";
   const src = (label, href) => (href && href !== "#")
     ? `<a href="${href}" target="_blank" rel="noopener">${label}</a>`
-    : `<a href="#" onclick="return false;" aria-disabled="true" title="Internal report — not published yet">${label}</a>`;
+    : `<a href="#" onclick="return false;" aria-disabled="true" title="Internal report - not published yet">${label}</a>`;
 
   return `
     <div class="panel" style="background:#fff;margin-bottom:10px;">
@@ -3643,7 +3643,7 @@ function buildMonthlyEnergyBalancePreview(thermalBalance, electricalBalance){
         : "This scenario has zero modelled electrical demand."}</p></div>`;
   const basisNote = thermalBalance.previewBasisNote || "Hourly direct-use matching is used (no storage).";
   return `<section class="industry-balance-preview" aria-labelledby="industry-balance-preview-title">
-    <div class="industry-balance-preview-head"><div><h4 id="industry-balance-preview-title">Alternative view — Monthly energy balance</h4><p>Preview using the same calculated results. ${basisNote} Demand bars stack solar used with backup or grid energy; narrow teal bars show unused or exported solar energy separately.</p></div><span>Preview</span></div>
+    <div class="industry-balance-preview-head"><div><h4 id="industry-balance-preview-title">Alternative view - Monthly energy balance</h4><p>Preview using the same calculated results. ${basisNote} Demand bars stack solar used with backup or grid energy; narrow teal bars show unused or exported solar energy separately.</p></div><span>Preview</span></div>
     <div class="balance-preview-grid">${thermalPanel}${electricalPanel}</div>
     <p class="balance-preview-compare-note">The original graphs are unchanged below for comparison.</p>
   </section>`;
@@ -3666,28 +3666,28 @@ function buildIndustryChartGroups(chartThermalDemand, chartThermalSupply, chartE
 function formatSummaryWhole(value){
   return isFiniteNumber(value)
     ? Math.round(value).toLocaleString(undefined, { maximumFractionDigits: 0 })
-    : "\u2014";
+    : "-";
 }
 
 function formatSummaryPercent(value){
-  return isFiniteNumber(value) ? `${(value * 100).toFixed(1)}%` : "\u2014";
+  return isFiniteNumber(value) ? `${(value * 100).toFixed(1)}%` : "-";
 }
 
 function formatSummaryCurrency(value){
   return isFiniteNumber(value)
     ? `$${Math.round(value).toLocaleString(undefined, { maximumFractionDigits: 0 })} AUD/yr`
-    : "\u2014";
+    : "-";
 }
 
 function buildIndustryPerformanceSummary(opts){
   const savingsAud = isFiniteNumber(opts.savingsAud) ? opts.savingsAud : 0;
-  const heatCoverage = isFiniteNumber(opts.solarHeatFraction) ? `${(opts.solarHeatFraction * 100).toFixed(1)}%` : "\u2014";
-  const electricCoverage = isFiniteNumber(opts.solarElecFraction) ? `${(opts.solarElecFraction * 100).toFixed(1)}%` : "\u2014";
-  const unusedHeat = isFiniteNumber(opts.unusedHeatKWh) ? `${formatSummaryWhole(opts.unusedHeatKWh)} kWh` : "\u2014";
-  const unusedElectricity = isFiniteNumber(opts.unusedElectricityKWh) ? `${formatSummaryWhole(opts.unusedElectricityKWh)} kWh` : "\u2014";
+  const heatCoverage = isFiniteNumber(opts.solarHeatFraction) ? `${(opts.solarHeatFraction * 100).toFixed(1)}%` : "-";
+  const electricCoverage = isFiniteNumber(opts.solarElecFraction) ? `${(opts.solarElecFraction * 100).toFixed(1)}%` : "-";
+  const unusedHeat = isFiniteNumber(opts.unusedHeatKWh) ? `${formatSummaryWhole(opts.unusedHeatKWh)} kWh` : "-";
+  const unusedElectricity = isFiniteNumber(opts.unusedElectricityKWh) ? `${formatSummaryWhole(opts.unusedElectricityKWh)} kWh` : "-";
   const areaText = isFiniteNumber(opts.areaM2)
     ? `${Number(opts.areaM2).toLocaleString(undefined, { maximumFractionDigits: 1 })} m\u00B2`
-    : "\u2014";
+    : "-";
   const locationText = escapeHtml(opts.locationName || "selected location");
 
   return `
@@ -3711,10 +3711,10 @@ function buildRecommendedSystemSizeBox(opts){
   const defaultTargetPct = isFiniteNumber(opts?.targetPct) ? clamp(Number(opts.targetPct), 1, 100) : 50;
   const areaText = isFiniteNumber(areaM2)
     ? `${areaM2.toLocaleString(undefined, { maximumFractionDigits: 1 })} m\u00B2`
-    : "\u2014";
+    : "-";
   const coverageText = isFiniteNumber(heatCoverage)
     ? `${(heatCoverage * 100).toFixed(1)}%`
-    : "\u2014";
+    : "-";
   const estimateArea = targetFraction => {
     if (!isFiniteNumber(areaM2) || areaM2 <= 0 || !isFiniteNumber(heatCoverage) || heatCoverage <= 1e-6) return null;
     return areaM2 * targetFraction / heatCoverage;
@@ -3781,7 +3781,7 @@ function updateRecommendedSizeTarget(input){
 }
 
 function buildIndustryEnergyFlowSummary(opts){
-  const energyValue = (value) => isFiniteNumber(value) ? `${formatSummaryWhole(value)} kWh/yr` : "\u2014";
+  const energyValue = (value) => isFiniteNumber(value) ? `${formatSummaryWhole(value)} kWh/yr` : "-";
   return `
     <div class="energy-flow-summary">
       <section class="energy-flow-group electrical">
@@ -3859,7 +3859,7 @@ function buildProcessBreakdown(rows, totalKWh){
         <div>Process</div>
         <div style="text-align:right;">Annual demand</div>
       </div>
-      ${rowHtml || `<div class="process-breakdown-row"><div class="note">No processes selected.</div><div class="process-kwh">\u2014<span class="process-unit">kWh/yr</span></div></div>`}
+      ${rowHtml || `<div class="process-breakdown-row"><div class="note">No processes selected.</div><div class="process-kwh">-<span class="process-unit">kWh/yr</span></div></div>`}
       <div class="process-breakdown-total">
         <div>Total</div>
         <div class="process-kwh">${formatSummaryWhole(totalKWh)}<span class="process-unit">kWh/yr</span></div>
@@ -4150,7 +4150,7 @@ function renderMonthlyAllTable(monthlyData){
   monthlyData.forEach(row => {
     if (row.month === 0) return;
     const gain = row.pv_kWh - (row.pvOnly_kWh || 0);
-    html += `<tr><td>${mn[row.month]}</td><td class="num">${row.pv_kWh.toFixed(1)}</td><td class="num">${(row.pvOnly_kWh || 0).toFixed(1)}</td><td class="num">${gain >= 0 ? '+' : ''}${gain.toFixed(1)}</td><td class="num">${row.th_kWh.toFixed(1)}</td><td class="num">${row.PVTPanel_C_avg > 0 ? row.PVTPanel_C_avg.toFixed(1) : '\u2014'}</td></tr>`;
+    html += `<tr><td>${mn[row.month]}</td><td class="num">${row.pv_kWh.toFixed(1)}</td><td class="num">${(row.pvOnly_kWh || 0).toFixed(1)}</td><td class="num">${gain >= 0 ? '+' : ''}${gain.toFixed(1)}</td><td class="num">${row.th_kWh.toFixed(1)}</td><td class="num">${row.PVTPanel_C_avg > 0 ? row.PVTPanel_C_avg.toFixed(1) : '-'}</td></tr>`;
   });
   container.innerHTML = html + `</table>`;
 }
@@ -4161,7 +4161,7 @@ function renderDailyAllTable(dailyData){
   let html = `<table class="result-table"><tr><th>Date</th><th style="text-align:right;">PVT elec (kWh)</th><th style="text-align:right;">PV-only elec (kWh)</th><th style="text-align:right;">Cooling gain (kWh)</th><th style="text-align:right;">Thermal (kWh)</th><th style="text-align:right;">Daytime PVT panel (\u00B0C)</th></tr>`;
   dailyData.forEach(row => {
     const gain = row.pv_kWh - (row.pvOnly_kWh || 0);
-    html += `<tr><td>${row.date}</td><td class="num">${row.pv_kWh.toFixed(2)}</td><td class="num">${(row.pvOnly_kWh || 0).toFixed(2)}</td><td class="num">${gain >= 0 ? '+' : ''}${gain.toFixed(2)}</td><td class="num">${row.th_kWh.toFixed(2)}</td><td class="num">${row.PVTPanel_C_avg > 0 ? row.PVTPanel_C_avg.toFixed(1) : '\u2014'}</td></tr>`;
+    html += `<tr><td>${row.date}</td><td class="num">${row.pv_kWh.toFixed(2)}</td><td class="num">${(row.pvOnly_kWh || 0).toFixed(2)}</td><td class="num">${gain >= 0 ? '+' : ''}${gain.toFixed(2)}</td><td class="num">${row.th_kWh.toFixed(2)}</td><td class="num">${row.PVTPanel_C_avg > 0 ? row.PVTPanel_C_avg.toFixed(1) : '-'}</td></tr>`;
   });
   container.innerHTML = html + `</table>`;
 }
@@ -4174,7 +4174,7 @@ function renderTemperatureTable(monthlyData){
   monthlyData.forEach(row => {
     if (row.month === 0) return;
     const cooling = (row.PVPanel_C_avg > 0 && row.PVTPanel_C_avg > 0) ? row.PVPanel_C_avg - row.PVTPanel_C_avg : null;
-    html += `<tr><td>${mn[row.month]}</td><td class="num">${row.Tin_C_avg > 0 ? row.Tin_C_avg.toFixed(1) : '\u2014'}</td><td class="num">${row.Tout_C_avg > 0 ? row.Tout_C_avg.toFixed(1) : '\u2014'}</td><td class="num">${row.PVPanel_C_avg > 0 ? row.PVPanel_C_avg.toFixed(1) : '\u2014'}</td><td class="num">${row.PVTPanel_C_avg > 0 ? row.PVTPanel_C_avg.toFixed(1) : '\u2014'}</td><td class="num">${cooling != null ? cooling.toFixed(1) : '\u2014'}</td></tr>`;
+    html += `<tr><td>${mn[row.month]}</td><td class="num">${row.Tin_C_avg > 0 ? row.Tin_C_avg.toFixed(1) : '-'}</td><td class="num">${row.Tout_C_avg > 0 ? row.Tout_C_avg.toFixed(1) : '-'}</td><td class="num">${row.PVPanel_C_avg > 0 ? row.PVPanel_C_avg.toFixed(1) : '-'}</td><td class="num">${row.PVTPanel_C_avg > 0 ? row.PVTPanel_C_avg.toFixed(1) : '-'}</td><td class="num">${cooling != null ? cooling.toFixed(1) : '-'}</td></tr>`;
   });
   container.innerHTML = html + `</table>`;
 }
@@ -4191,7 +4191,7 @@ function aggregateMonthlyAll(series, year){
     PVTPanel_C_sum:0, PVTPanel_C_count:0, PVTPanel_C_avg:0
   }));
   series.forEach(r => {
-    // Bucket by the row's own TMY month (1-12) — no Date parsing, so results
+    // Bucket by the row's own TMY month (1-12) - no Date parsing, so results
     // are identical in every browser timezone and in leap years.
     const m = (Number.isInteger(r.month) && r.month >= 1 && r.month <= 12)
       ? r.month - 1
@@ -4218,7 +4218,7 @@ function aggregateMonthlyAll(series, year){
 
 function aggregateDailyAll(series, year, month){
   // Day slots come from the fixed TMY calendar (MONTH_DAYS), not the display
-  // year — a leap-year Date lookup added a phantom Feb 29 slot the 365-day
+  // year - a leap-year Date lookup added a phantom Feb 29 slot the 365-day
   // TMY can never fill.
   const days = MONTH_DAYS[month - 1] || 31;
   const daysArr = Array.from({length:days}, (_,i) => ({
@@ -4252,6 +4252,18 @@ function aggregateDailyAll(series, year, month){
 // ================================================================
 //  MODAL FUNCTIONS
 // ================================================================
+let HOW_IT_WORKS_STEP_TIMER = null;
+
+function showModalWithMotion(modal, modeClass=""){
+  if (!modal) return;
+  modal.classList.remove("motion-enter", "how-it-works-open", "how-step-open");
+  modal.style.display = "flex";
+  modal.setAttribute("aria-hidden", "false");
+  void modal.offsetWidth;
+  modal.classList.add("motion-enter");
+  if (modeClass) modal.classList.add(modeClass);
+}
+
 function openClimateCharts(ev){
   if (ev) ev.preventDefault();
   if (!CURRENT_MAINS) return;
@@ -4265,8 +4277,9 @@ function openClimateCharts(ev){
 function closeMainsChart(){
   const modal = document.getElementById("mainsChartModal");
   modal.style.display = "none"; modal.setAttribute("aria-hidden","true");
+  modal.classList.remove("motion-enter", "how-it-works-open");
   closeHowItWorksStep();
-  document.querySelectorAll("rect[data-step]").forEach(r => r.classList.remove("active"));
+  document.querySelectorAll("rect[data-step]").forEach(r => r.classList.remove("active", "step-selecting"));
 }
 
 function openProcessDiagram(ev){
@@ -4349,7 +4362,7 @@ function closeProcessUsage(){
 let LOAD_REQUEST_SEQ = 0;
 
 // ----------------------------------------------------------------
-//  BC-Aus SWH reference — closest corrected legacy reference location
+//  BC-Aus SWH reference - closest corrected legacy reference location
 // ----------------------------------------------------------------
 function isTestingMode(){
   return document.getElementById("chkHideMains")?.checked ?? false;
@@ -4402,7 +4415,7 @@ function updateCERZoneDisplay(lat,lon,countryCode){
   window._cerZoneState = {lat,lon,countryCode};
   const el = document.getElementById("cerZoneDisplay");
   if (!el) return;
-  // The non-Australia warning always shows — the BC-Aus mains model and CER zone
+  // The non-Australia warning always shows - the BC-Aus mains model and CER zone
   // lookup are only calibrated for Australia. Zone chips remain testing-mode only.
   if (countryCode && countryCode !== "au"){
     el.textContent = "⚠ Warning: The selected location does not appear to be in Australia. The CER climate zone lookup and BC-Aus model are only valid for Australian locations.";
@@ -4437,8 +4450,8 @@ function setLocationConfirm(loc, tzInfo, tzPending){
     ? "loading..."
     : getTimezoneDisplay(tzInfo);
   const dataState = (CURRENT_MET && CURRENT_MET.length)
-    ? ` — ✓ TMY weather loaded (${CURRENT_MET.length.toLocaleString()} hourly records)`
-    : " — loading TMY weather… (a first fetch can take up to a minute)";
+    ? ` - ✓ TMY weather loaded (${CURRENT_MET.length.toLocaleString()} hourly records)`
+    : " - loading TMY weather… (a first fetch can take up to a minute)";
   document.getElementById("locConfirm").textContent =
     `Location: ${loc.name} (lat=${loc.lat.toFixed(6)}, lon=${loc.lon.toFixed(6)}), Timezone: ${tzDisplay}${dataState}`;
   updateCERZoneDisplay(loc.lat,loc.lon,loc.countryCode);
@@ -4675,14 +4688,14 @@ const HOW_IT_WORKS_DETAIL = {
   },
   weather: {
     title: "3. Weather download",
-    body: "Coordinates are passed to the PVGIS API — first via a local FastAPI server, then via the hosted Render fallback if the local server is not running. PVGIS returns a Typical Meteorological Year (TMY) assembled from multi-year satellite observations. The first hosted request may take ~1 minute while the server cold-starts.",
+    body: "Coordinates are passed to the PVGIS API - first via a local FastAPI server, then via the hosted Render fallback if the local server is not running. PVGIS returns a Typical Meteorological Year (TMY) assembled from multi-year satellite observations. The first hosted request may take ~1 minute while the server cold-starts.",
     inputs: ["Latitude", "Longitude"],
     outputs: ["8,760 hourly rows: GHI (W/m²), DHI (W/m²), Ta (°C), wind (m/s)"],
     buildMiniSvg: () => buildMiniSvg_weather()
   },
   records: {
     title: "8,760 hourly weather records",
-    body: "Every hour of a typical year carries four measured values from the TMY dataset. All downstream steps — solar geometry, panel output, and energy matching — run independently once for each of these 8,760 hours.",
+    body: "Every hour of a typical year carries four measured values from the TMY dataset. All downstream steps - solar geometry, panel output, and energy matching - run independently once for each of these 8,760 hours.",
     inputs: ["PVGIS TMY dataset for the site location"],
     outputs: ["Global horizontal irradiance GHI (W/m²)", "Diffuse irradiance DHI (W/m²)", "Ambient air temperature Ta (°C)", "Wind speed u (m/s)"]
   },
@@ -4690,12 +4703,12 @@ const HOW_IT_WORKS_DETAIL = {
     title: "4a. Solar geometry & irradiance",
     body: "For each hour the sun's altitude and azimuth are calculated from site latitude and time of year. The collector's tilt and surface azimuth are used with a transposition model to convert horizontal irradiance into irradiance on the tilted panel surface (GTI), accounting for direct beam, sky diffuse, and ground-reflected components.",
     inputs: ["Hour of year", "Site latitude/longitude", "Collector tilt angle (°)", "Surface azimuth angle (°)", "Ground albedo (0–1)"],
-    outputs: ["GTI — irradiance on tilted panel surface (W/m²)"],
+    outputs: ["GTI - irradiance on tilted panel surface (W/m²)"],
     buildMiniSvg: () => buildMiniSvg_solarGeo()
   },
   "mains-temp": {
     title: "4b. Mains water temperature",
-    body: "The BC-Aus model predicts cold mains temperature using the NREL Burch–Christensen sinusoid fitted to four corrected legacy CER/SRES domestic reference decks. The formula from the geographically closest reference location—Rockhampton, Alice Springs, Sydney or Melbourne—is selected. Canberra zone 5 remains excluded because it is ASHP-only. This is an engineering approximation, not an official postcode-zone determination or AS/NZS 4234:2021 data.",
+    body: "The BC-Aus model predicts cold mains temperature using the NREL Burch–Christensen sinusoid fitted to four corrected legacy CER/SRES domestic reference decks. The formula from the geographically closest reference location-Rockhampton, Alice Springs, Sydney or Melbourne-is selected. Canberra zone 5 remains excluded because it is ASHP-only. This is an engineering approximation, not an official postcode-zone determination or AS/NZS 4234:2021 data.",
     inputs: ["Site latitude/longitude", "Closest legacy SWH reference", "Legacy fitted BC-Aus constants"],
     outputs: ["Hourly mains water temperature Tmains (°C)"]
   },
@@ -4714,14 +4727,14 @@ const HOW_IT_WORKS_DETAIL = {
   },
   matching: {
     title: "6. Hour-by-hour energy matching",
-    body: "Each of the 8,760 hours is balanced independently. PVT thermal output covers heat demand first — any shortfall is met by the gas boiler. PV electricity covers electrical demand first — any surplus is exported to the grid. Hourly matching captures the real mismatch between solar availability and demand rather than masking it with annual averages.",
+    body: "Each of the 8,760 hours is balanced independently. PVT thermal output covers heat demand first - any shortfall is met by the gas boiler. PV electricity covers electrical demand first - any surplus is exported to the grid. Hourly matching captures the real mismatch between solar availability and demand rather than masking it with annual averages.",
     inputs: ["Hourly PVT thermal output (kWh)", "Hourly PV electrical output (kWh)", "Hourly heat demand (kWh)", "Hourly electricity demand (kWh)"],
     outputs: ["Solar heat delivered to process (kWh/yr)", "Gas boiler top-up (kWh/yr)", "PV self-consumed (kWh/yr)", "Grid export / import (kWh/yr)"],
     buildMiniSvg: () => buildMiniSvg_matching()
   },
   results: {
     title: "7. Results",
-    body: "Annual totals are summed across all 8,760 hours and converted to economics using the tariff and gas price inputs. Payback and NPV use the Capital Recovery Factor over the system lifetime. Thermal savings assume 100% utilisation of PVT heat output — see footnotes.",
+    body: "Annual totals are summed across all 8,760 hours and converted to economics using the tariff and gas price inputs. Payback and NPV use the Capital Recovery Factor over the system lifetime. Thermal savings assume 100% utilisation of PVT heat output - see footnotes.",
     inputs: ["Annual energy flows (kWh)", "Electricity tariff (¢/kWh)", "Gas price ($/GJ)", "System cost, lifetime, discount rate"],
     outputs: ["Annual PV + thermal yield (kWh)", "Bill savings ($/yr)", "Simple payback (years)", "NPV ($)", "CO₂-e avoided (t/yr)"]
   }
@@ -4848,15 +4861,20 @@ function openHowItWorksStep(stepId){
     ${ioBlock}${miniSvgBlock}`;
 
   const modal = document.getElementById("howItWorksStepModal");
-  modal.style.display = "flex";
-  modal.setAttribute("aria-hidden","false");
+  showModalWithMotion(modal, "how-step-open");
+  requestAnimationFrame(() => document.getElementById("btnCloseHowItWorksStep")?.focus());
 }
 
 function closeHowItWorksStep(){
+  if (HOW_IT_WORKS_STEP_TIMER){
+    clearTimeout(HOW_IT_WORKS_STEP_TIMER);
+    HOW_IT_WORKS_STEP_TIMER = null;
+  }
   const modal = document.getElementById("howItWorksStepModal");
   if (!modal) return;
   modal.style.display = "none";
   modal.setAttribute("aria-hidden","true");
+  modal.classList.remove("motion-enter", "how-step-open");
   const b = document.getElementById("howItWorksStepBody");
   if (b) b.innerHTML = "";
 }
@@ -4866,7 +4884,7 @@ function buildHowItWorksSvg(){
   const parts = [];
 
   const box = (x, y, w, h, lines, fill, stroke, textColor="#16202b", titleLine=0, stepId="") => {
-    const stepAttr = stepId ? ` data-step="${stepId}"` : "";
+    const stepAttr = stepId ? ` data-step="${stepId}" tabindex="0" role="button" aria-label="${lines.join(": ")}"` : "";
     parts.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10" fill="${fill}" stroke="${stroke}" stroke-width="1.4"${stepAttr}/>`);
     const lineH = 16;
     const startY = y + h/2 - ((lines.length-1)*lineH)/2 + 5;
@@ -4890,7 +4908,7 @@ function buildHowItWorksSvg(){
   arrow(430, 218, 430, 248);
   box(250, 250, 360, 48, ["8,760 hourly weather records", "sunshine · air temperature · wind"], "#eef6ff", "#7da7cf", "#16202b", 0, "records");
 
-  // Split — long clean diagonals
+  // Split - long clean diagonals
   arrow(340, 298, 190, 382);
   arrow(520, 298, 670, 382);
 
@@ -4930,16 +4948,30 @@ function openHowItWorks(ev){
     `<p style="text-align:center;font-size:11.5px;color:#6a7e8e;margin:10px 0 0;">Click any box to explore that step in detail</p>`;
 
   body.querySelectorAll("rect[data-step]").forEach(rect => {
-    rect.addEventListener("click", () => {
-      body.querySelectorAll("rect[data-step]").forEach(r => r.classList.remove("active"));
+    const activateStep = () => {
+      if (HOW_IT_WORKS_STEP_TIMER) clearTimeout(HOW_IT_WORKS_STEP_TIMER);
+      body.querySelectorAll("rect[data-step]").forEach(r => r.classList.remove("active", "step-selecting"));
       rect.classList.add("active");
-      openHowItWorksStep(rect.dataset.step);
+      void rect.getBoundingClientRect();
+      rect.classList.add("step-selecting");
+      const revealStep = () => {
+        HOW_IT_WORKS_STEP_TIMER = null;
+        openHowItWorksStep(rect.dataset.step);
+      };
+      if (window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) revealStep();
+      else HOW_IT_WORKS_STEP_TIMER = setTimeout(revealStep, 220);
+    };
+    rect.addEventListener("click", activateStep);
+    rect.addEventListener("keydown", event => {
+      if (event.key === "Enter" || event.key === " "){
+        event.preventDefault();
+        activateStep();
+      }
     });
   });
 
   const modal = document.getElementById("mainsChartModal");
-  modal.style.display = "flex";
-  modal.setAttribute("aria-hidden","false");
+  showModalWithMotion(modal, "how-it-works-open");
 }
 
 // ================================================================
@@ -5066,7 +5098,7 @@ const PV_DAYTIME_TEMP_START_HOUR = 10;
 const PV_DAYTIME_TEMP_END_HOUR = 16;
 
 // ============================================================================
-// NOCT CODE — PV/PVT cell-temperature model
+// NOCT CODE - PV/PVT cell-temperature model
 //   T_PVT = T_a + (G/800)(T_NOCT - 20) - mdot*cp*(T_out - T_in)/(U_L*A)
 //   Part 1 (calcNoctPanelTempC):  bare-panel NOCT temperature.
 //   Part 2 (calcPvtPanelTempC):   subtract heat removed by the coolant loop.
@@ -5217,7 +5249,7 @@ async function calcAnnualPVT(){
     if (tiltAngle < 0 || tiltAngle > 90){ setOutput("Tilt angle must be between 0\u00b0 (horizontal) and 90\u00b0 (vertical).", true); return; }
     if (azimuthAngle < -180 || azimuthAngle > 180){ setOutput("Surface azimuth must be between \u2212180\u00b0 and 180\u00b0 (0\u00b0 = north-facing, 90\u00b0 = east, 180\u00b0/\u2212180\u00b0 = south).", true); return; }
     if (albedo < 0 || albedo > 1){ setOutput("Ground albedo must be between 0 and 1 (typical grass/roof \u2248 0.2).", true); return; }
-    if (!(flowRate > 0)){ setOutput("Flow rate must be greater than 0 L/s/m\u00b2 \u2014 a PVT collector needs coolant flow to capture heat (typical \u2248 0.02).", true); return; }
+    if (!(flowRate > 0)){ setOutput("Flow rate must be greater than 0 L/s/m\u00b2 - a PVT collector needs coolant flow to capture heat (typical \u2248 0.02).", true); return; }
     if (etaPv < 0 || etaPv > 1){ setOutput("PV efficiency must be between 0 and 1.", true); return; }
     if (!isFiniteNumber(pvTempCoeffPerC)){ setOutput("PV temperature coefficient must be a valid number.", true); return; }
     if (pvNoctC < 20 || pvNoctC > 80){ setOutput("PV NOCT must be between 20\u00b0C and 80\u00b0C.", true); return; }
@@ -5418,8 +5450,8 @@ async function calcAnnualPVT(){
       : -capex + netAnnualBenefit * N;
     const totalEnergy    = E_pv_kWh + E_th_kWh;
     const fmtNumber = (v, d=2) => Number(v).toLocaleString(undefined, { minimumFractionDigits:d, maximumFractionDigits:d });
-    const fmtE = (v, d=2, unit='') => v != null ? `${fmtNumber(v, d)}${unit ? ' '+unit : ''}` : '&mdash;';
-    const fmtC = (v) => v != null ? `$${fmtNumber(v, 2)}` : '&mdash;';
+    const fmtE = (v, d=2, unit='') => v != null ? `${fmtNumber(v, d)}${unit ? ' '+unit : ''}` : '-';
+    const fmtC = (v) => v != null ? `$${fmtNumber(v, 2)}` : '-';
     const pvtElectricGainKWh = E_pv_kWh - E_pv_standalone_kWh;
     const pvtElectricGainPct = E_pv_standalone_kWh > 1e-9 ? (pvtElectricGainKWh / E_pv_standalone_kWh) * 100 : 0;
     const gainSign = pvtElectricGainKWh >= 0 ? '+' : '-';
@@ -5444,7 +5476,7 @@ async function calcAnnualPVT(){
     const outletTooLow = isFiniteNumber(daytimeToutAvg) && daytimeToutAvg < LOW_OUTLET_THRESHOLD_C;
     const flowSuggestionHtml = outletTooLow ? `
       <div class="flow-suggestion">
-        <b>&#10052; Winter tip:</b> average daytime outlet temperature is ${daytimeToutAvg.toFixed(1)}&deg;C &mdash; below the ${LOW_OUTLET_THRESHOLD_C}&deg;C useful threshold.
+        <b>&#10052; Winter tip:</b> average daytime outlet temperature is ${daytimeToutAvg.toFixed(1)}&deg;C - below the ${LOW_OUTLET_THRESHOLD_C}&deg;C useful threshold.
         Try lowering the <b>flow rate</b> (currently ${flowRate} L/s/m&sup2;): slower flow raises outlet temperature, making the heat more useful for winter water heating, at the cost of a small drop in total thermal energy.
       </div>` : "";
     const tempModelText = `${pvTempCorrEnable
@@ -5470,7 +5502,7 @@ async function calcAnnualPVT(){
       ? `${gainSign}${pvtElectricGainPct.toFixed(1)}% vs PV-only`
       : "Cooling effect disabled";
     const outletTempNote = isFiniteNumber(daytimeToutAvg)
-      ? `Avg daytime air ${isFiniteNumber(daytimeAmbientAvg) ? daytimeAmbientAvg.toFixed(1) : "&mdash;"}&deg;C${outletTooLow ? " - below 20&deg;C" : ""}`
+      ? `Avg daytime air ${isFiniteNumber(daytimeAmbientAvg) ? daytimeAmbientAvg.toFixed(1) : "-"}&deg;C${outletTooLow ? " - below 20&deg;C" : ""}`
       : "";
     let html = `
       <div class="output-card output-card-annual" style="position:relative;">
@@ -5553,14 +5585,14 @@ async function calcAnnualPVT(){
         <tr><td><b>Annual PVT Electricity Saving</b></td><td class="num"><span class="ok">${fmtC(annualSavingPV)} /yr</span></td></tr>
         <tr><td><b>Annual Heat Saving</b> (gas displaced @ ${(boilerEff*100).toFixed(0)}% boiler)</td><td class="num"><span class="ok">${fmtC(annualSavingHeat)} /yr</span></td></tr>
         <tr><td><b>Annual Net Benefit</b></td><td class="num"><span class="${netAnnualBenefit>=0?'ok':'err'}">${fmtC(netAnnualBenefit)} /yr</span></td></tr>
-        <tr><td><b>Simple Payback Period (SPP)</b></td><td class="num">${spp != null ? fmtE(spp,1,'years') : '&mdash;'}</td></tr>
+        <tr><td><b>Simple Payback Period (SPP)</b></td><td class="num">${spp != null ? fmtE(spp,1,'years') : '-'}</td></tr>
         <tr><td><b>NPV (${N} yr @ ${fmtE(discountRate*100,1,'%')})</b></td><td class="num"><span class="${npv>=0?'ok':'err'}">${fmtC(npv)}</span></td></tr>
       </table>
       <h4 style="margin:14px 0 6px;color:#1a5276;">Levelised Cost</h4>
       <table class="result-table">
-        <tr><td><b>LCOE</b> (electricity only)</td><td class="num">${lcoe != null ? fmtC(lcoe)+' /kWh_e' : '&mdash;'}</td></tr>
-        <tr><td><b>LCOH</b> (heat only)</td><td class="num">${lcoh != null ? fmtC(lcoh)+' /kWh_th' : '&mdash;'}</td></tr>
-        <tr><td><b>Combined LCOE</b> (heat&rarr;electricity equiv.)</td><td class="num">${lcoeCombo != null ? fmtC(lcoeCombo)+' /kWh_eq' : '&mdash;'}</td></tr>
+        <tr><td><b>LCOE</b> (electricity only)</td><td class="num">${lcoe != null ? fmtC(lcoe)+' /kWh_e' : '-'}</td></tr>
+        <tr><td><b>LCOH</b> (heat only)</td><td class="num">${lcoh != null ? fmtC(lcoh)+' /kWh_th' : '-'}</td></tr>
+        <tr><td><b>Combined LCOE</b> (heat&rarr;electricity equiv.)</td><td class="num">${lcoeCombo != null ? fmtC(lcoeCombo)+' /kWh_eq' : '-'}</td></tr>
         <tr style="background:#fffbe6;"><td style="font-size:11px;color:#888;" colspan="2">
           CAPEX split: PV ${fmtE(pvShare*100,1,'%')} / Thermal ${fmtE(thShare*100,1,'%')} &nbsp;|&nbsp;
           CRF = ${fmtE(CRF,5)} &nbsp;|&nbsp; Heat-to-elec equiv. = ${fmtE(f_th2e,3)} (1 kWh heat valued as 1 kWh electricity for the split)
@@ -5611,16 +5643,16 @@ async function calcAnnualPVT(){
           ["Annual PVT Electricity Saving", formatExportValue(exportMetric("", annualSavingPV, "", 2, "", { prefix:"$", suffix:" /yr" }))],
           ["Annual Heat Saving", formatExportValue(exportMetric("", annualSavingHeat, "", 2, "", { prefix:"$", suffix:" /yr" }))],
           ["Annual Net Benefit", formatExportValue(exportMetric("", netAnnualBenefit, "", 2, "", { prefix:"$", suffix:" /yr" }))],
-          ["Simple Payback Period (SPP)", spp != null ? formatExportValue(exportMetric("", spp, "years", 1)) : "\u2014"],
+          ["Simple Payback Period (SPP)", spp != null ? formatExportValue(exportMetric("", spp, "years", 1)) : "-"],
           [`NPV (${N} yr @ ${formatExportNumber(discountRate * 100, 1)}%)`, formatExportValue(exportMetric("", npv, "", 2, "", { prefix:"$" }))]
         ]
       },
       {
         title: "Levelised Cost",
         rows: [
-          ["LCOE (electricity only)", lcoe != null ? formatExportValue(exportMetric("", lcoe, "/kWh_e", 2, "", { prefix:"$" })) : "\u2014"],
-          ["LCOH (heat only)", lcoh != null ? formatExportValue(exportMetric("", lcoh, "/kWh_th", 2, "", { prefix:"$" })) : "\u2014"],
-          ["Combined LCOE", lcoeCombo != null ? formatExportValue(exportMetric("", lcoeCombo, "/kWh_eq", 2, "", { prefix:"$" })) : "\u2014"]
+          ["LCOE (electricity only)", lcoe != null ? formatExportValue(exportMetric("", lcoe, "/kWh_e", 2, "", { prefix:"$" })) : "-"],
+          ["LCOH (heat only)", lcoh != null ? formatExportValue(exportMetric("", lcoh, "/kWh_th", 2, "", { prefix:"$" })) : "-"],
+          ["Combined LCOE", lcoeCombo != null ? formatExportValue(exportMetric("", lcoeCombo, "/kWh_eq", 2, "", { prefix:"$" })) : "-"]
         ]
       }
     ];
@@ -5710,7 +5742,7 @@ async function calcAnnualPVT(){
       const chartSet = buildIndustryChartSet({
         thermalDatasets, pvtMonthly, thermMonthly, pvMonthly, elecMonthly,
         thermalBalance, electricalBalance:elecBalance,
-        thermalTitle: `Monthly Thermal Demand \u2014 ${profileLabels[dairyProfileType]}`,
+        thermalTitle: `Monthly Thermal Demand - ${profileLabels[dairyProfileType]}`,
         elecTitle: `Monthly Electrical Demand (scenario: ${dairyAssumptions.electricalKWhPerKL.toFixed(1)} kWh/kL)`,
         sharedScale: true
       });
@@ -5748,7 +5780,7 @@ async function calcAnnualPVT(){
           <div class="dairy-result-head">
             <div class="dairy-intro-card">
               <div class="dairy-kicker">Dairy load profile</div>
-              <h3>Dairy Farm \u2014 ${profileLabels[dairyProfileType]}</h3>
+              <h3>Dairy Farm - ${profileLabels[dairyProfileType]}</h3>
               <div class="dairy-meta-row">
                 <span class="dairy-meta-pill"><b>Milk throughput</b><strong>${(throughput_L/1000).toLocaleString(undefined,{maximumFractionDigits:0})} kL/yr</strong></span>
                 <a class="dairy-shape-link" href="#" onclick="openDairyDailyShape(event)">Daily demand shape</a>
@@ -5861,7 +5893,7 @@ async function calcAnnualPVT(){
       const chartSet = buildIndustryChartSet({
         thermalDatasets, pvtMonthly, thermMonthly, pvMonthly, elecMonthly,
         thermalBalance, electricalBalance:elecBalance,
-        thermalTitle: `Monthly Thermal Demand \u2014 ${profileLabels[breweryProfileType]}`,
+        thermalTitle: `Monthly Thermal Demand - ${profileLabels[breweryProfileType]}`,
         elecTitle: `Monthly Electrical Demand (scenario: ${breweryAssumptions.electricalKWhPerHL.toFixed(2)} kWh/hL)`,
         sharedScale: true
       });
@@ -5898,7 +5930,7 @@ async function calcAnnualPVT(){
         ${buildRecommendedSystemSizeBox({ areaM2: A, heatCoverageFraction: solarFraction })}
         <div class="industry-top-row">
           <div style="flex:1 1 420px;">
-            <h3 style="margin:0 0 8px 0;">Brewery \u2014 ${profileLabels[breweryProfileType]}</h3>
+            <h3 style="margin:0 0 8px 0;">Brewery - ${profileLabels[breweryProfileType]}</h3>
             <p style="font-size:13px;margin:0 0 6px 0;"><b>Annual beer throughput:</b> ${(throughput_L/1000).toLocaleString(undefined,{maximumFractionDigits:0})} kL</p>
             <div class="mains-links" style="margin:6px 0 10px 0;">
               <a class="mains-link" href="#" onclick="openBreweryDailyShape(event)">Daily demand shape</a>
@@ -6075,7 +6107,7 @@ async function calcAnnualPVT(){
       const chartSet = buildIndustryChartSet({
         thermalDatasets, pvtMonthly, thermMonthly, pvMonthly, elecMonthly,
         thermalBalance:hotelThermalBalance, electricalBalance:elecBalance,
-        thermalTitle: `Monthly Thermal Demand \u2014 ${hotelProfileLabel}`,
+        thermalTitle: `Monthly Thermal Demand - ${hotelProfileLabel}`,
         elecTitle: `Monthly Electrical Demand (${hotelElectricalIntensity} kWh/room-night scenario)`,
         sharedScale: true
       });
@@ -6111,7 +6143,7 @@ async function calcAnnualPVT(){
           locationName: CURRENT_LOC?.name || "selected location"
         })}
         ${buildRecommendedSystemSizeBox({ areaM2: A, heatCoverageFraction: solarFraction })}
-        <h3>Hotel \u2014 ${hotelProfileLabel}</h3>
+        <h3>Hotel - ${hotelProfileLabel}</h3>
         ${buildIndustryEnergyFlowSummary({
           thermalDemandKWh: totalThermalDemandKWh,
           solarHeatUsedKWh: demandMet,
@@ -6250,7 +6282,7 @@ async function calcAnnualPVT(){
       const chartSet = buildIndustryChartSet({
         thermalDatasets, pvtMonthly, thermMonthly, pvMonthly, elecMonthly,
         thermalBalance, electricalBalance:aquaticElecBalance,
-        thermalTitle: `Monthly Aquatic Thermal Demand \u2014 ${aquaticProfileLabel}`,
+        thermalTitle: `Monthly Aquatic Thermal Demand - ${aquaticProfileLabel}`,
         elecTitle: `Monthly Electrical Demand (scenario: ${aquaticElectricIntensity} kWh/m\u00b2 water area/yr)`,
         supplyTitle: "Monthly PVT Thermal Supply vs Aquatic Thermal Demand",
         sharedScale: false
@@ -6291,7 +6323,7 @@ async function calcAnnualPVT(){
           locationName: CURRENT_LOC?.name || "selected location"
         })}
         ${buildRecommendedSystemSizeBox({ areaM2: A, heatCoverageFraction: solarFraction })}
-        <h3>Aquatic Centre \u2014 Area-Based Heat Loss Model</h3>
+        <h3>Aquatic Centre - Area-Based Heat Loss Model</h3>
         <div class="process-chip-row" style="margin:0 0 12px;">${processChips}</div>
         ${buildIndustryEnergyFlowSummary({
           thermalDemandKWh: totalThermalDemandKWh,
@@ -6455,7 +6487,7 @@ async function calcAnnualPVT(){
         ${buildRecommendedSystemSizeBox({ areaM2: A, heatCoverageFraction: solarFraction })}
         <div class="industry-top-row">
           <div style="flex:1 1 420px;">
-            <h3 style="margin:0 0 8px 0;">Commercial Laundry — Hot-Water Washing Demand</h3>
+            <h3 style="margin:0 0 8px 0;">Commercial Laundry - Hot-Water Washing Demand</h3>
             <p style="font-size:13px;margin:0 0 6px 0;"><b>Annual laundry processed:</b> ${annualKg.toLocaleString(undefined,{maximumFractionDigits:0})} kg/yr</p>
             <p style="font-size:13px;margin:0 0 6px 0;"><b>Model scope:</b> hot-water washing demand only; drying and whole-site electricity are not included.</p>
             <div class="mains-links" style="margin:6px 0 10px 0;">
@@ -6626,7 +6658,7 @@ async function calcAnnualPVT(){
 }
 
 // ================================================================
-//  INPUT PERSISTENCE — inputs survive page reloads (localStorage)
+//  INPUT PERSISTENCE - inputs survive page reloads (localStorage)
 // ================================================================
 const INPUT_STORE_KEY = "pvtCalcInputs.v1";
 const INPUT_DEFAULTS_VERSION_KEY = "pvtCalcInputs.defaultsVersion";
@@ -6654,7 +6686,7 @@ function applyInputState(data){
 function saveInputsToStorage(){
   try {
     localStorage.setItem(INPUT_STORE_KEY, JSON.stringify(collectInputState()));
-  } catch(_e){ /* private browsing or storage full — persistence is best-effort */ }
+  } catch(_e){ /* private browsing or storage full - persistence is best-effort */ }
 }
 
 function restoreInputsFromStorage(){
@@ -6681,10 +6713,10 @@ function resetInputsToDefaults(){
 }
 
 // ================================================================
-//  SHAREABLE SCENARIO LINK — encode all inputs into the URL hash
+//  SHAREABLE SCENARIO LINK - encode all inputs into the URL hash
 // ================================================================
 // Build a URL that reproduces the current inputs (address, area, tilt,
-// model, economics, custom monthly mains, …) — UTF-8-safe base64 in #s=.
+// model, economics, custom monthly mains, …) - UTF-8-safe base64 in #s=.
 function buildShareScenarioPayload(){
   return {
     schemaVersion: 2,
@@ -6754,7 +6786,7 @@ async function copyShareLink(){
 }
 
 // ================================================================
-//  SUMMARY CSV — annual energy + economics, for the thesis
+//  SUMMARY CSV - annual energy + economics, for the thesis
 // ================================================================
 function buildSummaryCsv(){
   const esc = (v) => {
@@ -6807,7 +6839,7 @@ function buildSummaryCsv(){
     return lines.join("\n").replace(/\n+$/,"") + "\n";
   }
 
-  push("CoolSheet PVT Calculator — results summary");
+  push("CoolSheet PVT Calculator - results summary");
   push("Location", CURRENT_LOC?.name || "N/A");
   push("Collector / PV area (m2)", document.getElementById("area")?.value || "");
   push("Thermal model", getCheckedThermalModelLabel());
@@ -6857,7 +6889,7 @@ if (_sharedScenarioApplied){
   document.getElementById("modelAParams").style.display = modelBSelected ? "none" : "block";
   document.getElementById("modelBParams").style.display = modelBSelected ? "block" : "none";
 }
-// Validation & references popover — a testing-only menu next to "How this calculator works".
+// Validation & references popover - a testing-only menu next to "How this calculator works".
 function closeValidationPopover(){
   const pop = document.getElementById("validationPopover");
   const btn = document.getElementById("btnValidationMenu");

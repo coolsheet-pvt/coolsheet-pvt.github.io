@@ -199,7 +199,7 @@ console.log("\n# alternative graph markup coexists with the original charts");
     excessMonthly:[1000,500,...new Array(10).fill(250)]
   };
   const html = mod.buildMonthlyEnergyBalancePreview(balance, balance);
-  ok("new graph is clearly labelled as an alternative preview", html.includes("Alternative view — Monthly energy balance"));
+  ok("new graph is clearly labelled as an alternative preview", html.includes("Alternative view - Monthly energy balance"));
   ok("comparison explicitly says original graphs remain", html.includes("The original graphs are unchanged below for comparison."));
   ok("both heat and electricity panels render", html.includes("Heat demand balance") && html.includes("Electricity demand balance"));
   ok("all 24 monthly bar groups render", (html.match(/class=\"balance-preview-month\"/g) || []).length === 24);

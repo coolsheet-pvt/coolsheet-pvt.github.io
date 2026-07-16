@@ -6,10 +6,10 @@
   <title>Annual PVT Calculator</title>
   <meta name="description" content="Estimates annual energy output, savings and payback of photovoltaic-thermal (PVT) solar systems for Australian commercial sites." />
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
-  <link rel="stylesheet" href="css/styles.css?v=13.36" />
+  <link rel="stylesheet" href="css/styles.css?v=13.38" />
   <!-- Chart.js v4.5.1 vendored locally (assets/vendor/) so charts work offline / on flaky wifi. -->
   <script src="assets/vendor/chart.umd.min.js"></script>
-  <script src="js/bc_aus_zone_constants.js?v=13.36"></script>
+  <script src="js/bc_aus_zone_constants.js?v=13.38"></script>
 </head>
 
 <body>
@@ -34,12 +34,12 @@
         <button id="btnValidationMenu" type="button" class="validation-orb" title="Validation &amp; reference pages" aria-haspopup="true" aria-expanded="false" aria-label="Validation and reference pages">&#10003;</button>
         <div id="validationPopover" class="validation-popover" role="menu" hidden>
           <div class="validation-popover-title">Validation &amp; references</div>
-          <a role="menuitem" href="pages/validation-hub.html" title="Plain-language summary of all validation evidence and limits">Validation centre &mdash; start here</a>
-          <a role="menuitem" href="pages/validation.html" target="_blank" rel="noopener" title="BC-Aus vs CER reference, standard +6&deg;F offset">Validation 1 &mdash; CER +6&deg;F</a>
-          <a role="menuitem" href="pages/validation2.html" target="_blank" rel="noopener" title="BC-Aus vs CER reference, no-offset variant">Validation 2 &mdash; CER 0&deg;F</a>
-          <a role="menuitem" href="pages/validation3.html" target="_blank" rel="noopener" title="BC-Aus vs EnergyPlus 0.5 m ground temperatures">Validation 3 &mdash; ground 0.5 m</a>
-          <a role="menuitem" href="pages/validation4.html" target="_blank" rel="noopener" title="BC-Aus vs EnergyPlus 2.0 m ground temperatures">Validation 4 &mdash; ground 2.0 m</a>
-          <a role="menuitem" href="pages/validation5.html" target="_blank" rel="noopener" title="The BC-Aus mains-water formula explained step by step">Validation 5 &mdash; formula</a>
+          <a role="menuitem" href="pages/validation-hub.html" title="Plain-language summary of all validation evidence and limits">Validation centre - start here</a>
+          <a role="menuitem" href="pages/validation.html" target="_blank" rel="noopener" title="BC-Aus vs CER reference, standard +6&deg;F offset">Validation 1 - CER +6&deg;F</a>
+          <a role="menuitem" href="pages/validation2.html" target="_blank" rel="noopener" title="BC-Aus vs CER reference, no-offset variant">Validation 2 - CER 0&deg;F</a>
+          <a role="menuitem" href="pages/validation3.html" target="_blank" rel="noopener" title="BC-Aus vs EnergyPlus 0.5 m ground temperatures">Validation 3 - ground 0.5 m</a>
+          <a role="menuitem" href="pages/validation4.html" target="_blank" rel="noopener" title="BC-Aus vs EnergyPlus 2.0 m ground temperatures">Validation 4 - ground 2.0 m</a>
+          <a role="menuitem" href="pages/validation5.html" target="_blank" rel="noopener" title="The BC-Aus mains-water formula explained step by step">Validation 5 - formula</a>
           <a role="menuitem" href="pages/cer_comparison.html" target="_blank" rel="noopener" title="Interactive CER DomDecks comparison tool">CER comparison tool</a>
           <a role="menuitem" href="pages/soac-field-validation.html" target="_blank" rel="noopener" title="Measured CoolSheet PVT performance at Sydney Olympic Aquatic Centre">SOAC field validation</a>
           <a role="menuitem" href="pages/pv-external-validation.html" target="_blank" rel="noopener" title="PV-only comparison with official PVGIS and PVWatts calculators">PV external validation</a>
@@ -47,7 +47,7 @@
       </div>
     </div>
     <div class="brand-meta" style="position:absolute;bottom:10px;right:14px;text-align:right;">
-      <span id="appVersionLabel" style="font-size:11px;font-style:italic;color:rgba(255,255,255,0.35);">Version 13.36</span><br/>
+      <span id="appVersionLabel" style="font-size:11px;font-style:italic;color:rgba(255,255,255,0.35);">Version 13.38</span><br/>
       <label style="font-size:11px;color:rgba(255,255,255,0.35);cursor:pointer;display:inline-flex;align-items:center;gap:5px;margin-top:4px;">
         <input type="checkbox" id="chkHideMains" style="width:auto;margin:0;cursor:pointer;" onchange="onTestingModeChange();" />
         Testing
@@ -150,7 +150,7 @@
             </div>
             <label for="pvTempCoeff">PV temperature loss (%/&deg;C):</label>
             <input id="pvTempCoeff" type="number" step="0.01" value="-0.40" />
-            <label for="pvNoct">NOCT &mdash; normal panel temperature (&deg;C):</label>
+            <label for="pvNoct">NOCT - normal panel temperature (&deg;C):</label>
             <input id="pvNoct" type="number" min="20" max="80" step="0.1" value="45" />
             <label for="pvSystemLossPct">Non-inverter system losses (% of DC):</label>
             <input id="pvSystemLossPct" type="number" min="0" max="99" step="0.1" value="14" />
@@ -299,7 +299,7 @@
 
       <label for="industrySelect"><b>Industry:</b></label>
       <select id="industrySelect">
-        <option value="">&mdash; None (PVT supply only) &mdash;</option>
+        <option value="">- None (PVT supply only) -</option>
         <option value="dairy_farm">Dairy Farm</option>
         <option value="brewery">Brewery</option>
         <option value="aquatic_centres">Aquatic Centres</option>
@@ -452,11 +452,11 @@
             <label for="laundryWaterScenario"><b>Water-use scenario:</b></label>
             <select id="laundryWaterScenario" onchange="applyLaundryWaterScenario()">
               <option value="custom">Measured/custom value</option>
-              <option value="reuse_10">High reuse sensitivity — 10 L/kg</option>
-              <option value="efficient_12">Efficient sensitivity — 12 L/kg</option>
-              <option value="mid_15">Mid sensitivity — 15 L/kg</option>
-              <option value="nonreuse_17">No-reuse sensitivity — 17 L/kg</option>
-              <option value="high_22">High-water sensitivity — 22 L/kg</option>
+              <option value="reuse_10">High reuse sensitivity - 10 L/kg</option>
+              <option value="efficient_12">Efficient sensitivity - 12 L/kg</option>
+              <option value="mid_15">Mid sensitivity - 15 L/kg</option>
+              <option value="nonreuse_17">No-reuse sensitivity - 17 L/kg</option>
+              <option value="high_22">High-water sensitivity - 22 L/kg</option>
             </select>
 
             <label for="laundryHotWaterFraction"><b>Hot-water fraction of wash water:</b></label>
@@ -509,14 +509,14 @@
 
             <label for="gridEmissionFactor" class="setting-label">Region for emissions estimate:<span class="setting-tags"><span class="setting-chip industry">Industry</span></span></label>
             <select id="gridEmissionFactor" aria-describedby="gridEmissionFactorSource">
-              <option value="0.62" selected>National average &mdash; 0.62</option>
-              <option value="0.64">NSW &amp; ACT &mdash; 0.64</option>
-              <option value="0.78">VIC &mdash; 0.78</option>
-              <option value="0.67">QLD &mdash; 0.67</option>
-              <option value="0.22">SA &mdash; 0.22</option>
-              <option value="0.50">WA (SWIS) &mdash; 0.50</option>
-              <option value="0.20">TAS &mdash; 0.20</option>
-              <option value="0.56">NT (DKIS) &mdash; 0.56</option>
+              <option value="0.62" selected>National average - 0.62</option>
+              <option value="0.64">NSW &amp; ACT - 0.64</option>
+              <option value="0.78">VIC - 0.78</option>
+              <option value="0.67">QLD - 0.67</option>
+              <option value="0.22">SA - 0.22</option>
+              <option value="0.50">WA (SWIS) - 0.50</option>
+              <option value="0.20">TAS - 0.20</option>
+              <option value="0.56">NT (DKIS) - 0.56</option>
             </select>
             <div id="gridEmissionFactorSource" class="note full-row" style="margin:-4px 0 4px;">
               Source: DCCEEW <a href="https://www.dcceew.gov.au/climate-change/publications/national-greenhouse-accounts-factors-2025" target="_blank" rel="noopener">National Greenhouse Accounts Factors 2025</a>.
@@ -644,7 +644,7 @@
   <p class="footer-note footer-fineprint">
     Weather: <a href="https://re.jrc.ec.europa.eu/pvg_tools/en/" target="_blank" rel="noopener">PVGIS</a> (&copy; European Union, Joint Research Centre) typical meteorological year<br/>
     Geocoding &amp; map: &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL)<br/>
-    Mains water temperature: BC-Aus &mdash; <a href="https://www.osti.gov/biblio/981988" target="_blank" rel="noopener">Burch &amp; Christensen (NREL)</a> fitted to legacy CER/SRES domestic reference decks and selected by the geographically closest SWH reference location (not AS/NZS 4234:2021 engineering data)<br/>
+    Mains water temperature: BC-Aus - <a href="https://www.osti.gov/biblio/981988" target="_blank" rel="noopener">Burch &amp; Christensen (NREL)</a> fitted to legacy CER/SRES domestic reference decks and selected by the geographically closest SWH reference location (not AS/NZS 4234:2021 engineering data)<br/>
     Grid emission factors: DCCEEW <a href="https://www.dcceew.gov.au/climate-change/publications/national-greenhouse-accounts-factors-2025" target="_blank" rel="noopener">National Greenhouse Accounts Factors 2025</a> (defaults current as of 2025&ndash;2026)
   </p>
 
@@ -694,6 +694,6 @@
 
 </div>
 
-<script src="js/app.js?v=13.36"></script>
+<script src="js/app.js?v=13.38"></script>
 </body>
 </html>

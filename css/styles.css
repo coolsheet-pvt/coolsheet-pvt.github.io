@@ -1,12 +1,12 @@
 /* Styles for the Annual PVT Calculator (extracted from index.html) */
 *,*::before,*::after{box-sizing:border-box;}
 
-/* Inline loading spinner — inherits text colour (white on button, gold on status text) */
+/* Inline loading spinner - inherits text colour (white on button, gold on status text) */
 .cs-spinner{display:inline-block;width:1em;height:1em;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:cs-spin 0.7s linear infinite;vertical-align:-0.15em;margin-right:7px;}
 @keyframes cs-spin{to{transform:rotate(360deg);}}
 html{overflow-x:hidden;overflow-y:scroll;scrollbar-gutter:stable;}
 
-/* Custom scrollbar — matches the dark-blue header theme */
+/* Custom scrollbar - matches the dark-blue header theme */
 ::-webkit-scrollbar{width:8px;height:8px;}
 ::-webkit-scrollbar-track{background:#0d1f30;}
 ::-webkit-scrollbar-thumb{background:#2e6fa3;border-radius:4px;}
@@ -202,10 +202,26 @@ body.testing-mode .kwater-label{display:inline;}
 .display-controls input[type=checkbox]{width:auto;margin:0;}
 .chart-modal{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:1000;}
 .chart-card{background:#fff;border-radius:8px;padding:12px;width:min(920px,95vw);max-height:90vh;overflow:auto;}
+.chart-modal.motion-enter{animation:modalBackdropIn .2s ease-out both;}
+.chart-modal.motion-enter>.chart-card{animation:modalCardIn .34s cubic-bezier(.2,.8,.2,1) both;}
+.chart-modal.how-it-works-open .chart-svg{animation:diagramReveal .42s ease-out .08s both;}
+.chart-modal.how-it-works-open .chart-svg line{stroke-dasharray:520;stroke-dashoffset:520;animation:connectorDraw .72s ease-out .18s forwards;}
+.chart-modal.how-it-works-open .chart-svg rect[data-step]{transform-box:fill-box;transform-origin:center;animation:flowNodeIn .34s ease-out .14s both;}
+.chart-modal.how-it-works-open .chart-svg rect[data-step].step-selecting{animation:flowNodeSelect .3s ease-out both;}
+.chart-modal.how-step-open #howItWorksStepBody>p{animation:detailContentIn .28s ease-out .08s both;}
+.chart-modal.how-step-open #howItWorksStepBody>div{animation:detailContentIn .34s ease-out .14s both;}
+@keyframes modalBackdropIn{from{background:rgba(0,0,0,0)}to{background:rgba(0,0,0,.45)}}
+@keyframes modalCardIn{from{opacity:0;transform:translateY(18px) scale(.975)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes diagramReveal{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes connectorDraw{to{stroke-dashoffset:0}}
+@keyframes flowNodeIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
+@keyframes flowNodeSelect{0%{transform:scale(1)}50%{transform:scale(1.035);filter:drop-shadow(0 0 5px rgba(21,95,157,.38))}100%{transform:scale(1)}}
+@keyframes detailContentIn{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
 .chart-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
 .chart-close{padding:6px 10px;border:1px solid #bbb;background:#fff;border-radius:6px;cursor:pointer;color:#333;}
 .chart-close:hover{background:#eef2f6;color:#111;box-shadow:none;transform:none;}
 .chart-svg{width:100%;height:auto;border:1px solid #ddd;border-radius:6px;background:#fff;}
+.chart-svg rect[data-step]:focus-visible{outline:none;stroke:#155f9d;stroke-width:3px;filter:drop-shadow(0 0 4px rgba(21,95,157,.32));}
 .chart-grid{display:grid;grid-template-columns:1fr;gap:12px;}
 .diagram-controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
 .diagram-wrap{margin-top:10px;padding:10px;background:#fff;border:1px solid #ddd;border-radius:6px;}
@@ -214,6 +230,9 @@ body.testing-mode .kwater-label{display:inline;}
 .diagram-hotspot{position:absolute;border:3px solid #d32f2f;border-radius:8px;background:rgba(211,47,47,0.08);cursor:pointer;padding:0;}
 .diagram-hotspot:hover,.diagram-hotspot:focus{background:rgba(211,47,47,0.16);box-shadow:0 0 0 2px rgba(211,47,47,0.15);}
 .diagram-hotspot-label{position:absolute;left:0;top:-24px;background:#d32f2f;color:#fff;font-size:11px;padding:2px 6px;border-radius:4px;white-space:nowrap;}
+@media (prefers-reduced-motion:reduce){
+  .chart-modal.motion-enter,.chart-modal.motion-enter>.chart-card,.chart-modal.how-it-works-open .chart-svg,.chart-modal.how-it-works-open .chart-svg line,.chart-modal.how-it-works-open .chart-svg rect[data-step],.chart-modal.how-it-works-open .chart-svg rect[data-step].step-selecting,.chart-modal.how-step-open #howItWorksStepBody>*{animation:none !important;transition:none !important;}
+}
 .diagram-hotspot-note{margin-top:10px;padding:10px;border:1px solid #e3b4b4;background:#fff6f6;border-radius:6px;}
 .diagram-hotspot-note b{display:block;margin-bottom:4px;}
 .storage-note-banner{margin:12px 0 10px;padding:12px 14px;background:#fffdf5;border:1px solid #d9c98f;border-radius:8px;line-height:1.45;font-size:0;}
@@ -391,7 +410,7 @@ body.testing-mode .kwater-label{display:inline;}
 .formula-details.thermal-model-details[open]>.advanced-grid{background:transparent;}
 /* Consolidated inlet / monthly-mains override card inside Advanced Settings */
 .inlet-block{margin:2px 0 6px;padding:12px 14px;background:#f3f7fb;border:1px solid #dce5ee;border-radius:8px;}
-/* PV temperature-correction toggle — keep the checkbox small so the label reads on one line */
+/* PV temperature-correction toggle - keep the checkbox small so the label reads on one line */
 .tempcorr-toggle{display:flex;align-items:center;gap:9px;cursor:pointer;font-size:13px;line-height:1.35;}
 .tempcorr-toggle input[type=checkbox]{width:17px;height:17px;min-width:17px;min-height:17px;max-height:17px;flex:0 0 17px;margin:0;padding:0;align-self:center;}
 .tempcorr-toggle>span{flex:1;}
@@ -451,7 +470,7 @@ body.testing-mode .kwater-label{display:inline;}
 .formula-details[open]>.advanced-grid{display:grid;background:#dceaf7;padding:10px 12px;}
 .formula-details[open] .secondary-action{display:inline-block;}
 /* Always-visible action buttons inside the mains override card (the .secondary-action
-   default is display:none, shown contextually — these belong on-screen permanently). */
+   default is display:none, shown contextually - these belong on-screen permanently). */
 .mains-quickset .secondary-action,.mains-edit-actions .secondary-action{display:inline-block;}
 input:disabled{background:#eee;color:#666;cursor:not-allowed;}
 button:disabled{opacity:0.55;cursor:wait;transform:none;box-shadow:none;}

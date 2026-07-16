@@ -1,4 +1,4 @@
-# SOAC March 2026 — Field Dataset
+# SOAC March 2026 - Field Dataset
 
 Real-world monitoring data from an operating PVT (photovoltaic-thermal) collector
 array, extracted from a CoolSheet monitoring dashboard and used here as an
@@ -43,7 +43,7 @@ dashboard). Both values are recorded verbatim in `soac_meta.json`.
 | File | What it is | Provenance |
 |---|---|---|
 | `CoolSheet_Dashboard_SOAC_Mar2026_WindCorrected.htm` | Original dashboard (source of truth) | as supplied |
-| `extract_soac.mjs` | Re-runnable extractor (`node extract_soac.mjs`) | — |
+| `extract_soac.mjs` | Re-runnable extractor (`node extract_soac.mjs`) | - |
 | `soac_meta.json` | Site + certified-model metadata | **verbatim** from dashboard `DATA.meta` |
 | `soac_timeseries.csv` | 5-min series: `t, T_in, T_out, T_amb, T1, T2, flow, delta_T, P_kW, P_roll15, eta, eta_roll, G, buf_high, buf_low` | **verbatim** from `DATA.ts` |
 | `soac_daily_energy.csv` | Daily thermal energy `date, E_kWh` (19 rows) | **verbatim** from `DATA.daily` |
@@ -56,16 +56,16 @@ No values in the CSV/JSON files were rounded, rescaled, or recomputed. Nulls in
 the source (e.g. efficiency at night when there is no irradiance) are written as
 **blank cells**. Re-run `extract_soac.mjs` to regenerate them from the raw HTML.
 
-## Three data layers — keep them distinct
+## Three data layers - keep them distinct
 
 This matters for an honest thesis comparison:
 
-1. **Raw measured** — sensor readings: `T_in, T_out, T_amb, T1, T2, flow, G`.
-2. **Processed dashboard** — quantities the dashboard *computed* from the raw
+1. **Raw measured** - sensor readings: `T_in, T_out, T_amb, T1, T2, flow, G`.
+2. **Processed dashboard** - quantities the dashboard *computed* from the raw
    readings: `delta_T`, `P_kW` (= flow · cₚ · ΔT), `eta` (= P / (G·A)), the
    rolling averages, `daily.E_kWh`, the scatter cloud, and the headline totals
    in `meta` (e.g. `total_kWh`, `peak_kW`, `median_eta`).
-3. **Modelled** — the ISO η-vs-Tᵢₙ curves, stagnation temperatures, and the
+3. **Modelled** - the ISO η-vs-Tᵢₙ curves, stagnation temperatures, and the
    certified η₀/a₁ coefficients. These are **predictions of the collector model**,
    not measurements, and are the objects the CoolSheet calculator's own thermal
    model should be compared against.

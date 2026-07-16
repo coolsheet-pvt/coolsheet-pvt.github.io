@@ -1,4 +1,4 @@
-# Independent engineering model audit — 2026-07-10
+# Independent engineering model audit - 2026-07-10
 
 Repository: CoolSheet PVT Calculator  
 Audit type: adversarial, audit-only Phase 1  
@@ -135,7 +135,7 @@ The hashes below were computed before analysis and recomputed after creating thi
 | Model B: same conditions, 0.02 L/s/m² and audited defaults | efficiency 0.7196915369355533; thermal power 11,515.064590968854 W |
 | Both at zero irradiance | 0 W |
 
-### 4.3 Frozen findings — report only
+### 4.3 Frozen findings - report only
 
 1. ISO 9806:2025 Edition 3, published October 2025, now supersedes ISO 9806:2017. This audit confirms only that the public ISO scope covers hybrid solar collectors. It does **not** claim clause-level compatibility of the existing Model B equation or coefficients. No change is permitted without a separately approved standards review.
 2. The current PVGIS TMY response does contain relative humidity and downward long-wave infrared fields. The Model B comment at `js/app.js:4925` saying the TMY carries no measured long-wave is factually stale. The backend drops that field. This does not mean it is safe to wire PVGIS `IR(h)` into Model B: observed parsed values included negatives, so semantics and units require separate validation first.
@@ -222,7 +222,7 @@ Evidence classes: **M** certified/measured, **R** regulatory, **V** externally v
 
 ### 6.1 Raw fixture reconstruction
 
-Every fixture states “Revised 20/07/15 — for use with domestic system decks.” The identity must come from the fixture, not the later registry label.
+Every fixture states “Revised 20/07/15 - for use with domestic system decks.” The identity must come from the fixture, not the later registry label.
 
 | Fixture | `ASSIGN` weather | Declared zone | Latitude | Monthly cold-water °C, Jan…Dec | Audited identity |
 |---|---|---:|---:|---|---|
@@ -429,23 +429,23 @@ No source reviewed supports treating national ABS/Australian Energy Statistics a
 
 | ID / severity | Evidence | Affected outputs | Direction and quantified/expected impact |
 |---|---|---|---|
-| C1 Critical — zone 1/2 identity reversal | raw fixtures versus fitting/runtime labels (§6) | Tin, both thermal models, all water-heating demand, matching, savings, emissions, economics | Production counterfactual: thermal supply −24.4% to +44.1%; matched heat up to +106.7%; savings −14.9% to +25.2% across audited climates/industries. |
-| H1 High — deployed backend drift | strict live test: 0/8760 solarHour; five Sydney live/local mismatches | geometry, every result, share/reproduction | Unknown sign; deployed fallback uses civil clock as solar time. Must block claims of reproducibility. |
-| H2 High — unversioned weather/dependencies | `server.py:137`; loose requirements | all supply and weather-shaped demand | Sydney PVGIS 5.2 versus 5.3 GHI differs +3.5%, DNI +7.3%; future endpoint/package changes can silently move output. |
-| H3 High — historical-DST duplicate/missing demand hour | `coerce_year=1990`, zone conversion; unique-key audit | hourly matching and schedules | Annual record count unchanged; one duplicated and one missing local key in tested DST locations. Timing effect scenario-dependent. |
-| H4 High — BC zone-family/selector unsupported | generic five-zone runtime; climate-fingerprint selection | national mains profile and downstream outputs | Unknown outside anchors; can choose a non-regulatory zone anywhere in Australia. |
-| H5 High — industry exact defaults not substantiated | §9 and source register | demand, coverage, savings, sizing claims | Potentially order-one. Laundry alone is 20–120% higher volume heat at current official efficient ranges versus 10 L/kg. |
-| H6 High — PV cooling heuristic unvalidated | `calcPvtPanelTempC`; SOAC evidence too short | PV gain, total energy, value, emissions | Sydney audited cooling gain is 5,839–7,772 kWh/year (6.8–9.0% over PV-only), all currently unsupported as an independently validated annual gain. |
-| H7 High — aquatic boundary and climate inputs | fixed RH; 10 m wind; floor/surface denominator | aquatic demand and savings | Direction varies. Electrical default may be materially mis-scaled because area and energy boundary differ. |
-| H8 High — non-deterministic/broken regeneration | scripts write under `tools/`, runtime under `data/`/`js/` | BC constants and validation claims | Stale runtime artifacts can persist after a “successful” refit. |
-| M1 Medium — natural-gas factor boundary | 51.4 labelled CO2-e versus NGA combined 51.53 | avoided emissions | Combined Scope 1 would be +0.253% versus current gas avoided-emission number; Scope 3 would add more and is location-specific. |
-| M2 Medium — local/weather metadata discarded | backend returns meta; frontend/export does not retain full provenance | reproducibility, audit trail | A scenario cannot prove database years/months/version/request after the fact. |
-| M3 Medium — economic point estimate and unit wording | `app.js:5027-5053`; docs AUD/GJ mismatch | payback, NPV, LCOE/H, value | Sign and scale depend on omitted tariffs/escalation/degradation/replacement/tax/GST. Gas price unit error would be ×1000 if a user follows AUD/GJ wording literally. |
-| M4 Medium — CAPEX “default” has two states | HTML 800 AUD/m²; checked auto-fill produces 540 | NPV, payback, LCOE | 32.5% lower runtime CAPEX than static field value; source status remains A. |
-| M5 Medium — idealised storage | monthly free-shift bound; lossless hotel tank and 35°C target | coverage/backup/storage interpretation | Always optimistic relative to lossy finite storage; magnitude scenario-dependent. |
-| M6 Medium — tests are not independent | copied geometry/economics/model equations; nonasserting e2e | confidence claims | Green tests can preserve a shared defect. No direct numeric impact, high assurance impact. |
-| M7 Medium — DC/AC and system-loss omissions | PV result labels and equations | electrical yield/value/emissions | Direction is optimistic; magnitude not independently calculated in this audit. Must be explicit or modelled. |
-| L1 Low — stale comments/docs/counts | display-only selector, no RH/IR, stale validation counts/claims | user interpretation | Misleads reviewers even where code arithmetic is correct. |
+| C1 Critical - zone 1/2 identity reversal | raw fixtures versus fitting/runtime labels (§6) | Tin, both thermal models, all water-heating demand, matching, savings, emissions, economics | Production counterfactual: thermal supply −24.4% to +44.1%; matched heat up to +106.7%; savings −14.9% to +25.2% across audited climates/industries. |
+| H1 High - deployed backend drift | strict live test: 0/8760 solarHour; five Sydney live/local mismatches | geometry, every result, share/reproduction | Unknown sign; deployed fallback uses civil clock as solar time. Must block claims of reproducibility. |
+| H2 High - unversioned weather/dependencies | `server.py:137`; loose requirements | all supply and weather-shaped demand | Sydney PVGIS 5.2 versus 5.3 GHI differs +3.5%, DNI +7.3%; future endpoint/package changes can silently move output. |
+| H3 High - historical-DST duplicate/missing demand hour | `coerce_year=1990`, zone conversion; unique-key audit | hourly matching and schedules | Annual record count unchanged; one duplicated and one missing local key in tested DST locations. Timing effect scenario-dependent. |
+| H4 High - BC zone-family/selector unsupported | generic five-zone runtime; climate-fingerprint selection | national mains profile and downstream outputs | Unknown outside anchors; can choose a non-regulatory zone anywhere in Australia. |
+| H5 High - industry exact defaults not substantiated | §9 and source register | demand, coverage, savings, sizing claims | Potentially order-one. Laundry alone is 20–120% higher volume heat at current official efficient ranges versus 10 L/kg. |
+| H6 High - PV cooling heuristic unvalidated | `calcPvtPanelTempC`; SOAC evidence too short | PV gain, total energy, value, emissions | Sydney audited cooling gain is 5,839–7,772 kWh/year (6.8–9.0% over PV-only), all currently unsupported as an independently validated annual gain. |
+| H7 High - aquatic boundary and climate inputs | fixed RH; 10 m wind; floor/surface denominator | aquatic demand and savings | Direction varies. Electrical default may be materially mis-scaled because area and energy boundary differ. |
+| H8 High - non-deterministic/broken regeneration | scripts write under `tools/`, runtime under `data/`/`js/` | BC constants and validation claims | Stale runtime artifacts can persist after a “successful” refit. |
+| M1 Medium - natural-gas factor boundary | 51.4 labelled CO2-e versus NGA combined 51.53 | avoided emissions | Combined Scope 1 would be +0.253% versus current gas avoided-emission number; Scope 3 would add more and is location-specific. |
+| M2 Medium - local/weather metadata discarded | backend returns meta; frontend/export does not retain full provenance | reproducibility, audit trail | A scenario cannot prove database years/months/version/request after the fact. |
+| M3 Medium - economic point estimate and unit wording | `app.js:5027-5053`; docs AUD/GJ mismatch | payback, NPV, LCOE/H, value | Sign and scale depend on omitted tariffs/escalation/degradation/replacement/tax/GST. Gas price unit error would be ×1000 if a user follows AUD/GJ wording literally. |
+| M4 Medium - CAPEX “default” has two states | HTML 800 AUD/m²; checked auto-fill produces 540 | NPV, payback, LCOE | 32.5% lower runtime CAPEX than static field value; source status remains A. |
+| M5 Medium - idealised storage | monthly free-shift bound; lossless hotel tank and 35°C target | coverage/backup/storage interpretation | Always optimistic relative to lossy finite storage; magnitude scenario-dependent. |
+| M6 Medium - tests are not independent | copied geometry/economics/model equations; nonasserting e2e | confidence claims | Green tests can preserve a shared defect. No direct numeric impact, high assurance impact. |
+| M7 Medium - DC/AC and system-loss omissions | PV result labels and equations | electrical yield/value/emissions | Direction is optimistic; magnitude not independently calculated in this audit. Must be explicit or modelled. |
+| L1 Low - stale comments/docs/counts | display-only selector, no RH/IR, stale validation counts/claims | user interpretation | Misleads reviewers even where code arithmetic is correct. |
 
 ## 12. Uncertainty and sensitivity
 
@@ -477,7 +477,7 @@ A later phase should use source-defined or metered ranges and report at least lo
 - requirements and Node dependency ranges are not deterministic.
 - existing validation documentation has stale assertion counts and claims; a passing test should not be called external validation unless it is independent.
 
-## 14. Prioritized fix plan — outside Model A/B only
+## 14. Prioritized fix plan - outside Model A/B only
 
 No item below is authorized by this report. Implement only after explicit approval.
 

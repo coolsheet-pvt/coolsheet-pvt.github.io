@@ -108,7 +108,7 @@ def parse_cer_fixture(path: Path) -> dict:
     return {
         "key": f"zone{zone_number}",
         "zoneNumber": zone_number,
-        "name": f"Zone {zone_number} — {DISPLAY_CITY_BY_WEATHER[weather_file]}",
+        "name": f"Zone {zone_number} - {DISPLAY_CITY_BY_WEATHER[weather_file]}",
         "city": DISPLAY_CITY_BY_WEATHER[weather_file],
         "lat": float(lat_match.group(1)),
         "ta": AMBIENT_MONTHLY_C_BY_WEATHER[weather_file],

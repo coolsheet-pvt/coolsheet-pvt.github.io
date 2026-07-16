@@ -30,7 +30,7 @@ let pass=0, fail=0;
 function ok(name, cond, detail=""){ if(cond){pass++; console.log(`  PASS  ${name}`);} else {fail++; console.log(`  FAIL  ${name}  ${detail}`);} }
 function near(name, got, exp, tol){ ok(name, Math.abs(got-exp)<=tol, `got ${got.toFixed(3)} expected ${exp}±${tol}`); }
 
-console.log("\n# Declination (Cooper) — known solstice/equinox values");
+console.log("\n# Declination (Cooper) - known solstice/equinox values");
 const c = new TiltedSurfaceRadiation(-33.87, 151.2, 30, 0);
 near("Jun solstice +23.45 (n=172)", c.declinationAngle(172), 23.45, 0.1);
 near("Dec solstice -23.45 (n=355)", c.declinationAngle(355), -23.45, 0.1);
@@ -59,7 +59,7 @@ ok("No negative components", noBeamBehind.totalIrradiance>=0);
 const horiz = new TiltedSurfaceRadiation(-33.87,151.2, 0, 0);  // flat plate
 ok("Flat plate diffuse = full DHI", Math.abs(horiz.calculate(266,12,0,200).totalIrradiance - 200) < 1e-6, "tilt0 should pass DHI through");
 
-console.log("\n# Edge cases — formulas must not NaN/throw");
+console.log("\n# Edge cases - formulas must not NaN/throw");
 for (const [lat,name] of [[0,"equator"],[-90,"south pole"],[66.5,"arctic circle"],[-33.87,"sydney"]]){
   const k = new TiltedSurfaceRadiation(lat,0,30,0);
   let bad=false;

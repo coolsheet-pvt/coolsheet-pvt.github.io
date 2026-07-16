@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Parse CER DomDecks V30h .tmy files to extract monthly mean ambient air temperature.
-Format: 1X,3I2,5I3,I2,I1 — ambient temperature at chars 14-16 in DEG.C * 10.
+Format: 1X,3I2,5I3,I2,I1 - ambient temperature at chars 14-16 in DEG.C * 10.
 Usage: python3 parse_tmy.py path/to/file.tmy
 """
 import sys

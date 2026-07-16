@@ -7,7 +7,7 @@ Date: 2026-07-02 · Coolsheet version 13.11 · Prepared as a basic validation no
 This document checks whether the Coolsheet calculator's **PV-only electrical output**
 (the "PV-only baseline" figure) is broadly consistent with external PV-only
 calculators when the inputs are matched as closely as each external tool allows.
-It covers electrical output only — Coolsheet's PVT thermal output is **not**
+It covers electrical output only - Coolsheet's PVT thermal output is **not**
 compared against PV-only tools.
 
 ## 2. Method
@@ -29,10 +29,10 @@ compared against PV-only tools.
 
 | Tool | Used? | Reason |
 |---|---|---|
-| [PVGIS 5.3 PVcalc](https://re.jrc.ec.europa.eu/pvg_tools/en/) (EU JRC) | **Yes — primary** | Free API, covers Australia, all key inputs adjustable (kWp, tilt, azimuth, loss). Caveat: uses the PVGIS-ERA5 weather family, which is also Coolsheet's weather source — so this comparison isolates the **PV conversion model**, not the weather data. |
-| [Renewables.ninja](https://www.renewables.ninja/) (Imperial College/ETH, GSEE model) | **Yes — independent weather** | Free API, all key inputs adjustable. Uses NASA MERRA-2 reanalysis for a single actual year (2019 used here) — fully independent of ERA5, but its simulations are bias-corrected only for Europe, and MERRA-2 irradiance is known to run low in parts of Australia. |
-| [Global Solar Atlas](https://globalsolaratlas.info/) (World Bank / Solargis) | **Yes — context only** | Free API, satellite-derived Solargis data (independent). But tilt is fixed at the tool's optimum (31°/31°/28° here, close to 30°) and it applies a fixed, non-adjustable set of real-system losses — so it is a "realistic system" reference, not a matched-physics one. |
-| [SunSPOT](https://www.sunspot.org.au/) (APVI/UNSW) | No | Preferred Australian tool, but it derives tilt/azimuth from real roof geometry drawn on a map, has no API, and does not accept free tilt/azimuth/loss inputs — matched-input comparison is not possible. Recommended as a manual follow-up. |
+| [PVGIS 5.3 PVcalc](https://re.jrc.ec.europa.eu/pvg_tools/en/) (EU JRC) | **Yes - primary** | Free API, covers Australia, all key inputs adjustable (kWp, tilt, azimuth, loss). Caveat: uses the PVGIS-ERA5 weather family, which is also Coolsheet's weather source - so this comparison isolates the **PV conversion model**, not the weather data. |
+| [Renewables.ninja](https://www.renewables.ninja/) (Imperial College/ETH, GSEE model) | **Yes - independent weather** | Free API, all key inputs adjustable. Uses NASA MERRA-2 reanalysis for a single actual year (2019 used here) - fully independent of ERA5, but its simulations are bias-corrected only for Europe, and MERRA-2 irradiance is known to run low in parts of Australia. |
+| [Global Solar Atlas](https://globalsolaratlas.info/) (World Bank / Solargis) | **Yes - context only** | Free API, satellite-derived Solargis data (independent). But tilt is fixed at the tool's optimum (31°/31°/28° here, close to 30°) and it applies a fixed, non-adjustable set of real-system losses - so it is a "realistic system" reference, not a matched-physics one. |
+| [SunSPOT](https://www.sunspot.org.au/) (APVI/UNSW) | No | Preferred Australian tool, but it derives tilt/azimuth from real roof geometry drawn on a map, has no API, and does not accept free tilt/azimuth/loss inputs - matched-input comparison is not possible. Recommended as a manual follow-up. |
 | [NREL PVWatts v8](https://pvwatts.nrel.gov/) | No | Intended as a reference, but nrel.gov was unreachable from the test machine at the time of writing (DNS failure; PVGIS and the others resolved normally). Recorded honestly rather than substituted with assumed numbers. |
 | SolarQuotes and similar retail estimators | No | Fixed marketing assumptions; tilt/azimuth/losses not controllable. |
 | Solcast | No | Requires a commercial account/API key. |
@@ -57,7 +57,7 @@ from Coolsheet's NOCT approach by design.
 Difference (%) = (Coolsheet − External) ÷ External × 100.
 Assessment: Good ≤ ±5% · Reasonable ≤ ±10% · Needs investigation > ±10%.
 
-### 4a. Primary — PVGIS 5.3 (matched physics: 5 kWp, 30°, north, loss 0%)
+### 4a. Primary - PVGIS 5.3 (matched physics: 5 kWp, 30°, north, loss 0%)
 
 | Test case | Coolsheet PV-only (kWh/yr) | External tool | External (kWh/yr) | Diff (kWh/yr) | Diff (%) | Assessment |
 |---|---|---|---|---|---|---|
@@ -65,18 +65,18 @@ Assessment: Good ≤ ±5% · Reasonable ≤ ±10% · Needs investigation > ±10%
 | Melbourne | 8,464.5 | PVGIS 5.3 PVcalc | 8,448.7 | +15.8 | **+0.2%** | Good agreement |
 | Brisbane | 8,939.1 | PVGIS 5.3 PVcalc | 8,922.0 | +17.1 | **+0.2%** | Good agreement |
 
-(For context, PVGIS with its default 14% system loss gives 7,742 / 7,266 / 7,673 kWh —
+(For context, PVGIS with its default 14% system loss gives 7,742 / 7,266 / 7,673 kWh -
 what a user of the public PVGIS site would see by default.)
 
-### 4b. Independent weather — Renewables.ninja (5 kW, 30°, north, loss 0, MERRA-2, year 2019)
+### 4b. Independent weather - Renewables.ninja (5 kW, 30°, north, loss 0, MERRA-2, year 2019)
 
 | Test case | Coolsheet (kWh/yr) | External (kWh/yr) | Diff (kWh/yr) | Diff (%) | Assessment |
 |---|---|---|---|---|---|
-| Sydney | 8,612.9 | 6,273.8 | +2,339.1 | +37.3% | Needs investigation — see §5 |
-| Melbourne | 8,464.5 | 6,137.2 | +2,327.3 | +37.9% | Needs investigation — see §5 |
-| Brisbane | 8,939.1 | 7,258.8 | +1,680.3 | +23.1% | Needs investigation — see §5 |
+| Sydney | 8,612.9 | 6,273.8 | +2,339.1 | +37.3% | Needs investigation - see §5 |
+| Melbourne | 8,464.5 | 6,137.2 | +2,327.3 | +37.9% | Needs investigation - see §5 |
+| Brisbane | 8,939.1 | 7,258.8 | +1,680.3 | +23.1% | Needs investigation - see §5 |
 
-### 4c. Context — Global Solar Atlas (PVOUT_csi × 5 kWp; OPTA tilt; fixed real-system losses)
+### 4c. Context - Global Solar Atlas (PVOUT_csi × 5 kWp; OPTA tilt; fixed real-system losses)
 
 | Test case | Coolsheet (kWh/yr) | External (kWh/yr) | Diff (%) | Note |
 |---|---|---|---|---|
@@ -109,7 +109,7 @@ what a user of the public PVGIS site would see by default.)
 - **Melbourne is the visible outlier pattern.** Coolsheet (ERA5) puts Melbourne
   only ~1.7% below Sydney, whereas the satellite-based GSA puts it ~8% below.
   This suggests the ERA5 Melbourne TMY irradiance runs somewhat high relative to
-  satellite-derived data — a weather-dataset effect worth noting when quoting
+  satellite-derived data - a weather-dataset effect worth noting when quoting
   Melbourne results, not a PV-model error (PVGIS-ERA5 shows the same pattern).
 - **Coolsheet models no inverter, wiring, soiling or availability losses** in the
   PV-only figure. Users comparing against retail calculators or real bills should
@@ -128,7 +128,7 @@ the Coolsheet model. On this evidence the Coolsheet PV-only model appears
 gross-of-system-losses, and ERA5-based Melbourne irradiance appears optimistic
 relative to satellite-derived references.
 
-## Appendix — Reproduction record
+## Appendix - Reproduction record
 
 Coolsheet: local build v13.11, inputs as in §3, industry preset "None"; the
 "PV-only baseline" metric was read from the annual results

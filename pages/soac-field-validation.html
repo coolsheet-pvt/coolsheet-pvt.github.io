@@ -290,7 +290,7 @@
     });
   }
 
-  barChart("potentialChart",["Field delivered","Website default","Website — SOAC coefficients"],[FIELD,WEBSITE_DEFAULT,WEBSITE_SOAC],[C.field,C.blue,C.orange]);
+  barChart("potentialChart",["Field delivered","Website default","Website - SOAC coefficients"],[FIELD,WEBSITE_DEFAULT,WEBSITE_SOAC],[C.field,C.blue,C.orange]);
   matchedChart=barChart("matchedChart",["Field processed","Model A matched","Model B certified","Model B wind-adjusted"],[FIELD,FALLBACK.modelA,FALLBACK.modelB,FALLBACK.modelBWind],[C.field,C.blue,C.orange,C.purple]);
   new Chart(document.getElementById("efficiencyChart"),{
     type:"bar",
@@ -369,7 +369,7 @@
       const etaOutliers=rows.filter(r=>Number.isFinite(r.eta)&&r.eta>.4112).length;
       const negativePower=rows.filter(r=>Number.isFinite(r.P_kW)&&r.P_kW<0).length;
       const brightMedian=median(rows.filter(r=>r.flow>1&&r.G>=700&&r.P_kW>0&&r.eta<=.4112).map(r=>r.eta));
-      status.textContent=`Verified from 5,472 preserved five-minute records. Bright-sun median η ${brightMedian?.toFixed(3)??"—"}; ${etaOutliers} transient points above η₀; ${negativePower} negative-power points retained in the source.`;
+      status.textContent=`Verified from 5,472 preserved five-minute records. Bright-sun median η ${brightMedian?.toFixed(3)??"-"}; ${etaOutliers} transient points above η₀; ${negativePower} negative-power points retained in the source.`;
       status.dataset.status="ready";
     }catch(_error){
       renderScatter([]);

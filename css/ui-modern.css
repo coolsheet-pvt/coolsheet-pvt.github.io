@@ -1,5 +1,5 @@
 /* ============================================================================
-   MODERN UI (beta) — presentation-only styles, active ONLY under body.ui-modern
+   MODERN UI (beta) - presentation-only styles, active ONLY under body.ui-modern
    (set by js/ui-modern.js when the URL carries ?ui=modern).
    The classic UI is untouched: nothing here applies without the body class,
    except the small opt-in header link (.ui-modern-switch).

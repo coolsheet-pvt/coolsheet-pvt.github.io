@@ -65,6 +65,30 @@ test("calculator UI loads without console errors", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test("how-it-works diagram animates and opens step details", async ({ page }) => {
+  await page.goto(pageUrl);
+  await page.locator("#btnHowItWorks").click();
+  const overviewModal = page.locator("#mainsChartModal");
+  await expect(overviewModal).toBeVisible();
+  await expect(overviewModal).toHaveClass(/motion-enter/);
+  await expect(overviewModal).toHaveClass(/how-it-works-open/);
+
+  const weatherStep = overviewModal.locator('rect[data-step="weather"]');
+  await expect(weatherStep).toHaveAttribute("role", "button");
+  await expect(weatherStep).toHaveAttribute("tabindex", "0");
+  await weatherStep.click();
+
+  const detailModal = page.locator("#howItWorksStepModal");
+  await expect(detailModal).toBeVisible();
+  await expect(detailModal).toHaveClass(/how-step-open/);
+  await expect(page.locator("#howItWorksStepTitle")).not.toBeEmpty();
+  await expect(page.locator("#howItWorksStepBody")).not.toBeEmpty();
+  await page.locator("#btnCloseHowItWorksStep").click();
+  await expect(detailModal).toBeHidden();
+  await page.locator("#btnCloseMainsChart").click();
+  await expect(overviewModal).toBeHidden();
+});
+
 test("SOAC field-validation page is linked, interactive, and works offline", async ({ page }) => {
   const errors = [];
   page.on("console", msg => {
@@ -182,7 +206,7 @@ test("alternative monthly balance graph coexists with every legacy industry grap
   });
 
   await expect(page.locator(".industry-balance-preview")).toHaveCount(1);
-  await expect(page.locator(".industry-balance-preview-head h4")).toHaveText("Alternative view — Monthly energy balance");
+  await expect(page.locator(".industry-balance-preview-head h4")).toHaveText("Alternative view - Monthly energy balance");
   await expect(page.locator(".balance-preview-panel")).toHaveCount(2);
   await expect(page.locator(".balance-preview-data")).toHaveCount(2);
   await expect(page.locator(".industry-chart-section")).toHaveCount(2);

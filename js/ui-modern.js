@@ -1,5 +1,5 @@
 // ============================================================================
-//  MODERN UI (beta) — presentation-only layer.
+//  MODERN UI (beta) - presentation-only layer.
 //  Activated with ?ui=modern in the URL. The classic UI remains the default
 //  and is untouched; this file adds a body class, a compact provenance legend,
 //  simplified results, and collapsible assumptions. It contains NO
@@ -26,7 +26,7 @@
       a.className = "how-it-works-btn ui-modern-switch";
       a.href = buildUrl(true);
       a.textContent = "Try modern UI (beta)";
-      a.title = "Same calculator and results — clearer layout. Your inputs are kept.";
+      a.title = "Same calculator and results - clearer layout. Your inputs are kept.";
       headerActions.appendChild(a);
     }
     return;
@@ -68,7 +68,7 @@
 
   const panels = wrap.querySelectorAll(":scope > .panel");
 
-  // Provenance legend — explain input/model/assumption status once without
+  // Provenance legend - explain input/model/assumption status once without
   // repeating a badge beside every field label.
   const chip = (type, text) => {
     const s = document.createElement("span");
@@ -77,7 +77,7 @@
     return s;
   };
   const mainsNote = document.querySelector(".inlet-block > .note");
-  if (mainsNote) mainsNote.appendChild(chip("model", "calculated — editable"));
+  if (mainsNote) mainsNote.appendChild(chip("model", "calculated - editable"));
 
   const legend = document.createElement("div");
   legend.className = "prov-legend";
@@ -88,13 +88,13 @@
     <span class="prov-chip prov-assumption">assumption</span> editable engineering defaults`;
   panels[0]?.querySelector(".grid")?.prepend(legend);
 
-  // Assumptions at a glance — mirrors docs/assumptions-and-limitations.md.
+  // Assumptions at a glance - mirrors docs/assumptions-and-limitations.md.
   const assumptions = document.createElement("details");
   assumptions.className = "modern-assumptions";
   assumptions.innerHTML = `
     <summary>Assumptions used in this estimate <span class="prov-chip prov-assumption">assumption</span></summary>
     <div class="modern-assumptions-body"><ul>
-      <li>Weather is a PVGIS <b>typical meteorological year</b> — a representative year, not a forecast.</li>
+      <li>Weather is a PVGIS <b>typical meteorological year</b> - a representative year, not a forecast.</li>
       <li>Inlet water uses the <b>BC-Aus mains-water model</b> (editable monthly overrides above).</li>
       <li>PV headline output is the temperature-corrected gross module yield used in the original annual PVT result; estimated net AC is retained in the detailed results. The PVT cooling effect is on by default.</li>
       <li>Industry matching is <b>hourly direct-use with no storage tank</b> (except the hotel tank input); the supply-only value card assumes 100% utilisation and is an upper bound.</li>
@@ -189,12 +189,12 @@
     setTextIfChanged(cards[2].querySelector("span"), isElectrical ? "From grid" : "From backup");
     const total = document.createElement("small");
     total.className = "modern-flow-total";
-    total.innerHTML = `${isElectrical ? "Annual site electricity demand" : "Annual process heat demand"}<strong>${cards[0].querySelector("strong")?.textContent || "—"}</strong>`;
+    total.innerHTML = `${isElectrical ? "Annual site electricity demand" : "Annual process heat demand"}<strong>${cards[0].querySelector("strong")?.textContent || "-"}</strong>`;
     heading?.appendChild(total);
 
     const footer = document.createElement("div");
     footer.className = "modern-flow-footer";
-    footer.innerHTML = `<span>${isElectrical ? "PV exported" : "Excess solar heat"}</span><strong>${cards[3].querySelector("strong")?.textContent || "—"}</strong>`;
+    footer.innerHTML = `<span>${isElectrical ? "PV exported" : "Excess solar heat"}</span><strong>${cards[3].querySelector("strong")?.textContent || "-"}</strong>`;
     group.querySelector(".energy-flow-cards")?.after(footer);
     cards[0].classList.add("modern-flow-context-card");
     cards[3].classList.add("modern-flow-context-card");

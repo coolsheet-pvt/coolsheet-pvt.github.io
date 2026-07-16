@@ -8,7 +8,7 @@
 const BC_AUS_ZONE_CONSTANTS = {
   zone1: {
     zoneNumber: 1,
-    name: "Zone 1 — Rockhampton",
+    name: "Zone 1 - Rockhampton",
     city: "Rockhampton",
     families: ["swh", "ashp"],
     sourceFixture: "zone1_NW_Domestic.inc",
@@ -29,7 +29,7 @@ const BC_AUS_ZONE_CONSTANTS = {
   },
   zone2: {
     zoneNumber: 2,
-    name: "Zone 2 — Alice Springs",
+    name: "Zone 2 - Alice Springs",
     city: "Alice Springs",
     families: ["swh", "ashp"],
     sourceFixture: "zone2_NW_Domestic.inc",
@@ -50,7 +50,7 @@ const BC_AUS_ZONE_CONSTANTS = {
   },
   zone3: {
     zoneNumber: 3,
-    name: "Zone 3 — Sydney",
+    name: "Zone 3 - Sydney",
     city: "Sydney",
     families: ["swh", "ashp"],
     sourceFixture: "zone3_NW_Domestic.inc",
@@ -71,7 +71,7 @@ const BC_AUS_ZONE_CONSTANTS = {
   },
   zone4: {
     zoneNumber: 4,
-    name: "Zone 4 — Melbourne",
+    name: "Zone 4 - Melbourne",
     city: "Melbourne",
     families: ["swh", "ashp"],
     sourceFixture: "zone4_NW_Domestic.inc",
@@ -92,7 +92,7 @@ const BC_AUS_ZONE_CONSTANTS = {
   },
   zone5: {
     zoneNumber: 5,
-    name: "Zone 5 — Canberra",
+    name: "Zone 5 - Canberra",
     city: "Canberra",
     families: ["ashp"],
     sourceFixture: "ZONEHP5_Au_Domestic.inc",

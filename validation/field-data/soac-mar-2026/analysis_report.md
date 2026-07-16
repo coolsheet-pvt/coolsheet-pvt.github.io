@@ -1,4 +1,4 @@
-# SOAC March 2026 — Field-Data Analysis
+# SOAC March 2026 - Field-Data Analysis
 
 Analysis of the Sydney Olympic Aquatic Centre PVT array over 2026-03-02 to
 2026-03-20 (19 days, 5-minute data). All figures below are computed directly
@@ -22,7 +22,7 @@ the difference is explained rather than hidden.
 | Daily range (operating days, E > 1 kWh) | **10.4 kWh (03-13) … 685.7 kWh (03-11)** | `soac_daily_energy.csv` |
 | Operating days / total days | 17 / 19 | 2 zero-or-near-zero days (03-02 = 0, 03-18 = 0.3 kWh) |
 
-**Raw vs processed — a ~9 % gap.** Naively integrating the raw instantaneous
+**Raw vs processed - a ~9 % gap.** Naively integrating the raw instantaneous
 `P_kW` column gives **6,426 kWh**, about **9 % higher** than the dashboard's
 reported **5,888 kWh** (which equals the sum of the daily energies). The reported
 total is the *processed / quality-controlled* figure; the naive integral
@@ -42,7 +42,7 @@ should not be mistaken for collector under-performance.
 |---|---|---|
 | Peak power (reported) | **209 kW** | `meta.peak_kW` |
 | Peak of 15-min rolled power `P_roll15` | 170.8 kW | recomputed |
-| Single raw instantaneous max `P_kW` | 279.9 kW | recomputed — only **1** sample exceeds 209 kW |
+| Single raw instantaneous max `P_kW` | 279.9 kW | recomputed - only **1** sample exceeds 209 kW |
 | Median power (reported) | **62 kW** | `meta.median_kW` |
 | Median power over generating samples (P > 0) | 54.4 kW | recomputed |
 | Total generating time (P > 0) | 110.8 h over 19 days (~5.8 h/day) | recomputed |
@@ -59,7 +59,7 @@ of concern.
 
 | Metric | Value | Source |
 |---|---|---|
-| Median efficiency | **0.196** | `meta.median_eta` (recomputed 0.197 — matches) |
+| Median efficiency | **0.196** | `meta.median_eta` (recomputed 0.197 - matches) |
 | Peak efficiency (reported) | **0.474** | `meta.peak_eta` |
 | Raw instantaneous max efficiency | 0.661 | recomputed |
 | Certified optical efficiency η₀ | 0.4112 | modelled, `meta.eta0` |
@@ -67,7 +67,7 @@ of concern.
 **Physically implausible instantaneous points exist.** 27 samples show
 efficiency **above the modelled optical η₀ (0.4112)**, peaking at a raw 0.661.
 Steady-state efficiency cannot exceed η₀; these points reflect thermal-mass
-discharge, cloud/flow transients, or sensor timing — i.e. **transient, not
+discharge, cloud/flow transients, or sensor timing - i.e. **transient, not
 steady-state, behaviour**. They must be excluded from any steady-state check.
 
 ---
@@ -80,7 +80,7 @@ Pearson correlations over the operating scatter cloud (`soac_scatter.csv`, n = 5
 |---|---|---|
 | ΔT ↔ P_kW | **+0.95** | Near-mechanical: P = flow · cₚ · ΔT, so ΔT drives power. |
 | G ↔ P_kW | **+0.68** | More irradiance → more thermal power (expected). |
-| T_in ↔ η | **+0.54** | **Confounded — do not read as causal (see below).** |
+| T_in ↔ η | **+0.54** | **Confounded - do not read as causal (see below).** |
 | G ↔ η | +0.14 | Efficiency rises weakly with irradiance (relative losses fall; startup low-G points drag η down). |
 
 **The positive T_in ↔ η correlation is a confounding artefact, not physics.**
@@ -91,7 +91,7 @@ array is running well (high η), while low inlet temperatures occur at cold
 start-up with low η. Time-of-day and irradiance confound the raw correlation.
 **A thesis must not cite this as "hotter inlet improves efficiency."** The
 correct, de-confounded relationship only appears when efficiency is compared at
-matched (Tₘ − Tₐ)/G — i.e. against the ISO curve (§6).
+matched (Tₘ − Tₐ)/G - i.e. against the ISO curve (§6).
 
 Operating envelope in the field cloud: G ≈ 101–893 W/m², T_in ≈ 22.9–37.5 °C.
 
@@ -100,7 +100,7 @@ Operating envelope in the field cloud: G ≈ 101–893 W/m², T_in ≈ 22.9–37
 ## 5. Transient / restart behaviour to exclude from steady-state validation
 
 The source flags **220 restart events** and **1,496 transient samples**
-(`meta.n_restarts`, `meta.n_transient`) out of 5,472 — i.e. roughly a quarter of
+(`meta.n_restarts`, `meta.n_transient`) out of 5,472 - i.e. roughly a quarter of
 all samples are non-steady. Direct evidence in the extracted data:
 
 - 27 samples with η > η₀ (impossible in steady state);
@@ -126,7 +126,7 @@ The public calculator produces an **annual** energy estimate from a **Typical
 Meteorological Year** and a generic collector parameterisation. This dataset is a
 **19-day autumn** window with the site's **own measured weather**. They differ in
 period, weather, season, and aggregation. Comparing the calculator's annual kWh
-to 5,888 kWh over 19 days — or scaling either to match — would be **misleading
+to 5,888 kWh over 19 days - or scaling either to match - would be **misleading
 and is not done here.**
 
 ### 6b. Defensible: ISO steady-state collector model vs field, at matched conditions
@@ -145,8 +145,8 @@ like-for-like check of the collector model (not of the TMY pipeline):
 **Finding: the certified ISO model over-predicts field efficiency by roughly
 55–60 % (relative) even in bright, quasi-steady conditions.** The field array
 delivers about **0.63× the certified steady-state efficiency**. The wind
-correction (a₁ = 12.106) moves the model in the right direction — *lower*
-efficiency — but only closes a small part of the gap.
+correction (a₁ = 12.106) moves the model in the right direction - *lower*
+efficiency - but only closes a small part of the gap.
 
 This is **not** evidence the calculator is "wrong"; it is evidence that a
 laboratory-certified steady-state curve is an **optimistic envelope** for a real,
@@ -160,12 +160,12 @@ the model onto the data.
 1. **Load the SOAC collector coefficients into the calculator** (η₀ = 0.4112,
    a₁ = 10.358 / 12.106, F′ = 0.46, area 534.7 m²). The public defaults are a
    generic collector and will not match this array.
-2. **Drive the model with the field's measured G, Tₐ, T_in** at 5-min cadence —
-   not TMY — so both sides see identical weather and inlet conditions.
+2. **Drive the model with the field's measured G, Tₐ, T_in** at 5-min cadence -
+   not TMY - so both sides see identical weather and inlet conditions.
 3. **Apply the same steady-state mask** (exclude the 220 restarts / 1,496
    transients; require η ≤ η₀, stable flow).
 4. **Compare on matched aggregation** (per-timestep η, or energy over the same
-   window) — never annual-vs-19-day.
+   window) - never annual-vs-19-day.
 5. Report an explicit **real-world derating factor** (field ÷ model) with its
    spread, rather than a single "validated / not validated" verdict.
 

@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -78,8 +78,8 @@
       <summary>Info</summary>
       <div class="info-box-body note">
         <p style="margin:0 0 6px;"><b>AS/NZS 4234:</b> The Australian/New Zealand standard for solar hot water system certification. Defines 5 climate zones and reference mains temperatures used by the Clean Energy Regulator (CER) for STC calculations.</p>
-        <p style="margin:0 0 6px;"><b>CER TMY (solid lines):</b> Formula-only check — uses CER's own weather files, same data that produced the green reference line. Isolates formula bias.</p>
-        <p style="margin:0 0 6px;"><b>PVGIS (dashed teal line):</b> Live-calculator check — what the main calculator would actually predict for a real user at this location. Fetch per zone using the button.</p>
+        <p style="margin:0 0 6px;"><b>CER TMY (solid lines):</b> Formula-only check - uses CER's own weather files, same data that produced the green reference line. Isolates formula bias.</p>
+        <p style="margin:0 0 6px;"><b>PVGIS (dashed teal line):</b> Live-calculator check - what the main calculator would actually predict for a real user at this location. Fetch per zone using the button.</p>
         <p style="margin:0 0 6px;"><b>BC-Aus:</b> Australian refit of Burch-Christensen. Run <code>python3 fit_bc_aus.py</code> to regenerate <code>bc_aus_constants.js</code>.</p>
         <p style="margin:0 0 6px;"><b>Regional BC-Aus:</b> Separate five-constant fit for each AS/NZS 4234 climate zone. This is the stronger regional version than changing only the offset. Run <code>python3 fit_bc_aus_by_zone.py</code> to regenerate <code>bc_aus_zone_constants.js</code>.</p>
         <p style="margin:0;"><b>Zone correction:</b> Exact monthly correction vectors still exist in <code>bc_zone_corrections.js</code> for the perfect-fit benchmark, but the main chart below now focuses on the pure national and regional BC formula fits.</p>
@@ -105,9 +105,9 @@
   </div>
 
 <div class="panel">
-    <h4 style="margin:0 0 4px;font-size:16px;">BC-Aus constants <span style="font-size:12px;font-weight:400;color:#555;">— shared national fit replacing the US Burch-Christensen defaults, fitted to Australian CER data via <code>fit_bc_aus.py</code></span></h4>
+    <h4 style="margin:0 0 4px;font-size:16px;">BC-Aus constants <span style="font-size:12px;font-weight:400;color:#555;">- shared national fit replacing the US Burch-Christensen defaults, fitted to Australian CER data via <code>fit_bc_aus.py</code></span></h4>
     <p class="note" style="margin:6px 0 12px;line-height:1.6;">
-      A Python script (<code>fit_bc_aus.py</code>) adjusts all five parameters simultaneously — <em>offsetF, ratio_c0, ratio_c1, lag_c0, lag_c1</em> — to find the combination that best matches the Australian CER reference temperatures across all 60 data points (5 zones × 12 months) from the CER DomDecks V30h climate files.
+      A Python script (<code>fit_bc_aus.py</code>) adjusts all five parameters simultaneously - <em>offsetF, ratio_c0, ratio_c1, lag_c0, lag_c1</em> - to find the combination that best matches the Australian CER reference temperatures across all 60 data points (5 zones × 12 months) from the CER DomDecks V30h climate files.
     </p>
     <p class="note" style="margin:0 0 12px;line-height:1.5;">
       Regional per-zone BC-Aus constants are loaded separately from <code>bc_aus_zone_constants.js</code> and are not changed by these manual national inputs.
@@ -229,7 +229,7 @@ const bcAusZoneConstantsLoaded =
 // to match BC+0 so the BC-Aus line silently overlays the BC+0 line and the
 // page still works. The user will see this happen and know to run the fit.
 if (typeof BC_AUS_OFFSET_F === "undefined") {
-  console.warn("bc_aus_constants.js not loaded — BC-Aus will mirror BC+0. Run fit_bc_aus.py to generate the constants.");
+  console.warn("bc_aus_constants.js not loaded - BC-Aus will mirror BC+0. Run fit_bc_aus.py to generate the constants.");
   window.BC_AUS_OFFSET_F = 0;
   window.BC_AUS_RATIO_C0 = 0.4;
   window.BC_AUS_RATIO_C1 = 0.01;
@@ -290,7 +290,7 @@ if (stored) {
 
 const ZONE_DATA = {
   zone1: {
-    name: "Zone 1 \u2014 Rockhampton",
+    name: "Zone 1 - Rockhampton",
     city: "Rockhampton",
     latitude: -23.4,
     longitude: 150.51,
@@ -307,7 +307,7 @@ const ZONE_DATA = {
     cerMains: [28.0, 28.0, 27.0, 25.0, 23.0, 20.0, 20.0, 21.0, 24.0, 26.0, 28.0, 28.0]
   },
   zone2: {
-    name: "Zone 2 \u2014 Alice Springs",
+    name: "Zone 2 - Alice Springs",
     city: "Alice Springs",
     latitude: -23.5,
     longitude: 133.88,
@@ -326,7 +326,7 @@ const ZONE_DATA = {
     cerMains: [29.0, 27.0, 24.0, 20.0, 14.0, 11.0, 9.0, 12.0, 18.0, 23.0, 26.0, 28.0]
   },
   zone3: {
-    name: "Zone 3 \u2014 Sydney",
+    name: "Zone 3 - Sydney",
     city: "Sydney",
     latitude: -33.4,
     longitude: 151.21,
@@ -344,7 +344,7 @@ const ZONE_DATA = {
     cerMains: [23.0, 23.0, 21.0, 18.0, 15.0, 12.0, 11.0, 12.0, 15.0, 19.0, 21.0, 22.0]
   },
   zone4: {
-    name: "Zone 4 \u2014 Melbourne",
+    name: "Zone 4 - Melbourne",
     city: "Melbourne",
     latitude: -37.8,
     longitude: 144.96,
@@ -362,7 +362,7 @@ const ZONE_DATA = {
     cerMains: [20.0, 20.0, 18.0, 15.0, 11.0, 9.0, 8.0, 10.0, 12.0, 15.0, 17.0, 19.0]
   },
   zone5: {
-    name: "Zone 5 \u2014 Canberra",
+    name: "Zone 5 - Canberra",
     city: "Canberra",
     latitude: -35.3,
     longitude: 149.13,
@@ -425,7 +425,7 @@ function syncInitialBcAusStatus(){
     return;
   }
   if (!bcAusConstantsLoaded){
-    setBcAusStatus("âš ï¸ bc_aus_constants.js not loaded — using BC+0 defaults. Run fit_bc_aus.py to generate the file.", "warn");
+    setBcAusStatus("âš ï¸ bc_aus_constants.js not loaded - using BC+0 defaults. Run fit_bc_aus.py to generate the file.", "warn");
     return;
   }
   setBcAusStatus("Using values loaded from bc_aus_constants.js", "ok");
@@ -451,7 +451,7 @@ function resetBcAusFromFile(){
   bcAusRestoredFromStorage = false;
   renderZone(currentZoneKey);
   if (!bcAusConstantsLoaded){
-    setBcAusStatus("âš ï¸ bc_aus_constants.js not loaded — using BC+0 defaults. Run fit_bc_aus.py to generate the file.", "warn");
+    setBcAusStatus("âš ï¸ bc_aus_constants.js not loaded - using BC+0 defaults. Run fit_bc_aus.py to generate the file.", "warn");
     return;
   }
   setBcAusStatus("Using values loaded from bc_aus_constants.js", "ok");
@@ -872,7 +872,7 @@ async function fetchAllPvgisZones(){
     statusEl.textContent = "All 5 zones loaded successfully";
   } else {
     statusEl.style.color = "#b00020";
-    statusEl.textContent = `Failed: ${failed.join(", ")} — is the backend running on port 8000?`;
+    statusEl.textContent = `Failed: ${failed.join(", ")} - is the backend running on port 8000?`;
   }
 
   btn.disabled = false;
