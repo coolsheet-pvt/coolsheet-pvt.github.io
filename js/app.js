@@ -3,7 +3,7 @@
 
 // Single source of truth for the app version shown in the header + PDF/report.
 // Keep in sync with the ?v= cache-bust query on css/js in index.html.
-const APP_VERSION = "13.29";
+const APP_VERSION = "13.36";
 
 // ================================================================
 //  DETAILS ANIMATION — replay slideDown every time a panel opens
@@ -23,8 +23,11 @@ document.querySelectorAll('.advanced-settings').forEach(details => {
 //  UTILITIES
 // ================================================================
 function setOutput(html, isError=false){
-  document.getElementById("annualOutput").innerHTML = isError
+  const outputPanel = document.getElementById("output");
+  const annualOutput = document.getElementById("annualOutput");
+  annualOutput.innerHTML = isError
     ? `<span class="err">${html}</span>` : html;
+  if (outputPanel) outputPanel.style.display = html ? "block" : "none";
   if (isError){
     const charts = document.getElementById("supplyChartsPanel");
     if (charts) charts.style.display = "none";
@@ -58,8 +61,22 @@ function resetExportActions(){
     pdfBtn.disabled = true;
     pdfBtn.textContent = "Generate PDF report";
   }
+  const shareBtn = document.getElementById("btnShareLink");
+  if (shareBtn) shareBtn.style.display = "none";
   const pvCheckBtn = document.getElementById("btnCheckPvScenario");
-  if (pvCheckBtn) pvCheckBtn.disabled = true;
+  if (pvCheckBtn){
+    pvCheckBtn.style.display = "none";
+    pvCheckBtn.disabled = true;
+  }
+}
+
+function scrollToCalculationResults(){
+  const target = document.body.classList.contains("ui-modern")
+    ? document.getElementById("modernResults")
+    : document.getElementById("output");
+  if (!target) return;
+  const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+  requestAnimationFrame(() => target.scrollIntoView({ behavior:reducedMotion ? "auto" : "smooth", block:"start" }));
 }
 
 function escapeHtml(value){
@@ -6522,7 +6539,12 @@ async function calcAnnualPVT(){
     };
 
     const pvCheckBtn = document.getElementById("btnCheckPvScenario");
-    if (pvCheckBtn) pvCheckBtn.disabled = false;
+    if (pvCheckBtn){
+      pvCheckBtn.style.display = "inline-block";
+      pvCheckBtn.disabled = false;
+    }
+    const shareBtn = document.getElementById("btnShareLink");
+    if (shareBtn) shareBtn.style.display = "inline-block";
 
     setOutput(html);
     setIndustryOutput(industryHtml);
@@ -6592,6 +6614,7 @@ async function calcAnnualPVT(){
       pdfBtn.textContent = "Generate PDF report";
     }
     document.dispatchEvent(new CustomEvent("pvt:results-rendered"));
+    scrollToCalculationResults();
 
   } catch(err){
     console.error(err);
@@ -6644,6 +6667,17 @@ function restoreInputsFromStorage(){
     }
     applyInputState(data);
   } catch(_e){}
+}
+
+function resetInputsToDefaults(){
+  if (!window.confirm("Reset all calculator inputs to their original defaults?")) return;
+  try {
+    localStorage.removeItem(INPUT_STORE_KEY);
+    localStorage.removeItem(INPUT_DEFAULTS_VERSION_KEY);
+  } catch(_error){}
+  const url = new URL(location.href);
+  url.hash = "";
+  location.replace(url.href);
 }
 
 // ================================================================
@@ -6859,6 +6893,7 @@ onTestingModeChange();
 }
 document.getElementById("btnShareLink")?.addEventListener("click", copyShareLink);
 document.getElementById("btnCheckPvScenario")?.addEventListener("click", openCurrentPvValidation);
+document.getElementById("btnResetInputs")?.addEventListener("click", resetInputsToDefaults);
 document.querySelectorAll('input[name="thermalModel"]').forEach(radio => {
   radio.addEventListener('change', function(){
     const isA = this.value === 'A';

@@ -6,12 +6,10 @@
   <title>Annual PVT Calculator</title>
   <meta name="description" content="Estimates annual energy output, savings and payback of photovoltaic-thermal (PVT) solar systems for Australian commercial sites." />
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
-  <link rel="stylesheet" href="css/styles.css?v=13.29" />
-  <!-- Modern UI (beta): presentation-only, active with ?ui=modern; classic stays default. -->
-  <link rel="stylesheet" href="css/ui-modern.css?v=13.29" />
+  <link rel="stylesheet" href="css/styles.css?v=13.36" />
   <!-- Chart.js v4.5.1 vendored locally (assets/vendor/) so charts work offline / on flaky wifi. -->
   <script src="assets/vendor/chart.umd.min.js"></script>
-  <script src="js/bc_aus_zone_constants.js?v=13.29"></script>
+  <script src="js/bc_aus_zone_constants.js?v=13.36"></script>
 </head>
 
 <body>
@@ -49,7 +47,7 @@
       </div>
     </div>
     <div class="brand-meta" style="position:absolute;bottom:10px;right:14px;text-align:right;">
-      <span id="appVersionLabel" style="font-size:11px;font-style:italic;color:rgba(255,255,255,0.35);">Version 13.29</span><br/>
+      <span id="appVersionLabel" style="font-size:11px;font-style:italic;color:rgba(255,255,255,0.35);">Version 13.36</span><br/>
       <label style="font-size:11px;color:rgba(255,255,255,0.35);cursor:pointer;display:inline-flex;align-items:center;gap:5px;margin-top:4px;">
         <input type="checkbox" id="chkHideMains" style="width:auto;margin:0;cursor:pointer;" onchange="onTestingModeChange();" />
         Testing
@@ -70,7 +68,6 @@
           </div>
           <div id="locConfirm" class="note"></div>
         </div>
-        <div class="note privacy-note">Privacy: loading weather sends the address to OpenStreetMap for geocoding, then sends the resulting coordinates to the CoolSheet weather service and PVGIS. Do not enter confidential site details.</div>
         <div id="locationMap" style="display:none;margin-top:10px;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,0.15);"></div>
         <div id="cerZoneDisplay" style="display:none;margin-top:6px;font-size:12px;"></div>
       </div>
@@ -79,22 +76,24 @@
       <input id="area" type="number" min="0" step="0.01" value="250" />
 
       <details class="advanced-settings full-row">
-        <summary>Advanced Settings</summary>
+        <summary>Optional system settings</summary>
         <div class="advanced-settings-body">
           <div class="advanced-grid">
-            <label for="tiltAngle">Tilt Angle (deg):</label>
+            <label for="tiltAngle">Panel tilt (&deg;):</label>
             <input id="tiltAngle" type="number" step="0.01" value="30" />
 
-            <label for="azimuthAngle">Surface Azimuth (deg, 0°=N, 180°=S):</label>
+            <label for="azimuthAngle">Panel direction (&deg;, 0&deg; north, 180&deg; south):</label>
             <input id="azimuthAngle" type="number" step="0.01" value="0" />
 
-            <label for="albedo">Ground Albedo (0-1):</label>
+            <label for="albedo">Ground reflectivity (0&ndash;1):</label>
             <input id="albedo" type="number" min="0" max="1" step="0.01" value="0.2" />
 
-            <label for="flowRate">Flow Rate (L/s/m&sup2;):</label>
+            <label for="flowRate">Water flow rate (L/s/m&sup2;):</label>
             <input id="flowRate" type="number" min="0.001" step="0.001" value="0.02" />
 
-            <div class="full-row inlet-block">
+            <details class="setting-group full-row">
+              <summary><span>Water temperature</span><small>Automatic by default</small></summary>
+              <div class="setting-group-body inlet-block">
               <div class="note" style="margin:2px 0 2px;">
                 Inlet temperature T<sub>in</sub> comes from the <b>monthly mains-water temperature</b> below, auto-filled once TMY weather is loaded.
               </div>
@@ -125,9 +124,13 @@
               <div class="mains-edit-actions">
                 <button type="button" class="secondary-action" onclick="resetMainsToModel()">Reset to model</button>
               </div>
-            </div>
+              </div>
+            </details>
 
-            <label for="etaPv">PV efficiency at STC (0&ndash;1):</label>
+            <details class="setting-group full-row">
+              <summary><span>PV performance assumptions</span><small>Recommended defaults are already applied</small></summary>
+              <div class="setting-group-body advanced-grid">
+            <label for="etaPv">Panel efficiency:</label>
             <div class="eta-cell">
               <input id="etaPv" type="number" min="0" max="1" step="0.01" value="0.20" />
               <span class="note eta-note">Lab-rated DC module efficiency at 25&deg;C cell temperature. The calculator reports gross DC and estimated net AC separately.</span>
@@ -185,20 +188,24 @@
                 <span class="formula-sub"><b>Electricity adjustment.</b> Hotter panels make slightly less power.</span>
               </div>
             </details>
+              </div>
+            </details>
 
-            <div class="thermal-model-card full-row">
+            <details class="setting-group full-row">
+              <summary><span>Thermal model</span><small>Model A is recommended</small></summary>
+              <div class="setting-group-body">
+            <div class="thermal-model-card">
               <div class="thermal-model-head">
-                <b>PVT Thermal Efficiency Model</b>
-                <span>This controls how the calculator turns sunlight into useful hot-water heat.</span>
+                <span>Choose how sunlight is converted into useful hot-water heat.</span>
               </div>
               <div class="thermal-model-options" role="radiogroup" aria-label="PVT thermal efficiency model">
                 <label class="thermal-model-option">
                   <input type="radio" name="thermalModel" id="modelA" value="A" checked />
-                  <span><b>Model A</b><small>Simple linear</small></span>
+                  <span><b>Model A</b><small>Recommended &middot; Simple linear</small></span>
                 </label>
                 <label class="thermal-model-option">
                   <input type="radio" name="thermalModel" id="modelB" value="B" />
-                  <span><b>Model B</b><small>ISO 9806 full model (Eq.12)</small></span>
+                  <span><b>Model B</b><small>ISO 9806 full model</small></span>
                 </label>
               </div>
 
@@ -264,6 +271,8 @@
                 </details>
               </div>
             </div>
+              </div>
+            </details>
           </div>
         </div>
       </details>
@@ -476,30 +485,29 @@
         </div>
       </div>
 
-      <details class="advanced-settings full-row">
-        <summary>Advanced Settings</summary>
+      <details class="advanced-settings economics-settings full-row">
+        <summary>Costs and savings assumptions</summary>
         <div class="advanced-settings-body">
           <div class="advanced-grid">
-            <div class="note full-row advanced-usage-note">
-              <span>Financial assumptions for savings and payback.</span>
-              <span class="setting-chip annual">Annual PVT</span>
-              <span class="setting-chip industry">Industry</span>
-              <span class="setting-chip disabled">Not used</span>
+            <div class="note full-row economics-intro">
+              The calculator uses the defaults below. Change them only when you have site-specific prices or costs.
             </div>
 
-            <label for="electricityPrice" class="setting-label"><b>Local Electricity Price (AUD/kWh):</b><span class="setting-tags"><span class="setting-chip annual">Annual PVT</span><span class="setting-chip industry">Industry</span></span></label>
+            <div class="economics-section-title full-row"><b>Energy prices</b><span>Used to estimate annual savings</span></div>
+
+            <label for="electricityPrice" class="setting-label"><b>Electricity bought from the grid (AUD/kWh):</b><span class="setting-tags"><span class="setting-chip annual">Annual PVT</span><span class="setting-chip industry">Industry</span></span></label>
             <input id="electricityPrice" type="number" min="0" step="0.01" value="0.27" />
 
-            <label for="feedInTariffInput" class="setting-label">Feed-in Electricity Price (AUD/kWh):<span class="setting-tags"><span class="setting-chip industry">Industry</span></span></label>
+            <label for="feedInTariffInput" class="setting-label">Electricity exported to the grid (AUD/kWh):<span class="setting-tags"><span class="setting-chip industry">Industry</span></span></label>
             <input id="feedInTariffInput" type="number" min="0" step="0.01" value="0.06" />
 
-            <label for="gasPriceInput" class="setting-label"><b>Natural Gas Price (AUD/MJ):</b><span class="setting-tags"><span class="setting-chip industry">Industry</span></span></label>
+            <label for="gasPriceInput" class="setting-label"><b>Natural gas price (AUD/MJ):</b><span class="setting-tags"><span class="setting-chip industry">Industry</span></span></label>
             <input id="gasPriceInput" type="number" min="0" step="0.001" value="0.020" />
 
-            <label for="boilerEffInput" class="setting-label"><b>Boiler Efficiency &eta; (0&ndash;1):</b><span class="setting-tags"><span class="setting-chip industry">Industry</span></span></label>
+            <label for="boilerEffInput" class="setting-label"><b>Existing boiler efficiency (0&ndash;1):</b><span class="setting-tags"><span class="setting-chip industry">Industry</span></span></label>
             <input id="boilerEffInput" type="number" min="0.5" max="1" step="0.01" value="0.85" />
 
-            <label for="gridEmissionFactor" class="setting-label">Grid emission factor (kg CO&#8322;-e/kWh):<span class="setting-tags"><span class="setting-chip industry">Industry</span></span></label>
+            <label for="gridEmissionFactor" class="setting-label">Region for emissions estimate:<span class="setting-tags"><span class="setting-chip industry">Industry</span></span></label>
             <select id="gridEmissionFactor" aria-describedby="gridEmissionFactorSource">
               <option value="0.62" selected>National average &mdash; 0.62</option>
               <option value="0.64">NSW &amp; ACT &mdash; 0.64</option>
@@ -514,14 +522,19 @@
               Source: DCCEEW <a href="https://www.dcceew.gov.au/climate-change/publications/national-greenhouse-accounts-factors-2025" target="_blank" rel="noopener">National Greenhouse Accounts Factors 2025</a>.
             </div>
 
-            <label for="capexInput" class="setting-label"><b>CAPEX &ndash; Unit Cost (AUD/m&sup2;):</b><span class="setting-tags"><span class="setting-chip annual">Annual PVT</span></span></label>
+            <div class="economics-section-title full-row"><b>Installed cost</b><span>Used for payback and lifetime-cost estimates</span></div>
+
+            <label for="capexInput" class="setting-label"><b>Installed cost (AUD/m&sup2;):</b><span class="setting-tags"><span class="setting-chip annual">Annual PVT</span></span></label>
             <input id="capexInput" type="number" min="0" step="10" value="800" />
 
-            <div class="installed-cost-box full-row">
-              <div class="installed-cost-head">
-                <b>Installed cost auto-fill</b>
-                <span class="setting-chip annual">Annual PVT</span>
-              </div>
+            <label for="autoCapexFromWatts" class="auto-cost-toggle cost-auto-toggle full-row">
+              <input id="autoCapexFromWatts" type="checkbox" checked />
+              Calculate this automatically from $/W values
+            </label>
+
+            <details class="cost-conversion-details full-row">
+              <summary>Edit the $/W cost calculation</summary>
+              <div class="cost-conversion-body">
               <div class="installed-cost-grid">
                 <label for="pvInstalledCostPerW" class="setting-label">PV installed cost (AUD/W):<span class="setting-tags"><span class="setting-chip annual">Annual PVT</span></span></label>
                 <input id="pvInstalledCostPerW" type="number" min="0" step="0.01" value="1.20" />
@@ -535,46 +548,43 @@
                 <label for="installedCostPerFt2" class="setting-label">Reference installed cost conversion (AUD/ft&sup2;; non-SI):<span class="setting-tags"><span class="setting-chip annual">Annual PVT</span></span></label>
                 <input id="installedCostPerFt2" type="text" value="" readonly />
 
-                <label for="autoCapexFromWatts" class="auto-cost-toggle">
-                  <input id="autoCapexFromWatts" type="checkbox" checked />
-                  Auto-fill CAPEX unit cost from these values
-                </label>
               </div>
               <div class="note">
                 Uses installed $/W to fill primary Australian AUD/m&sup2; and a secondary non-SI AUD/ft&sup2; reference conversion.
               </div>
-            </div>
+              </div>
+            </details>
 
-            <label for="opexRateInput" class="setting-label">OPEX Rate (% of CAPEX / yr):<span class="setting-tags"><span class="setting-chip annual">Annual PVT</span></span></label>
+            <div class="economics-section-title full-row"><b>Financial period</b><span>Used for payback and NPV</span></div>
+
+            <label for="opexRateInput" class="setting-label">Annual operating cost (% of installed cost):<span class="setting-tags"><span class="setting-chip annual">Annual PVT</span></span></label>
             <input id="opexRateInput" type="number" min="0" max="20" step="0.1" value="1.5" />
 
-            <label for="systemLifeInput" class="setting-label">System Lifetime N (years):<span class="setting-tags"><span class="setting-chip annual">Annual PVT</span></span></label>
+            <label for="systemLifeInput" class="setting-label">System lifetime (years):<span class="setting-tags"><span class="setting-chip annual">Annual PVT</span></span></label>
             <input id="systemLifeInput" type="number" min="1" max="50" step="1" value="25" />
 
-            <label for="discountRateInput" class="setting-label">Discount Rate r (%):<span class="setting-tags"><span class="setting-chip annual">Annual PVT</span></span></label>
+            <label for="discountRateInput" class="setting-label">Discount rate (%):<span class="setting-tags"><span class="setting-chip annual">Annual PVT</span></span></label>
             <input id="discountRateInput" type="number" min="0" max="30" step="0.1" value="6" />
 
-            <div class="note full-row" style="margin-top:6px;">
-              Defaults are editable estimates.
-            </div>
           </div>
         </div>
       </details>
 
       <div class="btns full-row">
-        <button id="btnAnnual" type="button">Calculate Annual PV + Thermal</button>
+        <button id="btnAnnual" type="button">Calculate results</button>
         <span id="calcHint" style="display:none;margin-left:10px;font-size:12px;color:#666;line-height:2.5;">Calculating 8,760 hourly timesteps&hellip;</span>
         <a id="downloadLink" href="#" target="_blank" rel="noopener">Download hourly details CSV</a>
         <button id="btnGeneratePdf" type="button" class="secondary-action" disabled>Generate PDF report</button>
-        <button id="btnShareLink" type="button" class="secondary-action" style="display:inline-block;">Copy share link</button>
+        <button id="btnShareLink" type="button" class="secondary-action">Copy share link</button>
         <button id="btnCheckPvScenario" type="button" class="secondary-action" disabled>Check this PV result</button>
+        <button id="btnResetInputs" type="button" class="secondary-action" style="display:inline-block;">Reset inputs</button>
       </div>
 
     </div>
   </div>
 
   <!-- Base PVT Results + Supply Charts -->
-  <div id="output" class="panel">
+  <div id="output" class="panel" style="display:none;">
     <div id="annualOutput"></div>
 
     <!-- Supply Charts (Chart.js) -->
@@ -684,7 +694,6 @@
 
 </div>
 
-<script src="js/app.js?v=13.29"></script>
-<script src="js/ui-modern.js?v=13.29"></script>
+<script src="js/app.js?v=13.36"></script>
 </body>
 </html>

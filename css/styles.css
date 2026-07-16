@@ -181,7 +181,6 @@ body.testing-mode .kwater-label{display:inline;}
 .address-actions .btns{margin:0;flex:0 0 auto;}
 .address-actions .btns button{white-space:nowrap;}
 #locConfirm{min-height:0;flex:1 1 0;min-width:0;font-size:11px;line-height:1.35;margin-top:0;}
-.privacy-note{margin-top:7px;max-width:760px;line-height:1.4;}
 .chart-container{position:relative;height:400px;margin:16px 0;}
 .pv-comparison-chart{height:320px;}
 .data-table-container{margin-top:20px;}
@@ -350,33 +349,46 @@ body.testing-mode .kwater-label{display:inline;}
 .balance-preview-data thead th{color:#29485d;font-weight:700;}
 .industry-chart-group svg{border:0 !important;background:transparent !important;border-radius:0 !important;}
 .advanced-settings{grid-column:1 / -1;border:1px solid #d7dee8;background:#fff;border-radius:8px;overflow:hidden;}
-.advanced-settings summary{padding:12px 14px;font-size:13px;font-weight:600;cursor:pointer;background:#f7f9fc;transition:background 0.18s;user-select:none;}
-.advanced-settings summary:hover{background:#e8eef6;}
-.advanced-settings summary::marker{transition:transform 0.2s;}
-.advanced-settings[open] summary{background:#e8eef6;}
+.advanced-settings>summary{padding:12px 14px;font-size:13px;font-weight:600;cursor:pointer;background:#f7f9fc;transition:background 0.18s;user-select:none;}
+.advanced-settings>summary:hover{background:#e8eef6;}
+.advanced-settings>summary::marker{transition:transform 0.2s;}
+.advanced-settings[open]>summary{background:#e8eef6;}
 .advanced-settings-body{padding:12px 14px;border-top:1px solid #e5ebf2;}
 .advanced-settings-body.animate{animation:slideDown 0.65s ease;}
 .advanced-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;align-items:center;}
+.setting-group{border:1px solid #d7e1ea;border-radius:8px;background:#fbfcfe;overflow:hidden;}
+.setting-group>summary{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;cursor:pointer;background:#f4f7fa;color:#173047;list-style:none;}
+.setting-group>summary::-webkit-details-marker{display:none;}
+.setting-group>summary::before{content:"▶";flex:0 0 auto;color:#557086;font-size:9px;transition:transform .15s ease;}
+.setting-group[open]>summary::before{transform:rotate(90deg);}
+.setting-group>summary:hover{background:#eaf0f5;}
+.setting-group[open]>summary{background:#e7eef5;border-bottom:1px solid #d7e1ea;}
+.setting-group>summary span{font-size:13px;font-weight:700;}
+.setting-group>summary small{margin-left:auto;color:#667887;font-size:11px;font-weight:500;text-align:right;}
+.setting-group-body{padding:12px 14px;background:#fff;}
+.setting-group-body.inlet-block{margin:0;border:0;border-radius:0;}
+.setting-group-body>.thermal-model-card{margin:0;}
 /* PV efficiency input + its note side by side (note to the right, smaller) */
 .eta-cell{display:flex;align-items:center;gap:10px;}
 .eta-cell input{flex:0 0 110px;}
 .eta-note{flex:1 1 auto;font-size:11px;color:#666;line-height:1.3;margin:0;}
 .noct-explainer{margin:-2px 0 6px;color:#3f4d5b;max-width:900px;}
-.thermal-model-card{margin:10px 0 4px;padding:14px;border:1px solid #e1b86f;border-left:4px solid #b97916;border-radius:8px;background:#fffaf0;box-shadow:0 1px 0 rgba(120,83,24,0.08);}
-.thermal-model-head{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;color:#173047;}
-.thermal-model-head b{font-size:14px;}
-.thermal-model-head span{font-size:12px;color:#5d6470;line-height:1.35;}
-.thermal-model-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:10px;}
-.thermal-model-option{display:flex;align-items:center;gap:9px;min-height:48px;padding:10px 12px;border:1px solid #e7cf9d;border-radius:7px;background:#fff;cursor:pointer;}
+.thermal-model-card{margin:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;}
+.thermal-model-head{margin:0 0 12px;color:#5d6d79;}
+.thermal-model-head span{font-size:12px;line-height:1.4;}
+.thermal-model-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;margin:0;padding:0 0 14px;border-bottom:1px solid #dce4eb;}
+.thermal-model-option{display:flex;align-items:center;gap:9px;min-height:44px;padding:3px 0;border:0;border-radius:0;background:transparent;cursor:pointer;}
 .thermal-model-option input{width:16px;height:16px;flex:0 0 16px;margin:0;}
 .thermal-model-option span{display:flex;flex-direction:column;gap:3px;min-width:0;font-size:13px;line-height:1.2;color:#173047;}
 .thermal-model-option small{font-size:11px;color:#68706f;line-height:1.25;}
-.thermal-model-params{margin-top:2px;}
-.thermal-model-details{border-color:#d7ad64;background:#fffdf8;}
-.thermal-model-details>summary{background:#f5e7c8;color:#76480e;}
-.thermal-model-details>summary:hover{background:#efd9aa;}
-.thermal-model-details[open]>summary{background:#9b6419;color:#fff;}
-.thermal-model-details[open]>.advanced-grid{background:#fff6e1;}
+.thermal-model-option:has(input:checked) b{color:#0d6f8f;}
+.thermal-model-option:hover b{color:#155f9d;}
+.thermal-model-params{margin-top:0;}
+.formula-details.thermal-model-details{border:0;border-radius:0;background:transparent;}
+.formula-details.thermal-model-details>summary{padding:11px 0 3px;background:transparent;color:#155f9d;}
+.formula-details.thermal-model-details>summary:hover{background:transparent;color:#0d4f83;text-decoration:underline;}
+.formula-details.thermal-model-details[open]>summary{background:transparent;color:#0d4f83;}
+.formula-details.thermal-model-details[open]>.advanced-grid{background:transparent;}
 /* Consolidated inlet / monthly-mains override card inside Advanced Settings */
 .inlet-block{margin:2px 0 6px;padding:12px 14px;background:#f3f7fb;border:1px solid #dce5ee;border-radius:8px;}
 /* PV temperature-correction toggle — keep the checkbox small so the label reads on one line */
@@ -393,6 +405,22 @@ body.testing-mode .kwater-label{display:inline;}
 .setting-chip.annual{background:#eaf4ff;border-color:#a8cff0;color:#155f9d;}
 .setting-chip.industry{background:#eaf8ef;border-color:#a8d9b7;color:#236b3a;}
 .setting-chip.disabled{background:#f1f3f5;border-color:#d4d9df;color:#687380;}
+.economics-settings .setting-tags{display:none;}
+.economics-settings .setting-label{display:block;}
+.economics-intro{margin:0 0 4px;color:#5b6b78;line-height:1.45;}
+.economics-section-title{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-top:8px;padding-top:16px;border-top:1px solid #dde5ec;color:#173047;}
+.economics-intro + .economics-section-title{margin-top:0;padding-top:2px;border-top:0;}
+.economics-section-title b{font-size:13px;}
+.economics-section-title span{color:#71808c;font-size:11px;text-align:right;}
+.cost-conversion-details{margin:0;border-top:1px solid #e0e7ed;border-bottom:1px solid #e0e7ed;}
+.cost-conversion-details>summary{display:flex;align-items:center;gap:7px;padding:10px 0;list-style:none;cursor:pointer;color:#155f9d;font-size:12px;font-weight:700;}
+.cost-conversion-details>summary::-webkit-details-marker{display:none;}
+.cost-conversion-details>summary::before{content:"▶";font-size:9px;transition:transform .15s ease;}
+.cost-conversion-details[open]>summary::before{transform:rotate(90deg);}
+.cost-conversion-details>summary:hover{color:#0d4f83;text-decoration:underline;}
+.cost-conversion-body{padding:4px 0 12px;}
+.cost-conversion-body>.note{margin-top:8px;}
+.cost-auto-toggle{margin-top:-3px;color:#4f6270;font-size:12px;font-weight:500;}
 .formula-box{margin:4px 0 8px;padding:10px 12px;background:#fffbe6;border:1px solid #ffe58f;border-radius:6px;color:#54461d;}
 .formula-main{display:block;overflow-x:auto;font-family:"Cambria Math","Times New Roman",serif;font-size:15px;font-weight:600;line-height:1.6;white-space:nowrap;}
 .formula-main sub,.formula-main sup{font-size:72%;}
@@ -446,7 +474,7 @@ button:disabled{opacity:0.55;cursor:wait;transform:none;box-shadow:none;}
   .panel{padding:12px;}
   input:not([type=checkbox]):not([type=radio]),select,button,#downloadLink,.secondary-action,.shared-scenario-link{min-height:44px;font-size:14px;}
   input[type=checkbox],input[type=radio]{width:18px;height:18px;min-width:18px;min-height:18px;max-height:18px;}
-  .how-it-works-btn,.advanced-settings summary,.formula-details>summary,.footer-details summary{min-height:44px;}
+  .how-it-works-btn,.advanced-settings>summary,.setting-group>summary,.formula-details>summary,.footer-details summary{min-height:44px;}
   .brand-meta label,.tempcorr-toggle,.auto-cost-toggle,.display-controls label,.process-check label,.aquatic-process-label{min-height:44px;align-items:center;}
   .note a,.footer-note a{display:inline-flex;align-items:center;justify-content:center;min-width:40px;min-height:32px;padding:0 4px;vertical-align:middle;}
   .mains-quickset input,.mains-month-cell input{min-height:40px;}
@@ -459,6 +487,11 @@ button:disabled{opacity:0.55;cursor:wait;transform:none;box-shadow:none;}
   .setting-label{grid-template-columns:1fr;align-items:start;gap:6px;}
   .setting-tags{justify-content:flex-start;}
   .thermal-model-options{grid-template-columns:1fr;}
+  .setting-group>summary{display:grid;grid-template-columns:auto 1fr;align-items:start;gap:3px 8px;}
+  .setting-group>summary::before{grid-row:1 / span 2;margin-top:4px;}
+  .setting-group>summary small{grid-column:2;margin-left:0;text-align:left;}
+  .economics-section-title{align-items:flex-start;flex-direction:column;gap:3px;}
+  .economics-section-title span{text-align:left;}
   .address-actions{flex-direction:column;align-items:stretch;}
   .address-actions .btns,.address-actions .btns button{width:100%;}
   .inline-form-row{grid-template-columns:1fr;}

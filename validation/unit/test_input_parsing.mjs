@@ -68,5 +68,10 @@ console.log("\n# frozen zone untouched: Model A/B coefficient reads unchanged");
 ok("Model A a0 still plain parseFloat", SRC.includes(`const a0           = parseFloat(document.getElementById("pvtA0").value);`));
 ok("Model B isoA1 read unchanged (documented behaviour lock)", SRC.includes(`parseFloat(document.getElementById("isoA1").value) || 3.93`));
 
+console.log("\n# recovery controls");
+ok("reset removes the persisted input state", SRC.includes("localStorage.removeItem(INPUT_STORE_KEY)"));
+ok("reset removes the defaults-version state", SRC.includes("localStorage.removeItem(INPUT_DEFAULTS_VERSION_KEY)"));
+ok("weather service is pre-warmed without a visible status control", SRC.includes("function warmHostedTMYService()"));
+
 console.log(`\n=== ${pass} passed, ${fail} failed ===`);
 process.exit(fail===0?0:1);

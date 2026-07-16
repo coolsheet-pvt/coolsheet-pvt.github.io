@@ -31,6 +31,9 @@ ok("summary CSV has state-first branch", bodyOf("buildSummaryCsv").includes("con
 ok("share links use versioned payload", bodyOf("buildShareScenarioPayload").includes("schemaVersion: 2"));
 ok("share links include reproducibility note", bodyOf("buildShareScenarioPayload").includes("reproducibilityNote"));
 ok("shared-link loader keeps v1 flat input compatibility", bodyOf("applySharedScenarioFromUrl").includes("applyInputState(payload);"));
+ok("successful results reveal the share action", SRC.includes('shareBtn.style.display = "inline-block"'));
+ok("successful results reveal the PV check action", SRC.includes('pvCheckBtn.style.display = "inline-block"'));
+ok("successful calculation scrolls to results", SRC.includes("scrollToCalculationResults();"));
 
 console.log(`\n=== ${pass} passed, ${fail} failed ===`);
 process.exit(fail === 0 ? 0 : 1);

@@ -15,11 +15,53 @@ test("calculator UI loads without console errors", async ({ page }) => {
   });
   await page.goto(pageUrl);
   await expect(page.locator("#btnAnnual")).toBeVisible();
+  await expect(page.locator("#btnAnnual")).toHaveText("Calculate results");
   await expect(page.locator("#industrySelect")).toBeVisible();
   await expect(page.locator("#downloadLink")).toBeHidden();
-  await expect(page.locator("#btnCheckPvScenario")).toBeDisabled();
+  await expect(page.locator("#btnGeneratePdf")).toBeHidden();
+  await expect(page.locator("#btnShareLink")).toBeHidden();
+  await expect(page.locator("#btnCheckPvScenario")).toBeHidden();
+  await expect(page.locator("#btnResetInputs")).toBeVisible();
+  await expect(page.locator("#output")).toBeHidden();
+  await page.evaluate(() => setOutput("<div class=\"output-card output-card-annual\">Test result</div>"));
+  await expect(page.locator("#output")).toBeVisible();
+  await page.evaluate(() => setOutput(""));
+  await expect(page.locator("#output")).toBeHidden();
+  await expect(page.locator("#weatherServiceIndicator")).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Validation centre" })).toBeVisible();
-  await expect(page.getByText(/loading weather sends the address to OpenStreetMap/i)).toBeVisible();
+  await expect(page.getByText("Try modern UI", { exact:false })).toHaveCount(0);
+  await expect(page.locator('script[src*="ui-modern"]')).toHaveCount(0);
+  const optionalSystemSettings = page.locator("details.advanced-settings").filter({ has:page.locator("#tiltAngle") });
+  await expect(optionalSystemSettings.locator(":scope > summary")).toHaveText("Optional system settings");
+  await optionalSystemSettings.locator(":scope > summary").click();
+  await expect(optionalSystemSettings.locator("details.setting-group")).toHaveCount(3);
+  await expect(optionalSystemSettings.locator("details.setting-group[open]")).toHaveCount(0);
+  await expect(page.locator("#mainsMonthGrid")).toBeHidden();
+  const thermalGroup = optionalSystemSettings.locator("details.setting-group").filter({ has:page.locator("#modelA") });
+  await thermalGroup.locator(":scope > summary").click();
+  await expect(page.locator("#modelA")).toBeVisible();
+  await expect(page.locator("#modelB")).toBeVisible();
+  await expect(thermalGroup.locator(".thermal-model-card")).toHaveCSS("border-top-style", "none");
+  await expect(thermalGroup.locator(".thermal-model-option").first()).toHaveCSS("border-top-style", "none");
+  const economicsSettings = page.locator("details.economics-settings");
+  await expect(economicsSettings.locator(":scope > summary")).toHaveText("Costs and savings assumptions");
+  await economicsSettings.locator(":scope > summary").click();
+  await expect(economicsSettings.locator(".economics-section-title")).toHaveCount(3);
+  await expect(economicsSettings.locator(".setting-chip").first()).toBeHidden();
+  await expect(page.locator("#autoCapexFromWatts")).toBeVisible();
+  await expect(page.locator("#autoCapexFromWatts")).toBeChecked();
+  await expect(page.locator("#pvInstalledCostPerW")).toBeHidden();
+  await economicsSettings.locator(".cost-conversion-details > summary").click();
+  await expect(page.locator("#pvInstalledCostPerW")).toBeVisible();
+  await expect(page.getByText(/loading weather sends the address to OpenStreetMap/i)).toHaveCount(0);
+  await page.locator("#area").fill("321");
+  await page.locator("#area").dispatchEvent("change");
+  page.once("dialog", dialog => dialog.accept());
+  await Promise.all([
+    page.waitForNavigation(),
+    page.locator("#btnResetInputs").click()
+  ]);
+  await expect(page.locator("#area")).toHaveValue("250");
   expect(errors).toEqual([]);
 });
 
@@ -165,7 +207,7 @@ test("alternative monthly balance graph coexists with every legacy industry grap
   expect(mobile.visibleLabelX).toEqual([...mobile.visibleLabelX].sort((a,b) => a-b));
 });
 
-test("modern results prioritise matched decisions without changing values", async ({ page }) => {
+test.skip("retired modern UI presentation layer", async ({ page }) => {
   const errors = [];
   page.on("console", msg => {
     if (msg.type() === "error") errors.push(msg.text());
