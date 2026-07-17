@@ -40,10 +40,8 @@ const code = [
   ["monthFromDayN","func"],
   ["monthDayFromDayN","func"],
   ["aggregateMonthly","func"],
-  ["calculateThermalStorage","func"],
   ["calculateHourlyEnergyBalance","func"],
   ["calculateHourlyElectricityBalance","func"],
-  ["calculateStorageMonthlyEnergyBalance","func"],
   ["niceMonthlyBalanceAxisMax","func"],
   ["formatMonthlyBalanceMWh","func"],
   ["formatMonthlyBalanceKWh","func"],
@@ -53,7 +51,7 @@ const code = [
   ["getMonthlyWaterTemperatureRise","func"],
   ["aggregateDailyAll","func"]
 ].map(([n,k]) => extract(n,k)).join("\n");
-const mod = new Function(code + "\nreturn {MONTH_DAYS, monthFromDayN, monthDayFromDayN, aggregateMonthly, calculateThermalStorage, calculateHourlyEnergyBalance, calculateHourlyElectricityBalance, calculateStorageMonthlyEnergyBalance, buildMonthlyEnergyBalancePreview, aggregateMonthlyAll, getMonthlyWaterTemperatureRise, aggregateDailyAll};")();
+const mod = new Function(code + "\nreturn {MONTH_DAYS, monthFromDayN, monthDayFromDayN, aggregateMonthly, calculateHourlyEnergyBalance, calculateHourlyElectricityBalance, buildMonthlyEnergyBalancePreview, aggregateMonthlyAll, getMonthlyWaterTemperatureRise, aggregateDailyAll};")();
 
 let pass=0, fail=0;
 const ok=(n,c,d="")=>{ c?pass++:fail++; console.log(`  ${c?"PASS":"FAIL"}  ${n}${c?"":"  "+d}`); };
@@ -172,29 +170,6 @@ console.log("\n# hourly monthly energy balance reconciliation");
   near("unequal aligned demand still reconciles", unequalInputs.demandMonthly[0], unequalInputs.matchedMonthly[0] + unequalInputs.unmetMonthly[0], 1e-9);
 }
 
-console.log("\n# hotel storage monthly balance carries energy across months honestly");
-{
-  const met = [
-    {dayN:1, hourN:0}, {dayN:1, hourN:1},
-    {dayN:32, hourN:0}, {dayN:32, hourN:1}
-  ];
-  const supply = [10,0,0,0];
-  const demand = [0,0,5,0];
-  const storage = mod.calculateThermalStorage({
-    tank_volume_litres:1000,
-    pvt_supply_array:supply,
-    hotel_demand_array:demand,
-    mains_temp:14
-  });
-  const monthly = mod.calculateStorageMonthlyEnergyBalance(storage, demand, met);
-  near("January generation remains in tank", storage.tank_soc_kwh[1], 10, 1e-9);
-  near("February demand is served by carried tank energy", monthly.matchedMonthly[1], 5, 1e-9);
-  near("February backup remains zero", monthly.unmetMonthly[1], 0, 1e-9);
-  near("monthly served + backup equals February demand", monthly.matchedMonthly[1] + monthly.unmetMonthly[1], 5, 1e-9);
-  near("January storage conservation", supply[0] + supply[1], storage.tank_soc_kwh[1] + storage.excess_pvt_kwh[0] + storage.excess_pvt_kwh[1], 1e-9);
-  near("February storage conservation with opening SOC", storage.tank_soc_kwh[1], monthly.matchedMonthly[1] + storage.tank_soc_kwh[3] + storage.excess_pvt_kwh[2] + storage.excess_pvt_kwh[3], 1e-9);
-}
-
 console.log("\n# alternative graph markup coexists with the original charts");
 {
   const balance = {
@@ -221,12 +196,12 @@ console.log("\n# alternative graph markup coexists with the original charts");
 
   const hotel = mod.buildMonthlyEnergyBalancePreview({
     ...balance,
-    previewTitle:"Heat demand balance (with selected tank)",
-    solarLabel:"PVT/tank heat used",
-    surplusLabel:"Excess PVT heat",
-    previewBasisNote:"Stored energy is counted in the month when it serves demand."
+    previewTitle:"Heat demand balance (hourly direct use)",
+    solarLabel:"Solar heat used",
+    surplusLabel:"Unused solar heat",
+    previewBasisNote:"Hourly direct-use matching is used; excess heat is not carried overnight."
   }, balance);
-  ok("hotel storage terminology is carried into the preview", hotel.includes("PVT/tank heat used") && hotel.includes("Stored energy is counted in the month when it serves demand."));
+  ok("hotel direct-use terminology is carried into the preview", hotel.includes("Solar heat used") && hotel.includes("excess heat is not carried overnight."));
 }
 
 console.log("\n# source lock: no Date round-trip in chart aggregation");

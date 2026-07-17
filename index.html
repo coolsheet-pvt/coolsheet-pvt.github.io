@@ -387,9 +387,6 @@
             <label for="hotelOccupancyInput"><b>Occupancy rate (%):</b></label>
             <input id="hotelOccupancyInput" type="number" min="0" max="100" step="0.1" value="70" />
 
-            <label for="tankVolume"><b>Thermal storage tank volume (L):</b></label>
-            <input id="tankVolume" type="number" min="0" step="100" value="0" />
-
             <label for="hotelDhwKWh"><b>DHW assumption (kWh/occupied room-night):</b></label>
             <input id="hotelDhwKWh" type="number" min="0" step="0.1" value="4.5" />
             <label for="hotelKitchenKWh"><b>Kitchen assumption (kWh/occupied room-night):</b></label>
@@ -400,6 +397,43 @@
             <input id="hotelPoolKWh" type="number" min="0" step="0.1" value="0.8" />
             <label for="hotelElectricKWh"><b>Whole-site electricity assumption (kWh/occupied room-night):</b></label>
             <input id="hotelElectricKWh" type="number" min="0" step="0.5" value="15" />
+
+            <details class="hotel-reality-check full-row">
+              <summary>
+                <span>Reality Check</span>
+                <span class="hotel-reality-summary-note">Optional meter calibration</span>
+              </summary>
+              <div class="hotel-reality-input-body">
+                <p>Compare this scenario with metered fuel used only for the hot-water and process-heat loads modelled above. Whole-building gas use, space heating and kitchen gas outside this scope should be excluded.</p>
+                <div class="hotel-reality-input-grid">
+                  <label for="hotelMeasuredAnnualFuelGj"><b>Metered annual fuel for modelled heat (GJ):</b></label>
+                  <input id="hotelMeasuredAnnualFuelGj" type="number" min="0" step="0.1" placeholder="Optional" />
+
+                  <label class="hotel-reality-toggle" for="hotelApplyMeterCalibration">
+                    <input id="hotelApplyMeterCalibration" type="checkbox" />
+                    <span><b>Apply meter calibration</b><small>Scales the hotel heat profile to the metered annual useful heat.</small></span>
+                  </label>
+                </div>
+                <details class="hotel-monthly-meter">
+                  <summary>Enter full-year monthly fuel data instead</summary>
+                  <div class="hotel-meter-month-grid">
+                    <label>Jan<input id="hotelMeterJanFuelGj" type="number" min="0" step="0.1" placeholder="GJ" /></label>
+                    <label>Feb<input id="hotelMeterFebFuelGj" type="number" min="0" step="0.1" placeholder="GJ" /></label>
+                    <label>Mar<input id="hotelMeterMarFuelGj" type="number" min="0" step="0.1" placeholder="GJ" /></label>
+                    <label>Apr<input id="hotelMeterAprFuelGj" type="number" min="0" step="0.1" placeholder="GJ" /></label>
+                    <label>May<input id="hotelMeterMayFuelGj" type="number" min="0" step="0.1" placeholder="GJ" /></label>
+                    <label>Jun<input id="hotelMeterJunFuelGj" type="number" min="0" step="0.1" placeholder="GJ" /></label>
+                    <label>Jul<input id="hotelMeterJulFuelGj" type="number" min="0" step="0.1" placeholder="GJ" /></label>
+                    <label>Aug<input id="hotelMeterAugFuelGj" type="number" min="0" step="0.1" placeholder="GJ" /></label>
+                    <label>Sep<input id="hotelMeterSepFuelGj" type="number" min="0" step="0.1" placeholder="GJ" /></label>
+                    <label>Oct<input id="hotelMeterOctFuelGj" type="number" min="0" step="0.1" placeholder="GJ" /></label>
+                    <label>Nov<input id="hotelMeterNovFuelGj" type="number" min="0" step="0.1" placeholder="GJ" /></label>
+                    <label>Dec<input id="hotelMeterDecFuelGj" type="number" min="0" step="0.1" placeholder="GJ" /></label>
+                  </div>
+                  <p class="note">Enter all 12 calendar months. Their total overrides the annual-fuel field and unlocks the monthly comparison below.</p>
+                </details>
+              </div>
+            </details>
             <div class="note full-row">These are editable scenario assumptions. NABERS Hotels v4.3 defines a whole-building rating method; it does not validate this process-level decomposition.</div>
           </div>
         </div>

@@ -943,77 +943,6 @@ function isInputChecked(id){
   return !!document.getElementById(id)?.checked;
 }
 
-function calculateThermalStorage(requestPayload){
-  const tankVolumeLitres = Number(requestPayload?.tank_volume_litres);
-  const pvtSupplyArray = Array.isArray(requestPayload?.pvt_supply_array) ? requestPayload.pvt_supply_array : [];
-  const demandArray = Array.isArray(requestPayload?.hotel_demand_array) ? requestPayload.hotel_demand_array : [];
-  const mainsTemp = Number(requestPayload?.mains_temp);
-  // Optional per-hour mains temperatures (deg C) so tank capacity follows the
-  // seasonal mains profile; the scalar mains_temp remains the fallback.
-  const mainsTempArray = Array.isArray(requestPayload?.mains_temp_array) ? requestPayload.mains_temp_array : null;
-
-  if (!isFiniteNumber(tankVolumeLitres) || tankVolumeLitres < 0){
-    throw new Error("tank_volume_litres must be >= 0.");
-  }
-  if (pvtSupplyArray.length !== demandArray.length){
-    throw new Error("pvt_supply_array and hotel_demand_array must have the same length.");
-  }
-
-  const len = pvtSupplyArray.length;
-  const targetTempC = 35.0;
-  const safeMainsTemp = isFiniteNumber(mainsTemp) ? mainsTemp : 14;
-  const capacityFromMains = tC =>
-    Math.max(0, (tankVolumeLitres * 4.184 * (targetTempC - tC)) / 3600.0);
-  const capacityAtHour = hourIdx => {
-    const t = mainsTempArray ? Number(mainsTempArray[hourIdx]) : NaN;
-    return capacityFromMains(isFiniteNumber(t) ? t : safeMainsTemp);
-  };
-  // Reported capacity: annual average of the hourly capacities (equals the old
-  // scalar capacity when no per-hour mains array is supplied).
-  let capacitySum = 0;
-  const tankSoc = new Array(len).fill(0);
-  const unmetDemandKWh = new Array(len).fill(0);
-  const excessPvtKWh = new Array(len).fill(0);
-  let currentTankKWh = 0;
-
-  for (let hourIdx = 0; hourIdx < len; hourIdx++){
-    const supplyKWh = Math.max(0, Number(pvtSupplyArray[hourIdx]) || 0);
-    const demandKWh = Math.max(0, Number(demandArray[hourIdx]) || 0);
-    const capacityThisHourKWh = capacityAtHour(hourIdx);
-    capacitySum += capacityThisHourKWh;
-
-    currentTankKWh += supplyKWh;
-    currentTankKWh -= demandKWh;
-
-    if (currentTankKWh < 0){
-      unmetDemandKWh[hourIdx] = Math.abs(currentTankKWh);
-      currentTankKWh = 0;
-    } else if (currentTankKWh > capacityThisHourKWh){
-      excessPvtKWh[hourIdx] = currentTankKWh - capacityThisHourKWh;
-      currentTankKWh = capacityThisHourKWh;
-    }
-
-    tankSoc[hourIdx] = currentTankKWh;
-  }
-  const tankCapacityKWh = len > 0 ? capacitySum / len : capacityFromMains(safeMainsTemp);
-
-  const totalDemandKWh = demandArray.reduce((sum, value) => sum + Math.max(0, Number(value) || 0), 0);
-  const totalUnmetDemandKWh = unmetDemandKWh.reduce((sum, value) => sum + value, 0);
-  const totalExcessPvtKWh = excessPvtKWh.reduce((sum, value) => sum + value, 0);
-  const totalMetDemandKWh = Math.max(0, totalDemandKWh - totalUnmetDemandKWh);
-  const solarFractionPct = totalDemandKWh > 0 ? (totalMetDemandKWh / totalDemandKWh) * 100 : 0;
-
-  return {
-    tank_capacity_kwh: tankCapacityKWh,
-    tank_soc_kwh: tankSoc,
-    unmet_demand_kwh: unmetDemandKWh,
-    excess_pvt_kwh: excessPvtKWh,
-    total_unmet_demand_kwh: totalUnmetDemandKWh,
-    total_excess_pvt_kwh: totalExcessPvtKWh,
-    solar_fraction_pct: solarFractionPct
-  };
-}
-
 // Reusable thermal supply calculation. The annual calculator and the design
 // explorer both call this so the sizing view cannot drift from the main model.
 function calculatePvtThermalSample(record, calculator, options){
@@ -1981,6 +1910,129 @@ function getHotelProcessParams(){
 function getHotelElectricalIntensity(){
   return Math.max(0,getInputNumber("hotelElectricKWh",HOTEL_ELECTRICAL_KWH_PER_UNIT));
 }
+
+const HOTEL_METER_FUEL_INPUT_IDS = [
+  "hotelMeterJanFuelGj", "hotelMeterFebFuelGj", "hotelMeterMarFuelGj", "hotelMeterAprFuelGj",
+  "hotelMeterMayFuelGj", "hotelMeterJunFuelGj", "hotelMeterJulFuelGj", "hotelMeterAugFuelGj",
+  "hotelMeterSepFuelGj", "hotelMeterOctFuelGj", "hotelMeterNovFuelGj", "hotelMeterDecFuelGj"
+];
+const GJ_TO_KWH = 1000 / 3.6;
+
+function getHotelRealityCheck(modelledDemandKWh, boilerEfficiency){
+  const monthlyFuelGj = HOTEL_METER_FUEL_INPUT_IDS.map(id => getInputNumberValue(id));
+  const completeMonthlyMeter = monthlyFuelGj.every(value => isFiniteNumber(value) && value >= 0);
+  const enteredMonthlyCount = monthlyFuelGj.filter(value => isFiniteNumber(value) && value >= 0).length;
+  const annualFuelInputGj = getInputNumberValue("hotelMeasuredAnnualFuelGj");
+  const hasAnnualMeter = isFiniteNumber(annualFuelInputGj) && annualFuelInputGj >= 0;
+  const fuelGj = completeMonthlyMeter
+    ? monthlyFuelGj.reduce((sum, value) => sum + value, 0)
+    : hasAnnualMeter ? annualFuelInputGj : null;
+  const hasMeter = isFiniteNumber(fuelGj);
+  const usefulHeatKWh = hasMeter ? Math.max(0, fuelGj * GJ_TO_KWH * boilerEfficiency) : null;
+  const canCalibrate = isFiniteNumber(usefulHeatKWh) && usefulHeatKWh > 0 && modelledDemandKWh > 0;
+  const requestedCalibration = document.getElementById("hotelApplyMeterCalibration")?.checked === true;
+  const calibrationFactor = canCalibrate ? usefulHeatKWh / modelledDemandKWh : 1;
+  const applied = requestedCalibration && canCalibrate;
+  const uncertaintyFraction = !hasMeter ? 0.25 : completeMonthlyMeter ? 0.10 : 0.15;
+  const confidenceLabel = applied
+    ? completeMonthlyMeter ? "Meter calibrated" : "Meter informed"
+    : hasMeter ? "Meter preview" : "Indicative";
+
+  return {
+    hasMeter,
+    completeMonthlyMeter,
+    enteredMonthlyCount,
+    fuelGj,
+    usefulHeatKWh,
+    monthlyUsefulHeatKWh: completeMonthlyMeter
+      ? monthlyFuelGj.map(value => Math.max(0, value) * GJ_TO_KWH * boilerEfficiency)
+      : null,
+    calibrationFactor,
+    applied,
+    uncertaintyFraction,
+    confidenceLabel
+  };
+}
+
+function buildHotelRealityCheckHtml(opts){
+  const reality = opts?.reality || {};
+  const modelledDemandKWh = Math.max(0, Number(opts?.modelledDemandKWh) || 0);
+  const activeDemandKWh = Math.max(0, Number(opts?.activeDemandKWh) || 0);
+  const centralCoverage = Math.max(0, Number(opts?.centralCoverage) || 0);
+  const lowCoverage = Math.max(0, Number(opts?.lowCoverage) || 0);
+  const highCoverage = Math.max(0, Number(opts?.highCoverage) || 0);
+  const modelledMonthly = Array.isArray(opts?.modelledMonthly) ? opts.modelledMonthly : [];
+  const activeMonthly = Array.isArray(opts?.activeMonthly) ? opts.activeMonthly : [];
+  const fmtMWh = value => `${(Math.max(0, Number(value) || 0) / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })} MWh/yr`;
+  const fmtPct = value => `${(Math.max(0, Number(value) || 0) * 100).toFixed(1)}%`;
+  const rangePct = Math.max(0, Number(reality.uncertaintyFraction) || 0) * 100;
+  const shiftPct = (Math.max(0, Number(reality.calibrationFactor) || 1) - 1) * 100;
+  const statusCopy = !reality.hasMeter
+    ? `No meter data yet. The sensitivity band tests a ±${rangePct.toFixed(0)}% change in hotel heat demand; it is not a statistical confidence interval.`
+    : reality.applied
+      ? `Metered useful heat has scaled the annual hotel heat profile by ${shiftPct >= 0 ? "+" : ""}${shiftPct.toFixed(1)}%. The hourly shape remains modelled.`
+      : `Meter data suggests a ${shiftPct >= 0 ? "+" : ""}${shiftPct.toFixed(1)}% annual-demand adjustment. Tick “Apply meter calibration” to use it in the result.`;
+  const meterMetric = reality.hasMeter
+    ? `<div class="hotel-reality-metric"><span>Metered useful heat</span><strong>${fmtMWh(reality.usefulHeatKWh)}</strong><small>${reality.completeMonthlyMeter ? "Full-year monthly input" : "Annual fuel input"}</small></div>`
+    : `<div class="hotel-reality-metric"><span>Modelled heat demand</span><strong>${fmtMWh(modelledDemandKWh)}</strong><small>Current room-night scenario</small></div>`;
+  const monthlyComparison = reality.completeMonthlyMeter
+    ? `<details class="hotel-reality-monthly-comparison">
+        <summary>View monthly modelled vs metered heat</summary>
+        <div class="hotel-reality-table-wrap"><table><thead><tr><th>Month</th><th>Modelled</th><th>Metered useful heat</th><th>Difference</th></tr></thead><tbody>${MONTH_NAMES.map((month, index) => {
+          const modelled = Math.max(0, Number(modelledMonthly[index]) || 0);
+          const metered = Math.max(0, Number(reality.monthlyUsefulHeatKWh?.[index]) || 0);
+          const difference = metered - modelled;
+          return `<tr><th scope="row">${month}</th><td>${(modelled / 1000).toFixed(1)} MWh</td><td>${(metered / 1000).toFixed(1)} MWh</td><td class="${difference >= 0 ? "positive" : "negative"}">${difference >= 0 ? "+" : ""}${(difference / 1000).toFixed(1)} MWh</td></tr>`;
+        }).join("")}</tbody></table></div>
+      </details>`
+    : "";
+  const activeDemandMetric = reality.applied
+    ? `<div class="hotel-reality-metric"><span>Calibrated heat demand</span><strong>${fmtMWh(activeDemandKWh)}</strong><small>Applied to this result</small></div>`
+    : "";
+
+  return `<section class="hotel-reality-card" aria-labelledby="hotelRealityTitle">
+    <div class="hotel-reality-card-head">
+      <div><div class="hotel-reality-kicker">Reality Check</div><h3 id="hotelRealityTitle">Coverage confidence</h3></div>
+      <span class="hotel-reality-status ${reality.applied ? "calibrated" : reality.hasMeter ? "preview" : "indicative"}">${reality.confidenceLabel || "Indicative"}</span>
+    </div>
+    <div class="hotel-reality-metrics">
+      <div class="hotel-reality-metric primary"><span>Expected heat coverage</span><strong>${fmtPct(centralCoverage)}</strong><small>Same-hour direct use</small></div>
+      <div class="hotel-reality-metric"><span>Demand sensitivity band</span><strong>${fmtPct(lowCoverage)}–${fmtPct(highCoverage)}</strong><small>±${rangePct.toFixed(0)}% demand test</small></div>
+      ${meterMetric}
+      ${activeDemandMetric}
+    </div>
+    <p class="hotel-reality-status-copy">${statusCopy}</p>
+    ${monthlyComparison}
+  </section>`;
+}
+
+function buildHotelAdvancedAnalysisHtml(opts={}){
+  const designExplorerHtml = opts.designExplorerHtml || "";
+  const realityCheckHtml = opts.realityCheckHtml || "";
+  if (!designExplorerHtml && !realityCheckHtml) return "";
+
+  return `<section class="hotel-advanced-analysis" aria-labelledby="hotelAdvancedAnalysisTitle">
+    <details class="hotel-advanced-analysis-toggle">
+      <summary>
+        <span class="hotel-advanced-analysis-copy">
+          <span class="hotel-advanced-analysis-kicker">Optional tools</span>
+          <strong id="hotelAdvancedAnalysisTitle">Advanced analysis</strong>
+          <small>Explore collector sizing, the 8,760-hour energy map and the hotel reality check.</small>
+        </span>
+        <span class="hotel-advanced-analysis-action" aria-hidden="true">
+          <span class="hotel-advanced-analysis-open-label">Open tools</span>
+          <span class="hotel-advanced-analysis-close-label">Hide tools</span>
+          <i></i>
+        </span>
+      </summary>
+      <div class="hotel-advanced-analysis-body">
+        ${designExplorerHtml}
+        ${realityCheckHtml}
+      </div>
+    </details>
+  </section>`;
+}
+
 const HOTEL_ELECTRICAL_HOURLY  = [3,3,3,3,3,3, 4,5,6,5,5,5, 5,5,5,5,5,6, 7,7,6,5,4,3];
 const HOTEL_ELECTRICAL_MONTHLY = [1.05,1.05,1.00,0.95,0.95,1.00, 1.00,0.95,0.95,1.00,1.05,1.05];
 const HOTEL_ELECTRICAL_WEATHER_PARAMS = {
@@ -3641,25 +3693,6 @@ function calculateHourlyElectricityBalance(pvHourly, demandHourly, met){
   };
 }
 
-function calculateStorageMonthlyEnergyBalance(storageResult, demandHourly, met){
-  const n = Math.min(demandHourly.length, met?.length || 0);
-  const matchedHourly = new Array(n).fill(0);
-  const unmetHourly = new Array(n).fill(0);
-  const excessHourly = new Array(n).fill(0);
-  for (let i = 0; i < n; i++){
-    const demandKWh = Math.max(0, Number(demandHourly[i]) || 0);
-    const unmetKWh = Math.min(demandKWh, Math.max(0, Number(storageResult?.unmet_demand_kwh?.[i]) || 0));
-    matchedHourly[i] = demandKWh - unmetKWh;
-    unmetHourly[i] = unmetKWh;
-    excessHourly[i] = Math.max(0, Number(storageResult?.excess_pvt_kwh?.[i]) || 0);
-  }
-  return {
-    matchedMonthly: aggregateMonthly(matchedHourly, met),
-    unmetMonthly: aggregateMonthly(unmetHourly, met),
-    excessMonthly: aggregateMonthly(excessHourly, met)
-  };
-}
-
 function getProcessUsageRanges(hourlySeries, met){
   const hourTotal  = new Array(24).fill(0);
   const hourActive = new Array(24).fill(0);
@@ -4033,13 +4066,9 @@ function setDesignExplorerState(opts){
     isoA8: opts?.isoA8,
     isoTout0: opts?.isoTout0,
     isoIterMax: opts?.isoIterMax,
-    storageVolumeLitres: Math.max(0, Number(opts?.storageVolumeLitres) || 0),
     industryLabel: opts?.industryLabel || "Selected industry",
     cache: new Map()
   };
-  CURRENT_DESIGN_EXPLORER.mainsTempArray = CURRENT_DESIGN_EXPLORER.met.map(record =>
-    CURRENT_DESIGN_EXPLORER.mains?.byDay?.[record.dayN] ?? CURRENT_DESIGN_EXPLORER.mains?.annualAvgC ?? 14
-  );
   return CURRENT_DESIGN_EXPLORER;
 }
 
@@ -4057,7 +4086,7 @@ function designExplorerHourlyEnergy(value){
   return isFiniteNumber(value) ? `${designExplorerNumber(value)} kWh` : "-";
 }
 
-function buildDesignExplorerHourlySeries(supplyHourly, demandHourly, met, storageResult=null){
+function buildDesignExplorerHourlySeries(supplyHourly, demandHourly, met){
   const n = Math.min(
     Array.isArray(supplyHourly) ? supplyHourly.length : 0,
     Array.isArray(demandHourly) ? demandHourly.length : 0,
@@ -4068,25 +4097,19 @@ function buildDesignExplorerHourlySeries(supplyHourly, demandHourly, met, storag
     demand: new Array(n),
     matched: new Array(n),
     unmet: new Array(n),
-    excess: new Array(n),
-    storageSoc: new Array(n).fill(0)
+    excess: new Array(n)
   };
   for (let i = 0; i < n; i++){
     const supply = Math.max(0, Number(supplyHourly[i]) || 0);
     const demand = Math.max(0, Number(demandHourly[i]) || 0);
-    const unmet = storageResult
-      ? Math.min(demand, Math.max(0, Number(storageResult.unmet_demand_kwh?.[i]) || 0))
-      : Math.max(0, demand - supply);
+    const unmet = Math.max(0, demand - supply);
     const matched = Math.max(0, demand - unmet);
-    const excess = storageResult
-      ? Math.max(0, Number(storageResult.excess_pvt_kwh?.[i]) || 0)
-      : Math.max(0, supply - matched);
+    const excess = Math.max(0, supply - matched);
     series.supply[i] = supply;
     series.demand[i] = demand;
     series.matched[i] = matched;
     series.unmet[i] = unmet;
     series.excess[i] = excess;
-    series.storageSoc[i] = Math.max(0, Number(storageResult?.tank_soc_kwh?.[i]) || 0);
   }
   return series;
 }
@@ -4099,41 +4122,14 @@ function calculateDesignExplorerScenario(areaM2, state=CURRENT_DESIGN_EXPLORER, 
   if (state.cache?.has(cacheKey)) return state.cache.get(cacheKey);
 
   const supply = calculatePvtThermalHourly({ ...state, areaM2: area });
-  let balance;
-  let storageResult = null;
-  if (state.storageVolumeLitres > 0){
-    storageResult = calculateThermalStorage({
-      tank_volume_litres: state.storageVolumeLitres,
-      pvt_supply_array: supply.hourly,
-      hotel_demand_array: state.demandHourly,
-      mains_temp: state.mains?.annualAvgC ?? 14,
-      mains_temp_array: state.mainsTempArray
-    });
-    const demandMonthly = aggregateMonthly(state.demandHourly, state.met);
-    const storageMonthly = calculateStorageMonthlyEnergyBalance(storageResult, state.demandHourly, state.met);
-    const totalDemand = demandMonthly.reduce((sum, value) => sum + (value || 0), 0);
-    const unmet = Number(storageResult.total_unmet_demand_kwh) || 0;
-    const excess = Number(storageResult.total_excess_pvt_kwh) || 0;
-    balance = {
-      demandMonthly,
-      matchedMonthly: storageMonthly.matchedMonthly,
-      unmetMonthly: storageMonthly.unmetMonthly,
-      excessMonthly: storageMonthly.excessMonthly,
-      metBySupply: Math.max(0, totalDemand - unmet),
-      unmet,
-      excess,
-      solarFraction: totalDemand > 0 ? Math.max(0, totalDemand - unmet) / totalDemand : 0
-    };
-  } else {
-    balance = calculateHourlyEnergyBalance(supply.hourly, state.demandHourly, state.met);
-  }
+  const balance = calculateHourlyEnergyBalance(supply.hourly, state.demandHourly, state.met);
 
   const scenario = {
     areaM2: area,
     thermalKWh: supply.annualKWh,
     peakKW: supply.peakKW,
     balance,
-    hourly: includeHourly ? buildDesignExplorerHourlySeries(supply.hourly, state.demandHourly, state.met, storageResult) : null,
+    hourly: includeHourly ? buildDesignExplorerHourlySeries(supply.hourly, state.demandHourly, state.met) : null,
     coverage: balance.solarFraction
   };
   state.cache?.set(cacheKey, scenario);
@@ -4317,10 +4313,9 @@ function renderDesignExplorerHeatmap(scenario){
       demand: series.demand[index],
       matched: series.matched[index],
       unmet: series.unmet[index],
-      excess: series.excess[index],
-      storageSoc: series.storageSoc[index]
+      excess: series.excess[index]
     };
-    tooltip.innerHTML = `<b>${MONTH_NAMES[date.month - 1]} ${date.day}, ${String(hour).padStart(2, "0")}:00</b><span>Useful heat: ${designExplorerHourlyEnergy(point.matched)}</span><span>Backup heat: ${designExplorerHourlyEnergy(point.unmet)}</span><span>Excess heat: ${designExplorerHourlyEnergy(point.excess)}</span>${state.storageVolumeLitres > 0 ? `<span>Tank state: ${designExplorerHourlyEnergy(point.storageSoc)}</span>` : ""}`;
+    tooltip.innerHTML = `<b>${MONTH_NAMES[date.month - 1]} ${date.day}, ${String(hour).padStart(2, "0")}:00</b><span>Useful heat: ${designExplorerHourlyEnergy(point.matched)}</span><span>Backup heat: ${designExplorerHourlyEnergy(point.unmet)}</span><span>Excess heat: ${designExplorerHourlyEnergy(point.excess)}</span>`;
     tooltip.hidden = false;
     const shell = root.querySelector(".design-explorer-heatmap-stage");
     const shellRect = shell?.getBoundingClientRect?.();
@@ -4340,7 +4335,7 @@ function getDesignExplorerMessage(scenario, targetPct, recommendation, state){
     return `The selected ${target.toFixed(0)}% target is not reached below ${designExplorerNumber(recommendation.maxArea)} m\u00B2 in this hourly scenario. More area cannot replace missing daytime demand; storage or a load schedule change may be needed.`;
   }
   if (scenario.coverage + 1e-9 >= target / 100){
-    return `This ${designExplorerNumber(scenario.areaM2)} m\u00B2 scenario meets the ${target.toFixed(0)}% target using the ${state.storageVolumeLitres > 0 ? "selected tank" : "same-hour direct-use"} result.`;
+    return `This ${designExplorerNumber(scenario.areaM2)} m\u00B2 scenario meets the ${target.toFixed(0)}% target using same-hour direct-use.`;
   }
   return `The selected area delivers ${(scenario.coverage * 100).toFixed(1)}%; the hourly model estimates about ${designExplorerNumber(recommendation.scenario.areaM2)} m\u00B2 to reach ${target.toFixed(0)}%.`;
 }
@@ -4357,9 +4352,7 @@ function buildRecommendedSystemSizeBox(opts){
   const recommendationText = recommendation.achievable
     ? `${designExplorerNumber(recommendation.scenario.areaM2)} m\u00B2`
     : "Direct-use target not reached";
-  const modeText = state.storageVolumeLitres > 0
-    ? `Hourly match with ${designExplorerNumber(state.storageVolumeLitres)} L selected tank`
-    : "Same-hour direct-use match; excess heat is not carried overnight";
+  const modeText = "Same-hour direct-use match; excess heat is not carried overnight";
 
   return `
     <section class="design-explorer" id="designExplorer" aria-labelledby="designExplorerTitle">
@@ -5827,8 +5820,7 @@ const DEFAULT_SITE_SETTINGS = {
   pvTempCoeff: "-0.40",
   pvNoct: "45",
   pvSystemLossPct: "14",
-  pvInverterEfficiencyPct: "96",
-  tankVolume: "0"
+  pvInverterEfficiencyPct: "96"
 };
 const DEFAULT_CHECKBOX_SETTINGS = {
   pvTempCorrEnable: true,
@@ -6385,7 +6377,7 @@ async function calcAnnualPVT(){
     let industryReportSummary = null;
 
     CURRENT_PROCESS_DETAIL = null;
-    const configureDesignExplorer = (demandHourly, storageVolumeLitres=0) => setDesignExplorerState({
+    const configureDesignExplorer = demandHourly => setDesignExplorerState({
       areaM2: A,
       demandHourly,
       met,
@@ -6395,7 +6387,6 @@ async function calcAnnualPVT(){
       thermalModel,
       a0, a1, a2,
       isoEta0, isoA1, isoA2, isoA3, isoA4, isoA6, isoA8, isoTout0, isoIterMax,
-      storageVolumeLitres,
       industryLabel: INDUSTRY_UI[industry]?.name || industry || "Selected industry"
     });
 
@@ -6711,7 +6702,6 @@ async function calcAnnualPVT(){
     } else if (industry === "hotel" && INDUSTRY_UI[industry]){
       const rooms = getInputNumberValue("hotelRoomsInput");
       const occupancyPct = getInputNumberValue("hotelOccupancyInput");
-      const tankVolumeLitres = getInputNumberValue("tankVolume");
       if (!isFiniteNumber(rooms) || rooms <= 0){
         setOutput("For hotel calculations, total available rooms must be greater than 0.", true);
         return;
@@ -6720,11 +6710,6 @@ async function calcAnnualPVT(){
         setOutput("For hotel calculations, occupancy rate must be between 0 and 100%.", true);
         return;
       }
-      if (!isFiniteNumber(tankVolumeLitres) || tankVolumeLitres < 0){
-        setOutput("For hotel calculations, thermal storage tank volume must be 0 litres or greater.", true);
-        return;
-      }
-
       const throughput = rooms * 365 * (occupancyPct / 100);
       const selectedKeys = getSelectedProcessKeys();
       const processes = INDUSTRY_PROCESSES[industry] || {};
@@ -6732,12 +6717,12 @@ async function calcAnnualPVT(){
       const hotelProfileLabel = profileType === "mon_fri" ? "5 days/week (Mon-Fri)" : "Continuously active (24/7)";
 
       const processAnnuals = {};
-      let totalThermalDemandKWh = 0;
+      let modelledThermalDemandKWh = 0;
       for (const key of selectedKeys){
         const kWh = hotelProcessParams[key]?.kWhPerUnit || 0;
         const annual = Math.max(0, throughput) * kWh;
         processAnnuals[key] = annual;
-        totalThermalDemandKWh += annual;
+        modelledThermalDemandKWh += annual;
       }
 
       const weightSums = {};
@@ -6748,8 +6733,6 @@ async function calcAnnualPVT(){
       const thermalHourly = [];
       const processByHour = {};
       for (const key of selectedKeys) processByHour[key] = [];
-      let demandMet=0, unmet=0, excess=0;
-
       for (let i = 0; i < met.length; i++){
         const r = met[i];
         const mIdx = monthFromDayN(r.dayN) - 1;
@@ -6762,30 +6745,42 @@ async function calcAnnualPVT(){
           totalDemandThisHour += procDemand;
         }
         thermalHourly.push(totalDemandThisHour);
-        const sup = pvtThermalHourly[i] || 0;
-        demandMet += Math.min(totalDemandThisHour, sup);
-        unmet     += Math.max(0, totalDemandThisHour - sup);
-        excess    += Math.max(0, sup - totalDemandThisHour);
       }
-      let solarFraction = totalThermalDemandKWh > 0 ? demandMet / totalThermalDemandKWh : 0;
-      let thermalSectionTitle = "Heat Balance (Detailed)";
-      let tankCapacityKWh = 0;
-
-      const storageResult = calculateThermalStorage({
-        tank_volume_litres: tankVolumeLitres,
-        pvt_supply_array: pvtThermalHourly,
-        hotel_demand_array: thermalHourly,
-        mains_temp: CURRENT_MAINS?.annualAvgC ?? 14,
-        mains_temp_array: met.map(r => CURRENT_MAINS?.byDay?.[r.dayN] ?? CURRENT_MAINS?.annualAvgC ?? 14)
+      const realityCheck = getHotelRealityCheck(modelledThermalDemandKWh, boilerEff);
+      const heatDemandScale = realityCheck.applied ? realityCheck.calibrationFactor : 1;
+      const resultThermalHourly = thermalHourly.map(value => Math.max(0, value * heatDemandScale));
+      const resultProcessAnnuals = Object.fromEntries(selectedKeys.map(key => [key, (processAnnuals[key] || 0) * heatDemandScale]));
+      const resultProcessByHour = Object.fromEntries(selectedKeys.map(key => [
+        key,
+        (processByHour[key] || []).map(value => Math.max(0, value * heatDemandScale))
+      ]));
+      const totalThermalDemandKWh = resultThermalHourly.reduce((sum, value) => sum + value, 0);
+      const thermalBalance = calculateHourlyEnergyBalance(pvtThermalHourly, resultThermalHourly, met);
+      const demandMet = thermalBalance.metBySupply;
+      const unmet = thermalBalance.unmet;
+      const excess = thermalBalance.excess;
+      const solarFraction = thermalBalance.solarFraction;
+      const thermalSectionTitle = "Heat Balance (hourly direct use)";
+      const sensitivityLowCoverage = calculateHourlyEnergyBalance(
+        pvtThermalHourly,
+        resultThermalHourly.map(value => value * (1 + realityCheck.uncertaintyFraction)),
+        met
+      ).solarFraction;
+      const sensitivityHighCoverage = calculateHourlyEnergyBalance(
+        pvtThermalHourly,
+        resultThermalHourly.map(value => value * Math.max(0.05, 1 - realityCheck.uncertaintyFraction)),
+        met
+      ).solarFraction;
+      const hotelRealityCheckHtml = buildHotelRealityCheckHtml({
+        reality: realityCheck,
+        modelledDemandKWh: modelledThermalDemandKWh,
+        activeDemandKWh: totalThermalDemandKWh,
+        centralCoverage: solarFraction,
+        lowCoverage: sensitivityLowCoverage,
+        highCoverage: sensitivityHighCoverage,
+        modelledMonthly: aggregateMonthly(thermalHourly, met),
+        activeMonthly: thermalBalance.demandMonthly
       });
-      const totalUnmetDemandKWh = Number(storageResult?.total_unmet_demand_kwh) || 0;
-      const totalExcessPvtKWh = Number(storageResult?.total_excess_pvt_kwh) || 0;
-      tankCapacityKWh = Number(storageResult?.tank_capacity_kwh) || 0;
-      demandMet = Math.max(0, totalThermalDemandKWh - totalUnmetDemandKWh);
-      unmet = totalUnmetDemandKWh;
-      excess = totalExcessPvtKWh;
-      solarFraction = totalThermalDemandKWh > 0 ? ((Number(storageResult?.solar_fraction_pct) || 0) / 100) : 0;
-      thermalSectionTitle = tankVolumeLitres > 0 ? "Heat Balance (with storage)" : "Heat Balance (no storage)";
 
       const hotelElectricalIntensity = getHotelElectricalIntensity();
       const totalElecDemandKWh = Math.max(0, throughput) * hotelElectricalIntensity;
@@ -6799,21 +6794,23 @@ async function calcAnnualPVT(){
       const exportSavingsAud = elecExcess * feedInTariff;
       const thermalFuelSavingsAud = (demandMet * 3.6 / boilerEff) * gasPrice;
       const totalSavingsAud = electricalSavingsAud + exportSavingsAud + thermalFuelSavingsAud;
-      configureDesignExplorer(thermalHourly, tankVolumeLitres);
-      const hotelUnusedHeatNote = tankVolumeLitres > 0
-        ? "Excess PVT thermal after storage matching."
-        : "PVT heat above hourly process demand, with no storage counted.";
+      configureDesignExplorer(resultThermalHourly);
+      const hotelUnusedHeatNote = "PVT heat above hourly process demand, with no storage counted.";
+      const hotelAdvancedAnalysisHtml = buildHotelAdvancedAnalysisHtml({
+        designExplorerHtml: buildRecommendedSystemSizeBox({ areaM2: A, heatCoverageFraction: solarFraction }),
+        realityCheckHtml: hotelRealityCheckHtml
+      });
 
       const procLabels = {};
       for (const key of selectedKeys) procLabels[key] = (processes[key]?.label || HOTEL_PROCESS_SHORT_LABELS[key] || key);
-      CURRENT_PROCESS_DETAIL = { industry:"hotel", profileType, met, processByHour, processLabels:procLabels };
+      CURRENT_PROCESS_DETAIL = { industry:"hotel", profileType, met, processByHour:resultProcessByHour, processLabels:procLabels };
 
       const processRows = [];
       for (const key of selectedKeys){
         const proc = processes[key];
         if (!proc) continue;
-        const annual = processAnnuals[key] || 0;
-        const arr = processByHour[key] || [];
+        const annual = resultProcessAnnuals[key] || 0;
+        const arr = resultProcessByHour[key] || [];
         const usageRanges = getProcessUsageRanges(arr, met);
         const usageInline = usageRanges.length
           ? usageRanges.map(s => s.replace(/\s*\([^)]*\)\s*$/,"")).join(", ")
@@ -6829,21 +6826,19 @@ async function calcAnnualPVT(){
 
       const pvtMonthly   = aggregateMonthly(pvtThermalHourly, met);
       const pvMonthly    = elecBalance.pvMonthly;
-      const thermMonthly = aggregateMonthly(thermalHourly, met);
+      const thermMonthly = aggregateMonthly(resultThermalHourly, met);
       const elecMonthly  = elecBalance.demandMonthly;
       const hotelThermalBalance = {
-        ...calculateStorageMonthlyEnergyBalance(storageResult, thermalHourly, met),
-        previewTitle: tankVolumeLitres > 0 ? "Heat demand balance (with selected tank)" : "Heat demand balance (no storage)",
-        solarLabel: tankVolumeLitres > 0 ? "PVT/tank heat used" : "Solar heat used",
-        surplusLabel: tankVolumeLitres > 0 ? "Excess PVT heat" : "Unused solar heat",
-        previewBasisNote: tankVolumeLitres > 0
-          ? "Hotel heat includes the selected storage tank; stored energy is counted in the month when it serves demand."
-          : "Hourly direct-use matching is used (no storage)."
+        ...thermalBalance,
+        previewTitle: "Heat demand balance (hourly direct use)",
+        solarLabel: "Solar heat used",
+        surplusLabel: "Unused solar heat",
+        previewBasisNote: "Hourly direct-use matching is used; excess heat is not carried overnight."
       };
 
       const thermalDatasets = selectedKeys.map(k => ({
         label: HOTEL_PROCESS_SHORT_LABELS[k]||k, color: HOTEL_PROCESS_COLORS[k]||"#888",
-        monthly: aggregateMonthly(processByHour[k]||[], met)
+        monthly: aggregateMonthly(resultProcessByHour[k]||[], met)
       }));
       const chartSet = buildIndustryChartSet({
         thermalDatasets, pvtMonthly, thermMonthly, pvMonthly, elecMonthly,
@@ -6883,7 +6878,7 @@ async function calcAnnualPVT(){
           areaM2: A,
           locationName: CURRENT_LOC?.name || "selected location"
         })}
-        ${buildRecommendedSystemSizeBox({ areaM2: A, heatCoverageFraction: solarFraction })}
+        ${hotelAdvancedAnalysisHtml}
         <h3>Hotel - ${hotelProfileLabel}</h3>
         ${buildIndustryEnergyFlowSummary({
           thermalDemandKWh: totalThermalDemandKWh,
@@ -6904,7 +6899,6 @@ async function calcAnnualPVT(){
         <p style="font-size:13px;"><b>Total available rooms:</b> ${rooms.toLocaleString(undefined,{maximumFractionDigits:0})}</p>
         <p style="font-size:13px;"><b>Occupancy rate:</b> ${occupancyPct.toFixed(2)}%</p>
         <p style="font-size:13px;"><b>Occupied room-nights per year:</b> ${throughput.toLocaleString(undefined,{maximumFractionDigits:0})}</p>
-        <p style="font-size:13px;"><b>Tank volume:</b> ${tankVolumeLitres.toLocaleString(undefined,{maximumFractionDigits:0})} L${tankCapacityKWh > 0 ? ` (${tankCapacityKWh.toFixed(1)} kWh usable storage to 35&deg;C)` : ""}</p>
         <div class="mains-links" style="margin:6px 0 10px 0;">
           <a class="mains-link" href="#" onclick="openHotelDailyShape(event)">Daily demand shape</a>
           <a class="mains-link" href="#" onclick="openHotelProfileCompare(event)">24/7 vs Mon\u2013Fri comparison</a>
@@ -6912,6 +6906,7 @@ async function calcAnnualPVT(){
         </div>
         ${buildProcessBreakdown(processRows, totalThermalDemandKWh)}
         <p class="note" style="margin-top:6px;">Editable thermal assumptions (kWh per occupied room-night): DHW ${hotelProcessParams.domestic_hot_water.kWhPerUnit.toFixed(2)}, Kitchen ${hotelProcessParams.kitchen_dishwashing.kWhPerUnit.toFixed(2)}, Laundry ${hotelProcessParams.laundry.kWhPerUnit.toFixed(2)}, Pool ${hotelProcessParams.pool_heating.kWhPerUnit.toFixed(2)}. These are scenario inputs, not NABERS-validated process rates.</p>
+        ${realityCheck.applied ? `<p class="note" style="margin-top:6px;">Meter calibration scales every selected hotel heat process by ${heatDemandScale.toFixed(3)} to align annual useful heat with the entered meter data; it does not replace the modelled hourly demand shape.</p>` : ""}
         ${buildHeatBalanceTable(thermalSectionTitle, demandMet, unmet, excess, solarFraction)}
         ${buildElecBalanceTable(`Total yearly electricity use (${hotelElectricalIntensity} kWh/room-night assumption)`, totalElecDemandKWh, elecMetByPv, elecUnmet, elecExcess, elecSolarFrac)}
         ${buildSavingsTable({ boilerEff, gridEmissionFactor, solarHeatUsedKWh: demandMet, solarElecUsedKWh: elecMetByPv, thermalFuelSavingsAud, electricalSavingsAud, exportSavingsAud, totalSavingsAud })}

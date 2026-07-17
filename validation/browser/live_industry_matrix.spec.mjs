@@ -85,7 +85,6 @@ const INDUSTRIES = [
       await page.selectOption("#industrySelect", "hotel");
       await setInputValue(page, "#hotelRoomsInput", "120");
       await setInputValue(page, "#hotelOccupancyInput", "70");
-      await setInputValue(page, "#tankVolume", "5000");
     },
     variant: async page => {
       await setInputValue(page, "#hotelOccupancyInput", "90");

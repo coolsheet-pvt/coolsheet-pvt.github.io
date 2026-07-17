@@ -51,10 +51,9 @@ const SYMBOLS = [
   ["calcHotelElectricalWeatherFactor","func"],["calcHotelElectricalHourlyDemand","func"],
   ["calcDairyHourlyDemand","func"],["calcBreweryHourlyDemand","func"],["calcAquaticHourlyDemand","func"],
   ["laundryOperatingDayWeight","func"],["calcCommercialLaundryHourlyDemand","func"],
-  ["calculateThermalStorage","func"],
 ];
 const code = SYMBOLS.map(([n,k]) => extract(n,k)).join("\n");
-const mod = new Function(code + "\nreturn {calcDairyHourlyDemand,calcBreweryHourlyDemand,calcAquaticHourlyDemand,getAquaticRelativeHumidity,calcCommercialLaundryHourlyDemand,calcHotelElectricalHourlyDemand,calcHotelElectricalWeatherFactor,calculateThermalStorage,DAIRY_PROCESS_PARAMS,BREWERY_PROCESS_PARAMS,DAIRY_ELEC_PARAMS,BREWERY_ELEC_PARAMS,HOTEL_PROCESS_PARAMS,HOTEL_ELECTRICAL_KWH_PER_UNIT,LAUNDRY_DEFAULTS,LAUNDRY_PROCESS_STACK_ORDER,normalizeSeasonalFactors,DAIRY_SEASONAL,MONTH_DAYS,WATER_CP_KWH_PER_KG_C};")();
+const mod = new Function(code + "\nreturn {calcDairyHourlyDemand,calcBreweryHourlyDemand,calcAquaticHourlyDemand,getAquaticRelativeHumidity,calcCommercialLaundryHourlyDemand,calcHotelElectricalHourlyDemand,calcHotelElectricalWeatherFactor,DAIRY_PROCESS_PARAMS,BREWERY_PROCESS_PARAMS,DAIRY_ELEC_PARAMS,BREWERY_ELEC_PARAMS,HOTEL_PROCESS_PARAMS,HOTEL_ELECTRICAL_KWH_PER_UNIT,LAUNDRY_DEFAULTS,LAUNDRY_PROCESS_STACK_ORDER,normalizeSeasonalFactors,DAIRY_SEASONAL,MONTH_DAYS,WATER_CP_KWH_PER_KG_C};")();
 
 // --- synthetic full-year weather + constant mains so thermal totals are predictable ---
 const MAINS_C = 18;
@@ -181,34 +180,6 @@ console.log("\n# AQUATIC PVGIS HUMIDITY POLICY");
   const indoorHumid = mod.calcAquaticHourlyDemand({...indoorConfig,met:makeMet(85)});
   near("indoor pools retain controlled design RH", sum(indoorDry.thermalHourly), sum(indoorHumid.thermalHourly), 1e-9);
   ok("invalid RH falls back safely", Number.isFinite(mod.getAquaticRelativeHumidity({relativeHumidityPct:150},"outdoor_pool")));
-}
-
-console.log("\n# HOTEL STORAGE TANK  (capacity from mains profile, lossless)");
-{
-  const N = 48;
-  const supply = new Array(N).fill(0).map((_,i)=> (i%24>=8 && i%24<16) ? 10 : 0);
-  const demand = new Array(N).fill(2);
-  const scalar = mod.calculateThermalStorage({
-    tank_volume_litres: 5000, pvt_supply_array: supply, hotel_demand_array: demand, mains_temp: 14
-  });
-  near("capacity = V*cp*(35-14)/3600 = 122.03 kWh", scalar.tank_capacity_kwh, 5000*4.184*21/3600, 1e-6);
-  const flatArr = new Array(N).fill(14);
-  const withArr = mod.calculateThermalStorage({
-    tank_volume_litres: 5000, pvt_supply_array: supply, hotel_demand_array: demand,
-    mains_temp: 99, mains_temp_array: flatArr
-  });
-  near("constant mains array reproduces scalar capacity", withArr.tank_capacity_kwh, scalar.tank_capacity_kwh, 1e-9);
-  near("constant mains array reproduces scalar unmet", withArr.total_unmet_demand_kwh, scalar.total_unmet_demand_kwh, 1e-9);
-  near("energy balance closes: supply - demand = excess - unmet + final SOC",
-    sum(supply) - sum(demand),
-    scalar.total_excess_pvt_kwh - scalar.total_unmet_demand_kwh + scalar.tank_soc_kwh[N-1], 1e-9);
-  const coldArr = new Array(N).fill(8); // colder mains -> larger usable capacity
-  const cold = mod.calculateThermalStorage({
-    tank_volume_litres: 5000, pvt_supply_array: supply, hotel_demand_array: demand,
-    mains_temp: 14, mains_temp_array: coldArr
-  });
-  ok("colder mains raises usable tank capacity", cold.tank_capacity_kwh > scalar.tank_capacity_kwh,
-    `cold=${cold.tank_capacity_kwh.toFixed(1)} base=${scalar.tank_capacity_kwh.toFixed(1)}`);
 }
 
 console.log("\n# HOTEL  (60,000 occupied room-nights; energy per room-night)");

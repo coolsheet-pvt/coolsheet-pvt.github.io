@@ -45,7 +45,7 @@ Hourly supply loop (calcAnnualPVT, 8,760 steps)
 Demand models (hourly kWh series)
   │  dairy / brewery: throughput·kWater/365 · seasonal(normalised) · weights24
   │       → V_h; Q_h = V_h·4.184·max(0,Ttarget−Tmains)/3600
-  │  hotel: kWh/occupied-room-night × hourly/monthly weights (+ storage tank sim)
+  │  hotel: kWh/occupied-room-night × hourly/monthly weights
   │  aquatic: per-m² evaporation + makeup + sensible loss physics
   │  laundry: kg/day schedule × L/kg × cp·ΔT
   ▼
@@ -92,21 +92,20 @@ Status legend: ✅ correct · 🔧 fixed this audit · ⚠️ questionable (flag
 | 16 | Dairy/brewery V_h = T·kWater/365·seas·w_h; Q=V·4.184·ΔT/3600 | `calcDairyHourlyDemand`, `calcBrewery...` | L, °C → kWh | ✅ | seasonal factors day-weight normalised so annual = benchmark; tested to 1 % |
 | 17 | Dairy elec 51.7 kWh/kL; brewery 11.5 kWh/hL | same | ✅/🔍 | benchmarks locked by tests; source PDFs cited in model-basis modals, one internal (unpublished) |
 | 18 | Hotel Q = room-nights·kWh/unit, weights normalised over year | hotel branch | kWh | ✅ | annual preserved exactly (÷ weight sum); DHW 4.5 kWh/rn 🔍 (SA Water/NABERS-implied) |
-| 19 | Hotel tank: cap = V·4.184·(35−Tmains)/3600 kWh; hourly charge/draw | `calculateThermalStorage` | L, °C → kWh | 🔧/⚠️ | capacity now follows the daily mains profile (C6); 35 °C target still hard-coded; lossless tank (labelled in UI) |
-| 20 | Aquatic evaporation = c·(1+0.22u)·(Pw−Pa)·splash·A·0.68 | `calcAquaticHourlyDemand` | kPa, m/s, m² → kWh | ✅/🔍 | Shah/ASHRAE-form; magnitudes plausible (~6–8 L/m²/day Sydney); fixed design RH per pool (TMY has no RH - wording fixed 🔧) |
-| 21 | Aquatic makeup = L/m²/day ÷ open-h × cp × (Ttarget−Tmains) | same | 🔧 | now uses daily mains byDay (was annual average - fixed as C6, user-approved) |
-| 22 | Aquatic sensible = (Uconv+Urad)·A·(Ttarget−Tair)/1000 | same | W/m²K → kWh | ✅ | 1 h timestep implicit |
-| 23 | Saturation vapour pressure (Tetens 0.61078·e^(17.2694T/(T+237.3))) | `saturationVaporPressureKPa` | °C → kPa | ✅ | standard Tetens/Magnus |
-| 24 | Laundry Q = kg_h·L/kg·fraction·cp·ΔT | `calcCommercialLaundryHourlyDemand` | ✅ | uses daily mains ✓; annual kg = kg/day·days/wk·52 (364-day year, consistent internally) |
-| 25 | Hourly balance met=Σmin(S,D) etc. | `calculateHourlyEnergyBalance` | kWh | ✅ | honest no-storage baseline; monthly variant only as storage upper bound (labelled) |
-| 26 | Heat saving = met_th·3.6/boilerη·gas$/MJ | all branches | kWh→MJ→AUD | ✅ | boiler efficiency in correct direction (÷); tested |
-| 27 | Elec saving = met_e·price; export = excess_e·FiT | all branches | kWh·AUD/kWh | ✅ | no double counting (met + excess disjoint) |
-| 28 | CO₂-e = met_e·EF_grid + (met_th·3.6/η/1000)·51.4, ÷1000 t | `buildSavingsTable` | kWh·kg/kWh + GJ·kg/GJ | ✅/🔍 | dims correct; DCCEEW NGA-2025 factor values not independently verifiable offline |
-| 29 | CRF = i(1+i)^N/((1+i)^N−1); NPV = −C + B·annuity; SPP = C/B | supply card | ✅ | textbook-verified by tests; i→0 limits handled |
-| 30 | LCOE/LCOH energy-weighted CAPEX split (f_th2e = 1) | supply card | ⚠️ | 1 kWh heat valued = 1 kWh elec for the *split only*; explicitly labelled in UI; not an exergy weighting |
-| 31 | Supply "annual value" = E_pv·price + heat saving − OPEX | supply card | ✅ | 100 % utilisation upper bound - labelled as such in UI |
-| 32 | Installed cost: $/W × ηPV·1000 W/m² → $/m²; ÷10.764 → $/ft² | `getInstalledCostBasis` | ✅ | |
-| 33 | Monthly/daily chart aggregation | `aggregateMonthlyAll/DailyAll` | kWh | 🔧 | **was timezone/leap-year sensitive (dropped Jan 1, shifted all days). Now keyed on TMY dayN - fixed** |
+| 19 | Aquatic evaporation = c·(1+0.22u)·(Pw−Pa)·splash·A·0.68 | `calcAquaticHourlyDemand` | kPa, m/s, m² → kWh | ✅/🔍 | Shah/ASHRAE-form; magnitudes plausible (~6–8 L/m²/day Sydney); fixed design RH per pool (TMY has no RH - wording fixed 🔧) |
+| 20 | Aquatic makeup = L/m²/day ÷ open-h × cp × (Ttarget−Tmains) | same | 🔧 | now uses daily mains byDay (was annual average - fixed as C6, user-approved) |
+| 21 | Aquatic sensible = (Uconv+Urad)·A·(Ttarget−Tair)/1000 | same | W/m²K → kWh | ✅ | 1 h timestep implicit |
+| 22 | Saturation vapour pressure (Tetens 0.61078·e^(17.2694T/(T+237.3))) | `saturationVaporPressureKPa` | °C → kPa | ✅ | standard Tetens/Magnus |
+| 23 | Laundry Q = kg_h·L/kg·fraction·cp·ΔT | `calcCommercialLaundryHourlyDemand` | ✅ | uses daily mains ✓; annual kg = kg/day·days/wk·52 (364-day year, consistent internally) |
+| 24 | Hourly balance met=Σmin(S,D) etc. | `calculateHourlyEnergyBalance` | kWh | ✅ | honest no-storage baseline; monthly variant only as storage upper bound (labelled) |
+| 25 | Heat saving = met_th·3.6/boilerη·gas$/MJ | all branches | kWh→MJ→AUD | ✅ | boiler efficiency in correct direction (÷); tested |
+| 26 | Elec saving = met_e·price; export = excess_e·FiT | all branches | kWh·AUD/kWh | ✅ | no double counting (met + excess disjoint) |
+| 27 | CO₂-e = met_e·EF_grid + (met_th·3.6/η/1000)·51.4, ÷1000 t | `buildSavingsTable` | kWh·kg/kWh + GJ·kg/GJ | ✅/🔍 | dims correct; DCCEEW NGA-2025 factor values not independently verifiable offline |
+| 28 | CRF = i(1+i)^N/((1+i)^N−1); NPV = −C + B·annuity; SPP = C/B | supply card | ✅ | textbook-verified by tests; i→0 limits handled |
+| 29 | LCOE/LCOH energy-weighted CAPEX split (f_th2e = 1) | supply card | ⚠️ | 1 kWh heat valued = 1 kWh elec for the *split only*; explicitly labelled in UI; not an exergy weighting |
+| 30 | Supply "annual value" = E_pv·price + heat saving − OPEX | supply card | ✅ | 100 % utilisation upper bound - labelled as such in UI |
+| 31 | Installed cost: $/W × ηPV·1000 W/m² → $/m²; ÷10.764 → $/ft² | `getInstalledCostBasis` | ✅ | |
+| 32 | Monthly/daily chart aggregation | `aggregateMonthlyAll/DailyAll` | kWh | 🔧 | **was timezone/leap-year sensitive (dropped Jan 1, shifted all days). Now keyed on TMY dayN - fixed** |
 | 34 | Economics input parsing | `calcAnnualPVT` reads | - | 🔧 | **explicit 0 was silently replaced by defaults (CAPEX 0→800 etc.). Fixed via finite-check parsing** |
 | 35 | Weather export metadata annual sums (Wh→kWh) | `buildWeatherExportMetadata` | ✅ | |
 | 36 | PVGIS cross-check link (peakpower kW = A·ηPV; aspect = az−180 normalised) | `buildPvgisValidationLink` | ✅ | azimuth convention conversion verified both hemispheres |
@@ -147,12 +146,12 @@ All verified unreferenced by grep across app, pages, and the whole test suite:
 - aquatic branch dead economics (`pvtRatedWp/pvCapex/thermalCapex/panelSubtotal/installedCapex/simplePaybackYears` - computed then discarded) and their constants `PVT_CAPEX_PV_PER_W`, `PVT_CAPEX_THERMAL_PER_W`, `PVT_BOS_MULTIPLIER`.
 - **Approved and removed:** the "Evan view" machinery (`buildEvanIndustryViewHtml`, `renderHotelPrimaryChart`, `renderAquaticPrimaryChart`, `renderCurrentEvanView`, `formatEvanMetricValue`, `buildPrimaryLegend`, `renderMetricCards*`, `CURRENT_EVAN_VIEW`, `evanPrimaryChartInstance`) - it was unreachable (`CURRENT_EVAN_VIEW` was only ever assigned `null`). Recoverable from git history.
 
-### C6 - Aquatic makeup water & hotel tank now use the daily mains profile (MEDIUM, fixed - user-approved)
-- **Where:** `calcAquaticHourlyDemand` (makeup ΔT) and `calculateThermalStorage` (tank capacity).
-- **Problem:** both used the *annual-average* mains temperature while dairy, brewery, and laundry use the daily BC-Aus profile - inconsistent with the UI statement that T_in comes from the monthly mains model. Aquatic winter demand was understated and summer demand overstated.
-- **Fix:** aquatic makeup ΔT now uses `mains.byDay[dayN]` (scalar fallback retained for callers without a mains model); the hotel tank accepts an optional per-hour mains array - usable capacity now varies seasonally, and the reported capacity is the annual average (identical to the old scalar when the profile is flat).
-- **Effect on results:** aquatic annual totals are nearly unchanged when the mains swing is symmetric (ΔT is linear and the 0-clamp never binds at pool setpoints) but the *monthly* profile now correctly peaks in winter, which changes solar-fraction and backup-heat numbers slightly. Hotel storage results shift marginally (capacity higher in winter, lower in summer).
-- **Tests:** new blocks in `test_industry.mjs`: constant-profile equivalence with the old scalar path (backwards compatibility), annual-total preservation under a zero-mean swing, winter-day increase / summer-day decrease, tank capacity hand-value 122.03 kWh, tank energy-balance closure, colder-mains-larger-capacity.
+### C6 - Aquatic makeup water now uses the daily mains profile (MEDIUM, fixed - user-approved)
+- **Where:** `calcAquaticHourlyDemand` (makeup ΔT).
+- **Problem:** it used the *annual-average* mains temperature while dairy, brewery, and laundry use the daily BC-Aus profile - inconsistent with the UI statement that T_in comes from the monthly mains model. Aquatic winter demand was understated and summer demand overstated.
+- **Fix:** aquatic makeup ΔT now uses `mains.byDay[dayN]` (scalar fallback retained for callers without a mains model).
+- **Effect on results:** aquatic annual totals are nearly unchanged when the mains swing is symmetric (ΔT is linear and the 0-clamp never binds at pool setpoints) but the *monthly* profile now correctly peaks in winter, which changes solar-fraction and backup-heat numbers slightly.
+- **Tests:** `test_industry.mjs` checks annual-total preservation under a zero-mean swing plus winter-day increase and summer-day decrease.
 
 ### Not bugs (checked and cleared)
 - hourN 1–24 ↔ 0–23 conversions are consistent end-to-end (backend → normalize → CSV re-offset).
@@ -206,11 +205,10 @@ All verified unreferenced by grep across app, pages, and the whole test suite:
 | PV has no inverter/soiling/wiring losses | pv_stc | DC-optimistic ~10–14 % | **yes - note added this audit** (η field + modern assumptions card) | done |
 | PVT cooling ΔT = Q̇/(U_L·A) with U_L = |a1| | `calcPvtPanelTempC` | heuristic but bounded | NOCT explainer covers intent | keep; documented in §B13 |
 | Tin = mains water byDay (no return-loop preheat) | supply loop | Yes for preheat duty | yes (inlet-block note) | fine |
-| ~~Aquatic makeup/pool uses annual-average mains~~ | aquatic, hotel tank | **fixed this audit (C6)** - now daily byDay | n/a | done |
+| ~~Aquatic makeup/pool uses annual-average mains~~ | aquatic | **fixed this audit (C6)** - now daily byDay | n/a | done |
 | dayN = 1 is a Monday (Mon–Fri & laundry schedules) | `isMonToFriDay`, hotel, laundry | Arbitrary but harmless (TMY has no weekday) | no | add note to profile selector |
-| Hotel tank: lossless, 35 °C usable target | `calculateThermalStorage` | simplification | yes ("usable storage to 35 °C") | fine for prototype |
 | Fixed design RH per pool type (50–62 %) | aquatic evaporation | standard practice | **fixed this audit** (C4) | done |
-| No thermal storage in headline matching by default | all industries; hotel only uses storage when tank volume > 0 | conservative & honest | yes (storage note banner + hotel tank field) | fine |
+| No thermal storage in headline matching | all industries | conservative & honest | yes (storage note banner) | fine |
 | f_th2e = 1 (heat kWh = elec kWh for CAPEX split only) | LCOE/LCOH | simplification, not exergy | yes (explicit UI note) | fine |
 | Grid EF defaults (0.62 national etc., NGA 2025) | emissions | plausible | yes + DCCEEW link | 🔍 needs external validation against published tables |
 | Gas EF 51.4 kg CO₂-e/GJ scope 1 | emissions | plausible (NGA ~51.5) | cited in table row | 🔍 verify against NGA 2025 |

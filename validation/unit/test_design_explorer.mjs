@@ -34,12 +34,10 @@ const code = [
   extract("isFiniteNumber"),
   extract("MONTH_DAYS", "const"),
   extract("monthFromDayN"),
-  extract("calculateThermalStorage"),
   extract("calculatePvtThermalSample"),
   extract("calculatePvtThermalHourly"),
   extract("aggregateMonthly"),
   extract("calculateHourlyEnergyBalance"),
-  extract("calculateStorageMonthlyEnergyBalance"),
   extract("buildDesignExplorerHourlySeries"),
   extract("calculateDesignExplorerScenario"),
   extract("findDesignExplorerTargetArea")
@@ -68,7 +66,6 @@ const state = {
   a0:0.5,
   a1:0,
   a2:0,
-  storageVolumeLitres:0,
   cache:new Map()
 };
 
@@ -88,10 +85,6 @@ assert.equal(recommendation.achievable, true);
 assert.ok(Math.abs(recommendation.scenario.areaM2 - 62.5) < 0.1, `expected about 62.5 m2, got ${recommendation.scenario.areaM2}`);
 assert.ok(recommendation.scenario.coverage >= 0.5);
 
-const storageState = { ...state, storageVolumeLitres:1000, cache:new Map() };
-const storageResult = mod.calculateDesignExplorerScenario(100, storageState, { includeHourly:true });
-assert.equal(storageResult.coverage, 0.8);
-assert.equal(storageResult.hourly.storageSoc.length, 48);
 assert.match(APP, /function buildDesignExplorerHeatmap\(/);
 assert.match(APP, /function renderDesignExplorerHeatmap\(/);
 

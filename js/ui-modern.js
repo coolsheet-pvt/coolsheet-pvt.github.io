@@ -97,7 +97,7 @@
       <li>Weather is a PVGIS <b>typical meteorological year</b> - a representative year, not a forecast.</li>
       <li>Inlet water uses the <b>BC-Aus mains-water model</b> (editable monthly overrides above).</li>
       <li>PV headline output is the temperature-corrected gross module yield used in the original annual PVT result; estimated net AC is retained in the detailed results. The PVT cooling effect is on by default.</li>
-      <li>Industry matching is <b>hourly direct-use with no storage tank</b> (except the hotel tank input); the supply-only value card assumes 100% utilisation and is an upper bound.</li>
+      <li>Industry matching is <b>hourly direct-use with no storage tank</b>; the supply-only value card assumes 100% utilisation and is an upper bound.</li>
       <li>Prices, boiler efficiency, CAPEX/OPEX, lifetime and discount rate are <b>editable estimates</b>, not quotes.</li>
     </ul></div>`;
   panels[1]?.querySelector(".grid")?.appendChild(assumptions);
