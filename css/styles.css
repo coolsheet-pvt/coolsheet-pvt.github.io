@@ -13,7 +13,8 @@ html{overflow-x:hidden;overflow-y:scroll;scrollbar-gutter:stable;}
 ::-webkit-scrollbar-thumb:hover{background:#4a9fd4;}
 /* Firefox */
 html{scrollbar-width:thin;scrollbar-color:#2e6fa3 #0d1f30;}
-body{font-family:Arial,Helvetica,sans-serif;margin:18px;color:#111;padding-bottom:120px;background-color:#fff;background-image:linear-gradient(to bottom,#09131f 0px,#10253a 80px,#1a3a55 160px,#d6e4ef 420px,#eef3f7 520px,#fff 680px);background-repeat:no-repeat;background-size:100% 680px;overflow-y:visible;overflow-x:hidden;}
+body{font-family:"Cairo",Arial,Helvetica,sans-serif;margin:18px;color:#111;padding-bottom:120px;background-color:#fff;background-image:linear-gradient(to bottom,#09131f 0px,#10253a 80px,#1a3a55 160px,#d6e4ef 420px,#eef3f7 520px,#fff 680px);background-repeat:no-repeat;background-size:100% 680px;overflow-y:visible;overflow-x:hidden;}
+button,input,select,textarea{font-family:inherit;}
 .wrap{max-width:1070px;margin:0 auto;}
 .shared-scenario-banner{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 14px;padding:12px 14px;border:1px solid #d36a5c;border-radius:8px;background:#fff1ef;text-align:left;}
 .shared-scenario-banner[hidden]{display:none;}
@@ -405,7 +406,7 @@ body.testing-mode .pv-testing-controls{display:grid;grid-template-columns:1fr;ga
 .process-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px;}
 .process-pill{display:inline-flex;align-items:center;padding:3px 7px;border:1px solid #d3e1ec;border-radius:999px;background:#f8fbfd;color:#4f6072;font-size:11px;line-height:1.2;}
 .process-kwh{text-align:right;font-family:monospace;font-weight:700;color:#111;font-size:14px;}
-.process-unit{display:block;margin-top:2px;color:#6b7785;font-family:Arial,Helvetica,sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;}
+.process-unit{display:block;margin-top:2px;color:#6b7785;font-family:inherit;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;}
 .industry-chart-group{margin-top:14px;padding:14px;background:#fff;border:1px solid #d9e5ec;border-radius:10px;box-shadow:0 1px 0 rgba(22,32,43,0.04);}
 .industry-chart-grid{display:grid;grid-template-columns:1fr;gap:14px;align-items:start;}
 .industry-chart-section{min-width:0;padding:10px;border:1px solid #d9e5ec;border-radius:10px;}

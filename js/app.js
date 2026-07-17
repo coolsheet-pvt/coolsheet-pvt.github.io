@@ -583,6 +583,9 @@ function buildPdfTemplateDocument(){
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>PVT Report - ${escapeHtml(locationName)}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet" />
   <style>
     @page{
       size:A4;margin:10mm 10mm 15mm;
@@ -595,7 +598,8 @@ function buildPdfTemplateDocument(){
     }
     *{box-sizing:border-box;}
     html,body{margin:0;padding:0;}
-    body{font-family:Arial,Helvetica,sans-serif;color:#142437;background:#edf3f7;font-size:10.2px;line-height:1.32;}
+    body{font-family:"Cairo",Arial,Helvetica,sans-serif;color:#142437;background:#edf3f7;font-size:10.2px;line-height:1.32;}
+    button,input,select,textarea{font-family:inherit;}
     .report-shell{max-width:820px;margin:0 auto;padding:16px;}
     .handoff-actions{position:sticky;top:0;z-index:10;display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 10px;padding:9px;border:1px solid #c9d8e5;border-radius:8px;background:rgba(255,255,255,.97);box-shadow:0 4px 18px rgba(20,40,60,.08);}
     .handoff-actions button{padding:8px 11px;border:1px solid #1a5f9a;border-radius:6px;background:#1f6fb2;color:#fff;font-weight:700;cursor:pointer;font-size:12px;}
