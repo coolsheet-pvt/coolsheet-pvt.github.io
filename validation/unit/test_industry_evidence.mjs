@@ -16,6 +16,18 @@ for (const value of [10,12,15,17,22]){
 for (const id of ["hotelDhwKWh","hotelKitchenKWh","hotelLaundryKWh","hotelPoolKWh","hotelElectricKWh"]){
   assert.match(html, new RegExp(`id="${id}"`), `${id} must be editable`);
 }
+for (const [id, value] of Object.entries({
+  hotelRoomsInput: "147",
+  hotelOccupancyInput: "73.4",
+  hotelDhwKWh: "4.5",
+  hotelKitchenKWh: "1.6",
+  hotelLaundryKWh: "1.2",
+  hotelPoolKWh: "4.2",
+  hotelElectricKWh: "15"
+})){
+  assert.match(html, new RegExp(`id="${id}"[^>]*value="${value.replace(".", "\\.")}"`), `${id} must retain the requested Hotel scenario default`);
+}
+assert.match(app, /pool_heating:\s*\{ kWhPerUnit: 4\.20 \}/, "hotel pool fallback default must be 4.2 kWh/occupied room-night");
 for (const id of ["dairyElectricKWhPerKL","dairyFattyWater","dairyCipWater","dairyBoilerWater","dairyTargetTemp",
                   "breweryElectricKWhPerHL","breweryCipWater","breweryRinseWater","breweryBoilerWater","breweryCipTarget","breweryRinseTarget",
                   "aquaticElectricKWhPerM2","aquaticEvaporationScale","aquaticMakeupScale"]){

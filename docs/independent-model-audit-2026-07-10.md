@@ -21,7 +21,7 @@ The calculator's core bookkeeping and many unit conversions are logically cohere
 | Dairy demand | Red / Not validated | Arithmetic is traceable, but the exact 1.37 L/L, 51.7 kWh/kL, schedules and seasonality are not substantiated by an independent, page-level Australian source. |
 | Brewery demand | Red / Not validated | Exact 1.85 L/L and 11.5 kWh/hL defaults rely mainly on secondary/vendor/international sources; whole-site and PVT-eligible preheat boundaries remain weak. |
 | Aquatic-centre demand | Red | Engineering equations are explicit, but fixed RH ignores available weather RH; 10 m wind and water-surface area are compared with conditioned-floor-area total-energy data. |
-| Hotel demand | Red / Not validated | NABERS is whole-building evidence and does not directly establish 4.5/1.6/1.2/0.8 thermal or 15 electrical kWh per occupied room-night. |
+| Hotel demand | Red / Not validated | NABERS is whole-building evidence and does not directly establish 4.5/1.6/1.2/4.2 thermal or 15 electrical kWh per occupied room-night. |
 | Commercial laundry | Amber arithmetic; Red default evidence | Scope exclusions are unusually clear. The 10 L/kg default is below Sydney Water's 12–15 L/kg efficient-with-reuse and 17–22 L/kg efficient-without-reuse ranges. WELS does not currently regulate commercial clothes washers. |
 | Hourly matching and conservation | Amber | Direct-use identities are logically correct and browser results close within display rounding. Historical-DST clock keys and idealised storage claims prevent Green. |
 | Economics | Amber | CRF, NPV, displaced-gas and payback arithmetic pass hand checks. Results omit material financial terms and use editable examples as point estimates; combined LCOE uses arbitrary `f_th2e=1`. |
@@ -189,7 +189,7 @@ Evidence classes: **M** certified/measured, **R** regulatory, **V** externally v
 | Aquatic evaporation | vapour-pressure difference × coefficient × wind × splash × area × 0.68 kWh/kg | `app.js:1888-1990` | engineering model / V with tuned constants A | Fixed process RH; 10 m wind; output sensitive to area and operating assumptions. |
 | Aquatic makeup/sensible | L/m²/day × area × cp × ΔT; combined U×area×ΔT | same | mixed V/A | Daily mains profile now used. U, cover and makeup values are assumptions. |
 | Aquatic electricity | 250 kWh/m²/year × selected pool-water surface, weather-shaped | `app.js:1472+,1990-2020` | denominator-mismatched A/U | Deakin evidence is total energy per conditioned floor area, not electricity per water surface. |
-| Hotel thermal | occupied room-nights × 4.5/1.6/1.2/0.8 kWh; normalized profiles | `app.js:1482-1660` | derived assumptions / A | Energy balance arithmetic passes; process intensities not directly supported by NABERS. |
+| Hotel thermal | occupied room-nights × 4.5/1.6/1.2/4.2 kWh; normalized profiles | `app.js:1482-1660` | derived assumptions / A | Energy balance arithmetic passes; process intensities not directly supported by NABERS. |
 | Hotel electricity | 15 kWh/room-night; time reshaped by weather then annual-normalized | `app.js:1662-1686` | A/U | Annual total preserved; not a NABERS-derived process value. |
 | Hotel storage | lossless finite tank, usable energy to hard-coded 35°C target | hotel matching branch | idealized / A | Conservation can close, but losses, temperature stratification and equipment are absent. |
 | Laundry thermal | kg/hour × L/kg × fraction × cp × ΔT; optional rinse and user loss | `app.js:2199-2285` | transparent A | Hand calculation passes. Default 10 L/kg conflicts with current Sydney Water benchmark ranges. |
@@ -377,7 +377,7 @@ NatHERS 2022 has BOM-derived hourly Reference Meteorological Year files for 69 c
 ### 9.3 Hotel
 
 - Functional unit: occupied room-night.
-- NABERS Hotels Rules v4.3 (April 2026) is current and governs whole-building rating data. It does not directly decompose 4.5/1.6/1.2/0.8 thermal or 15 electrical kWh/room-night.
+- NABERS Hotels Rules v4.3 (April 2026) is current and governs whole-building rating data. It does not directly decompose 4.5/1.6/1.2/4.2 thermal or 15 electrical kWh/room-night.
 - Weather reshaping preserves the annual assumed electrical total, so it cannot validate the total.
 - Classification: derived assumptions. Require a transparent water-volume/occupancy/temperature derivation or metered Australian submeter data, with hotel class and services boundary.
 

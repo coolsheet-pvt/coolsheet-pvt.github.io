@@ -1878,7 +1878,7 @@ const HOTEL_PROCESS_PARAMS = {
   domestic_hot_water:  { kWhPerUnit: 4.50 },
   kitchen_dishwashing: { kWhPerUnit: 1.60 },
   laundry:             { kWhPerUnit: 1.20 },
-  pool_heating:        { kWhPerUnit: 0.80 }
+  pool_heating:        { kWhPerUnit: 4.20 }
 };
 
 // Hourly weight arrays (24 elements, index 0 = midnight)
@@ -7417,7 +7417,7 @@ async function calcAnnualPVT(){
 // ================================================================
 const INPUT_STORE_KEY = "pvtCalcInputs.v1";
 const INPUT_DEFAULTS_VERSION_KEY = "pvtCalcInputs.defaultsVersion";
-const INPUT_DEFAULTS_VERSION = "2026-07-pvt-cooling-default-on";
+const INPUT_DEFAULTS_VERSION = "2026-07-hotel-scenario-defaults";
 
 // Serialize every user-set input/select.
 function collectInputState(){
@@ -7454,6 +7454,9 @@ function restoreInputsFromStorage(){
     const data = JSON.parse(localStorage.getItem(INPUT_STORE_KEY) || "{}");
     if (localStorage.getItem(INPUT_DEFAULTS_VERSION_KEY) !== INPUT_DEFAULTS_VERSION){
       data.pvtCoolingSensitivityEnable = true;
+      if (String(data.hotelRoomsInput) === "120") delete data.hotelRoomsInput;
+      if (String(data.hotelOccupancyInput) === "70") delete data.hotelOccupancyInput;
+      if (String(data.hotelPoolKWh) === "0.8") delete data.hotelPoolKWh;
       localStorage.setItem(INPUT_DEFAULTS_VERSION_KEY, INPUT_DEFAULTS_VERSION);
       localStorage.setItem(INPUT_STORE_KEY, JSON.stringify(data));
     }
