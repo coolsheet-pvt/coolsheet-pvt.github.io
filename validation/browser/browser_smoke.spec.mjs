@@ -199,6 +199,10 @@ test("validation pages lead with simple visuals and keep technical material opti
   await expect(page.getByRole("heading", { name: /Validated or cross-checked/ })).toBeVisible();
   await expect(page.getByRole("heading", { name: /Not yet fully validated/ })).toBeVisible();
   await expect(page.getByText("PVT electrical cooling gain", { exact:true })).toBeVisible();
+  await expect(page.getByText("Industry and financial results", { exact:true })).toHaveCount(0);
+  await expect(page.locator(".formula")).toHaveCount(1);
+  await expect(page.locator(".formula")).toContainText("Cooling gain = cooled PVT electricity \u2212 uncooled PV-only electricity");
+  await expect(page.locator(".formula")).toContainText("Cooling gain (%) = cooling gain \u00F7 PV-only electricity \u00D7 100");
   await expect(page.locator(".mini-chart")).toHaveCount(3);
   await expect(page.getByText("Sydney example, yearly electricity")).toBeVisible();
   await expect(page.getByText("Australian climate zones checked")).toBeVisible();

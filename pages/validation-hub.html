@@ -10,22 +10,22 @@
     :root{--ink:#173047;--muted:#5d7080;--line:#d6dfea;--blue:#155f9d;--green:#18734e;--orange:#a75225;--paper:#fff;--wash:#f4f7fa}
     *{box-sizing:border-box}
     html{overflow-x:hidden;overflow-y:scroll;scrollbar-gutter:stable}
-    body{margin:0;padding:24px 18px 60px;background:var(--wash);color:var(--ink);font-family:Arial,Helvetica,sans-serif;line-height:1.5}
+    body{margin:0;padding:20px 18px 52px;background:#f7f9fb;color:var(--ink);font-family:Arial,Helvetica,sans-serif;line-height:1.5}
     a{color:var(--blue)}
     .shell{width:min(920px,100%);margin:0 auto}
     .topbar{display:flex;align-items:center;justify-content:flex-end;padding-bottom:16px;border-bottom:1px solid var(--line)}
     .back-link{display:inline-flex;align-items:center;min-height:38px;padding:8px 12px;border:1px solid #aac0d2;border-radius:6px;background:#fff;color:#234f72;font-size:13px;font-weight:700;text-decoration:none}
     .back-link:hover,.back-link:focus{background:#eaf2f8;border-color:#759bb9}
-    main{margin-top:24px;padding:34px 38px 38px;border:1px solid var(--line);border-radius:10px;background:var(--paper)}
+    main{margin-top:20px;padding:28px 30px 32px;border:1px solid var(--line);border-radius:8px;background:var(--paper)}
     .eyebrow{margin:0 0 7px;color:#557086;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
     h1{margin:0;color:#083d5b;font-size:34px;line-height:1.15}
     .intro{max-width:720px;margin:10px 0 0;color:var(--muted);font-size:15px}
-    .validation-checklist{margin-top:25px;border:1px solid #c8d8e3;border-radius:9px;overflow:hidden;background:#fff}
-    .checklist-heading{padding:16px 18px;background:#eaf2f8;border-bottom:1px solid #c8d8e3}
+    .validation-checklist{margin-top:22px;border:1px solid #c8d8e3;border-radius:6px;overflow:hidden;background:#fff}
+    .checklist-heading{padding:14px 16px;background:#fff;border-bottom:1px solid #c8d8e3}
     .checklist-heading h2{margin:0;color:#083d5b;font-size:19px}
     .checklist-heading p{margin:3px 0 0;color:#536979;font-size:13px}
     .checklist-columns{display:grid;grid-template-columns:1fr 1fr}
-    .checklist-group{margin-top:0;padding:18px}
+    .checklist-group{margin-top:0;padding:16px}
     .checklist-group+ .checklist-group{border-left:1px solid var(--line)}
     .checklist-group h3{display:flex;align-items:center;gap:8px;margin:0 0 12px;font-size:15px}
     .checklist-group.validated h3{color:#0d563a}.checklist-group.remaining h3{color:#8a461f}
@@ -36,21 +36,29 @@
     .remaining .check-icon{background:#f8eadf;color:var(--orange)}
     .checklist-item strong{display:block;color:#173047;font-size:13.5px}
     .checklist-item span:last-child{display:block;margin-top:1px;color:#5c6f7e;font-size:12px;line-height:1.4}
+    .checklist-item .check-description{display:block;margin-top:1px;color:#5c6f7e;font-size:12px;line-height:1.4}
+    .checklist-item span.formula{display:block;margin-top:7px;color:#2d526c;font-size:11.5px;font-weight:700;line-height:1.45}
+    .cooling-method{margin-top:9px;padding-top:9px;border-top:1px solid #e1e8ee;color:#536979;font-size:11.5px;line-height:1.45}
+    .cooling-method>strong{margin-bottom:5px;color:#2d526c;font-size:11.5px}
+    .cooling-method ol{margin:0;padding-left:18px}
+    .cooling-method li+li{margin-top:4px}
+    .cooling-method .equation{display:block;color:#2d526c;font-weight:700}
+    .cooling-method p{margin:7px 0 0}
     .validation-guidance{padding:12px 18px;border-top:1px solid var(--line);background:#f8fafc;color:#435a6b;font-size:12.5px}
     .validation-guidance strong{color:#173047}
     section{margin-top:30px}
     section h2{margin:0 0 6px;color:#083d5b;font-size:20px}
     .section-copy{margin:0 0 12px;color:var(--muted);font-size:13.5px}
-    .checks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:17px}
-    .check-row{display:flex;min-width:0;flex-direction:column;padding:18px;border:1px solid var(--line);border-radius:8px;background:#fff;color:inherit;text-decoration:none;transition:border-color .16s,box-shadow .16s,transform .16s}
-    .check-row:hover,.check-row:focus{border-color:#93b4ca;box-shadow:0 7px 20px rgba(25,65,91,.10);transform:translateY(-2px);outline:none}
+    .checks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:15px}
+    .check-row{display:flex;min-width:0;flex-direction:column;padding:15px;border:1px solid var(--line);border-radius:6px;background:#fff;color:inherit;text-decoration:none}
+    .check-row:hover,.check-row:focus{border-color:#7fa4be;background:#fafcfe;outline:none}
     .status{font-size:11px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:var(--blue)}
     .status.strong{color:var(--green)}.status.preliminary{color:var(--orange)}
     .check-copy h3{margin:7px 0 3px;color:#123f60;font-size:18px}
     .check-copy p{margin:0;color:var(--muted);font-size:13px}
     .check-copy .check-meta{margin-top:7px;color:#40586b;font-size:12px;font-weight:700}
     .open-label{margin-top:auto;padding-top:15px;color:var(--blue);font-size:13px;font-weight:700;white-space:nowrap}
-    .mini-chart{margin:15px 0 13px;padding:13px;border-radius:7px;background:#f5f8fa}
+    .mini-chart{margin:12px 0 10px;padding:10px;border-radius:4px;background:#f7f9fb}
     .mini-chart-title{margin:0 0 9px;color:#53697a;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
     .bar-row{display:grid;grid-template-columns:66px minmax(0,1fr) 62px;gap:7px;align-items:center;margin:7px 0;font-size:10px;color:#526777}
     .bar-track{height:9px;border-radius:20px;background:#dfe8ee;overflow:hidden}
@@ -111,11 +119,21 @@
             </li>
             <li class="checklist-item">
               <span class="check-icon" aria-hidden="true">!</span>
-              <span><strong>PVT electrical cooling gain</strong><span>Needs direct field testing against a comparable uncooled PV system.</span></span>
-            </li>
-            <li class="checklist-item">
-              <span class="check-icon" aria-hidden="true">!</span>
-              <span><strong>Industry and financial results</strong><span>Demand, savings and payback remain scenarios until site data is supplied.</span></span>
+              <div class="checklist-content">
+                <strong>PVT electrical cooling gain</strong>
+                <span class="check-description">Needs direct field testing against a comparable uncooled PV system.</span>
+                <span class="formula">Cooling gain = cooled PVT electricity &minus; uncooled PV-only electricity<br />Cooling gain (%) = cooling gain &divide; PV-only electricity &times; 100</span>
+                <div class="cooling-method">
+                  <strong>How the model calculates it</strong>
+                  <ol>
+                    <li>NOCT estimates the uncooled PV panel temperature.<span class="equation">T<sub>PV</sub> = T<sub>air</sub> + (G &divide; 800)(NOCT &minus; 20)</span></li>
+                    <li>The water temperature rise gives the heat removed.<span class="equation">Q = m&#775;c<sub>p</sub>(T<sub>out</sub> &minus; T<sub>in</sub>)</span></li>
+                    <li>Removed heat reduces the estimated PVT panel temperature.<span class="equation">T<sub>PVT</sub> = max(T<sub>in</sub>, T<sub>PV</sub> &minus; Q &divide; (U<sub>L</sub>A))</span></li>
+                    <li>The panel temperature coefficient converts the temperature difference into an electricity difference.<span class="equation">f<sub>T</sub> = 1 + &gamma;(T<sub>panel</sub> &minus; 25)</span></li>
+                  </ol>
+                  <p>Both cases use the same sunlight, panel area, system losses and inverter efficiency. The hourly differences are added across the year.</p>
+                </div>
+              </div>
             </li>
           </ul>
         </section>

@@ -59,5 +59,8 @@ assert.match(validationPage, /extra electricity claimed from PVT water cooling/i
 assert.match(validationHub, /Strong benchmark agreement/);
 assert.match(validationHub, /Preliminary field evidence/);
 assert.match(validationHub, /Not yet fully validated/);
+assert.doesNotMatch(validationHub, /Industry and financial results/);
+assert.match(validationHub, /Cooling gain = cooled PVT electricity &minus; uncooled PV-only electricity/);
+assert.match(validationHub, /Cooling gain \(%\) = cooling gain &divide; PV-only electricity &times; 100/);
 
 console.log("PV external comparison and page wiring passed.");
