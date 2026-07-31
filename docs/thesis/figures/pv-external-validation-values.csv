@@ -1,0 +1,13 @@
+city,source,annual_net_ac_kWh,difference_vs_coolsheet_pct
+Melbourne,CoolSheet PV-only,34345,+0.00
+Melbourne,PVGIS 5.3,33546,-2.33
+Melbourne,PVWatts,32582,-5.13
+Melbourne,Australian CEC regional benchmark,31536,-8.18
+Sydney,CoolSheet PV-only,33942,+0.00
+Sydney,PVGIS 5.3,35479,+4.53
+Sydney,PVWatts,36260,+6.83
+Sydney,Australian CEC regional benchmark,34164,+0.65
+Perth,CoolSheet PV-only,38576,+0.00
+Perth,PVGIS 5.3,38530,-0.12
+Perth,PVWatts,40430,+4.81
+Perth,Australian CEC regional benchmark,38544,-0.08

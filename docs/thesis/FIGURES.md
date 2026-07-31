@@ -23,6 +23,8 @@ The per-zone charts have been consolidated into **four combined 2×2 figures** a
 | 5 Daily profile example | `fig-daily-mains-profile.png` | — | Sydney: 18.02 °C mean, 9.71 K swing |
 | 6 Sensitivity | `fig-mains-sensitivity-demand.png` | — | ~6.0% heat-demand change per 1 K mains |
 | 7 Conceptual: damping & lag | `fig-concept-damping-and-lag.png` | — | explains the equation's two shape terms — **and that both are fitted away** (§0c) |
+| IV.X BC-Aus vs CER (dedicated) | `fig-IVX-bcaus-vs-cer.png` + `IVX-monthly-values.csv` | §0d | mean 0.62 °C MAE, sub-degree fit |
+| IV.Y BC-Aus vs ground temp (dedicated) | `fig-IVY-bcaus-vs-groundtemp.png` + `IVY-monthly-values.csv` | §0d | mean 2.4 °C vs 2.0 m — **weaker than expected, read §0d** |
 
 All four combined figures are 2×2 panels covering the **four runtime zones only**. Canberra (zone 5) is deliberately excluded: its source deck is heat-pump-only and the selector can never choose it, so including it would misrepresent the model's operating envelope. Each panel is annotated with its own MAE, and each figure carries a summary table plus a source note.
 
@@ -43,6 +45,23 @@ Mean absolute error vs the CER reference, °C. The in-sample column reproduces t
 **Reading:** swapping the fitted-era ambient series for the weather the calculator actually runs on roughly **halves the model's accuracy, from 0.62 °C to 1.02 °C mean absolute error** — still sub-1.1 °C on average, but with Alice Springs degrading most (0.78 → 1.77 °C), consistent with arid inland climates where the annual mean and swing differ most between the CER-era decks and modern PVGIS TMY. Rockhampton is unchanged.
 
 Quote **1.02 °C** when describing runtime accuracy and **0.705 °C RMSE / 0.62 °C MAE** only when explicitly describing fit quality. Both remain agreement with a *legacy certification schedule*, not with measured mains water — that gap is still open.
+
+## 0d. Figures IV.X and IV.Y — dedicated thesis figures with exported monthly values
+
+These two answer your outline's Figure IV.X (essential) and IV.Y (optional) directly, drawn from the **real 12 monthly values per location** that the website's own code computes. The underlying numbers are exported as CSV so you also have the values you said were missing.
+
+| Figure | Image | Data | Lines per panel |
+|---|---|---|---|
+| **IV.X** BC-Aus vs CER, four zones | `fig-IVX-bcaus-vs-cer.png` | `IVX-monthly-values.csv` | CER reference + BC-Aus (production) |
+| **IV.Y** BC-Aus vs EnergyPlus ground temp | `fig-IVY-bcaus-vs-groundtemp.png` | `IVY-monthly-values.csv` | EnergyPlus 0.5 m + 2.0 m + BC-Aus (production) |
+
+Both are clean 2×2 panels over the four runtime zones (Canberra excluded), each panel annotated with its own error, plus a summary table. The CSVs are wide-friendly: `zone_city, month, …` — 48 rows (4 zones × 12 months).
+
+**IV.X result** (BC-Aus production model vs CER reference, same weather): MAE 0.67 / 0.78 / 0.52 / 0.50 °C, **mean 0.62 °C** (RMSE mean 0.69 °C) — the fitted model reproduces the CER schedule to sub-degree accuracy. In-sample; cite as fit quality.
+
+**IV.Y result — read this before using the figure.** The production BC-Aus model agrees with EnergyPlus ground temperature only moderately: **mean MAE 1.97 °C vs 0.5 m and 2.39 °C vs 2.0 m**, and the agreement does **not** uniformly improve with depth (Alice Springs is much worse at 2.0 m: 1.62 → 3.18 °C). This is *worse* than the offset-removed original correlation managed on the same reference (1.25 °C vs 2.0 m, `fig-combined-ground-temperature.png`). The reason is the finding in §0c: the fitted constants have near-unity amplitude `ratio` and near-zero `lag`, so the model tracks the air-temperature swing rather than the damped, delayed deep-ground cycle. IV.Y therefore does not show a strong independent validation of the shipped model — it visually confirms that BC-Aus is a fitted curve to the CER schedules, not a ground-thermal model. Present it honestly, or omit it (it is your "optional" figure); do not caption it as "BC-Aus agrees with ground temperature."
+
+Note the two ground-temperature figures differ by design: `fig-combined-ground-temperature.png` plots the **original-coefficient** model line that `pages/validation3/4.html` literally compute, whereas **IV.Y plots the shipped production BC-Aus**. Use IV.Y when the claim is about the model you actually ship.
 
 ## 0c. Conceptual figure — and a caveat you must not omit
 

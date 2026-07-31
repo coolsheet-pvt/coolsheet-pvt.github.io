@@ -3168,11 +3168,12 @@ function buildDairyModelBasisHtml(){
     <div class="panel" style="background:#fff;margin-bottom:10px;">
       <p style="margin:0 0 6px 0;">1. Start with annual milk throughput.</p>
       <p style="margin:0 0 6px 0;">2. Apply the seasonal factor and hourly weighting for each process.</p>
-      <p style="margin:0 0 6px 0;">3. Heat that water from mains temperature up to 35 C to get hourly thermal demand.</p>
+      <p style="margin:0 0 6px 0;">3. Heat that water from mains temperature up to ${DP.fatty_film_rinse.T_target.toFixed(0)} C to get hourly thermal demand.</p>
       <p style="margin:0 0 6px 0;"><code>V_h = (Throughput_L x kWater / 365) x seasonalFactor x normalisedHourlyWeight[h]</code></p>
-      <p style="margin:0 0 6px 0;"><code>Q_h = (V_h x 4.184 x max(0, 35 - T_mains)) / 3600</code> <span style="color:#777;">Q = m c_p ΔT</span></p>
-      <p style="margin:0;"><code>Electrical_h = (51.7 x Throughput_kL / 365) x seasonalFactor x normalisedElectricalWeight[h]</code></p>
+      <p style="margin:0 0 6px 0;"><code>Q_h = (V_h x 4.184 x max(0, ${DP.fatty_film_rinse.T_target.toFixed(0)} - T_mains)) / 3600</code> <span style="color:#777;">Q = m c_p ΔT</span></p>
+      <p style="margin:0;"><code>Electrical_h = (${D.electricalKWhPerKL.toFixed(1)} x Throughput_kL / 365) x seasonalFactor x normalisedElectricalWeight[h]</code></p>
     </div>
+    <p class="note" style="margin:0 0 10px 0;">Normalisation makes the annual heated-water volume and electricity equal the benchmark totals; the thermal energy (kWh) then follows Q = m c_p ΔT with the <b>daily</b> mains temperature, so it varies with the local climate. The ${DP.fatty_film_rinse.T_target.toFixed(0)} C target is the low-temperature PVT pre-heat duty, not the full CIP or boiler temperature - a boiler still provides any final high-temperature lift.</p>
     <h4 style="margin:0 0 8px 0;">Normalised weighting</h4>
     <div class="note" style="margin:0 0 8px 0;">
       <a href="#" onclick="toggleDairyWeightingGraph(event)">View normalised weighting graph</a>
@@ -3229,8 +3230,9 @@ function buildBreweryModelBasisHtml(){
       <p style="margin:0 0 6px 0;">3. Heat that process water from local mains temperature up to the brewery process target temperature.</p>
       <p style="margin:0 0 6px 0;"><code>V_h = (Throughput_L x kWater / 365) x brewerySeasonalFactor x normalisedHourlyWeight[h]</code></p>
       <p style="margin:0 0 6px 0;"><code>Q_h = (V_h x 4.184 x max(0, T_target - T_mains)) / 3600</code></p>
-      <p style="margin:0;"><code>Electrical_h = (0.115 x Throughput_L / 365) x brewerySeasonalFactor x normalisedElectricalWeight[h]</code></p>
+      <p style="margin:0;"><code>Electrical_h = (${(B.electricalKWhPerHL/100).toFixed(3)} x Throughput_L / 365) x brewerySeasonalFactor x normalisedElectricalWeight[h]</code></p>
     </div>
+    <p class="note" style="margin:0 0 10px 0;">Normalisation makes the annual warm-water volume and electricity equal the benchmark totals; the thermal energy (kWh) then follows Q = m c_p ΔT with the <b>daily</b> mains temperature, so it varies with the local climate.</p>
     <h4 style="margin:0 0 8px 0;">Why these three processes</h4>
     <div class="panel" style="background:#fff;margin-bottom:10px;">
       <p style="margin:0 0 6px 0;"><b>CIP pre-rinse:</b> warm water helps strip yeast, proteins, and hop residues without jumping to caustic/steam conditions. ${src("CIP source", cipHref)}</p>

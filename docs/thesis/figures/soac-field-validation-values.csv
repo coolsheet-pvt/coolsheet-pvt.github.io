@@ -1,0 +1,5 @@
+series,campaign_thermal_kWh,difference_vs_measured_pct
+"Measured (field, quality-controlled)",5888.4000,0.00
+Model A (inlet correlation),5522.2685,-6.22
+Model B (ISO 9806),9494.4446,+61.24
+"Model B (ISO 9806, wind-corrected a1)",8894.6601,+51.05

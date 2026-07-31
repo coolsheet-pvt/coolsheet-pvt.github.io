@@ -1,0 +1,49 @@
+zone_city,zone_number,month,cer_reference_C,bcaus_model_C,residual_C
+Rockhampton,1,Jan,28.0,28.997612,+0.998
+Rockhampton,1,Feb,28.0,28.179800,+0.180
+Rockhampton,1,Mar,27.0,26.456019,-0.544
+Rockhampton,1,Apr,25.0,24.296863,-0.703
+Rockhampton,1,May,23.0,22.282200,-0.718
+Rockhampton,1,Jun,20.0,20.950392,+0.950
+Rockhampton,1,Jul,20.0,20.669472,+0.669
+Rockhampton,1,Aug,21.0,21.506568,+0.507
+Rockhampton,1,Sep,24.0,23.208413,-0.792
+Rockhampton,1,Oct,26.0,25.368672,-0.631
+Rockhampton,1,Nov,28.0,27.384873,-0.615
+Rockhampton,1,Dec,28.0,28.699117,+0.699
+Alice Springs,2,Jan,29.0,29.533393,+0.533
+Alice Springs,2,Feb,27.0,27.520738,+0.521
+Alice Springs,2,Mar,24.0,23.494393,-0.506
+Alice Springs,2,Apr,20.0,18.552561,-1.447
+Alice Springs,2,May,14.0,14.023227,+0.023
+Alice Springs,2,Jun,11.0,11.115878,+0.116
+Alice Springs,2,Jul,9.0,10.635906,+1.636
+Alice Springs,2,Aug,12.0,12.691918,+0.692
+Alice Springs,2,Sep,18.0,16.666254,-1.334
+Alice Springs,2,Oct,23.0,21.609998,-1.390
+Alice Springs,2,Nov,26.0,26.143113,+0.143
+Alice Springs,2,Dec,28.0,29.012621,+1.013
+Sydney,3,Jan,23.0,23.694796,+0.695
+Sydney,3,Feb,23.0,22.859443,-0.141
+Sydney,3,Mar,21.0,20.618740,-0.381
+Sydney,3,Apr,18.0,17.586602,-0.413
+Sydney,3,May,15.0,14.575590,-0.424
+Sydney,3,Jun,12.0,12.392197,+0.392
+Sydney,3,Jul,11.0,11.635394,+0.635
+Sydney,3,Aug,12.0,12.499560,+0.500
+Sydney,3,Sep,15.0,14.713465,-0.287
+Sydney,3,Oct,19.0,17.748515,-1.251
+Sydney,3,Nov,21.0,20.761108,-0.239
+Sydney,3,Dec,22.0,22.914591,+0.915
+Melbourne,4,Jan,20.0,20.383984,+0.384
+Melbourne,4,Feb,20.0,19.608574,-0.391
+Melbourne,4,Mar,18.0,17.450650,-0.549
+Melbourne,4,Apr,15.0,14.501730,-0.498
+Melbourne,4,May,11.0,11.551866,+0.552
+Melbourne,4,Jun,9.0,9.391381,+0.391
+Melbourne,4,Jul,8.0,8.612517,+0.613
+Melbourne,4,Aug,10.0,9.416155,-0.584
+Melbourne,4,Sep,12.0,11.548490,-0.452
+Melbourne,4,Oct,15.0,14.500403,-0.500
+Melbourne,4,Nov,17.0,17.451737,+0.452
+Melbourne,4,Dec,19.0,19.582513,+0.583

@@ -6,3 +6,8 @@ node_modules/
 test-results/
 validation/reports/live-results/
 .env
+
+__pycache__/
+*.pyc
+thesis-handover/
+

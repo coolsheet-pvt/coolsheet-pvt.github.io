@@ -1,0 +1,11 @@
+{
+  "model": "Model A (inlet correlation)",
+  "areaM2": 20,
+  "tiltDeg": 30,
+  "etaPv": 0.2,
+  "coolingEnabled": true,
+  "tempCorrEnabled": true,
+  "pvtAcKWh": 6042.345534200522,
+  "pvOnlyAcKWh": 5656.928226775194,
+  "hourlyRowsUsed": 8760
+}

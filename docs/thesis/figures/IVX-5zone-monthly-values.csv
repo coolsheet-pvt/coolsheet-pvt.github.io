@@ -1,0 +1,61 @@
+zone_city,zone_number,month,cer_reference_C,bcaus_model_C,residual_C,runtime_selectable
+Rockhampton,1,Jan,28.0,28.997612,+0.998,yes
+Rockhampton,1,Feb,28.0,28.179800,+0.180,yes
+Rockhampton,1,Mar,27.0,26.456019,-0.544,yes
+Rockhampton,1,Apr,25.0,24.296863,-0.703,yes
+Rockhampton,1,May,23.0,22.282200,-0.718,yes
+Rockhampton,1,Jun,20.0,20.950392,+0.950,yes
+Rockhampton,1,Jul,20.0,20.669472,+0.669,yes
+Rockhampton,1,Aug,21.0,21.506568,+0.507,yes
+Rockhampton,1,Sep,24.0,23.208413,-0.792,yes
+Rockhampton,1,Oct,26.0,25.368672,-0.631,yes
+Rockhampton,1,Nov,28.0,27.384873,-0.615,yes
+Rockhampton,1,Dec,28.0,28.699117,+0.699,yes
+Alice Springs,2,Jan,29.0,29.533393,+0.533,yes
+Alice Springs,2,Feb,27.0,27.520738,+0.521,yes
+Alice Springs,2,Mar,24.0,23.494393,-0.506,yes
+Alice Springs,2,Apr,20.0,18.552561,-1.447,yes
+Alice Springs,2,May,14.0,14.023227,+0.023,yes
+Alice Springs,2,Jun,11.0,11.115878,+0.116,yes
+Alice Springs,2,Jul,9.0,10.635906,+1.636,yes
+Alice Springs,2,Aug,12.0,12.691918,+0.692,yes
+Alice Springs,2,Sep,18.0,16.666254,-1.334,yes
+Alice Springs,2,Oct,23.0,21.609998,-1.390,yes
+Alice Springs,2,Nov,26.0,26.143113,+0.143,yes
+Alice Springs,2,Dec,28.0,29.012621,+1.013,yes
+Sydney,3,Jan,23.0,23.694796,+0.695,yes
+Sydney,3,Feb,23.0,22.859443,-0.141,yes
+Sydney,3,Mar,21.0,20.618740,-0.381,yes
+Sydney,3,Apr,18.0,17.586602,-0.413,yes
+Sydney,3,May,15.0,14.575590,-0.424,yes
+Sydney,3,Jun,12.0,12.392197,+0.392,yes
+Sydney,3,Jul,11.0,11.635394,+0.635,yes
+Sydney,3,Aug,12.0,12.499560,+0.500,yes
+Sydney,3,Sep,15.0,14.713465,-0.287,yes
+Sydney,3,Oct,19.0,17.748515,-1.251,yes
+Sydney,3,Nov,21.0,20.761108,-0.239,yes
+Sydney,3,Dec,22.0,22.914591,+0.915,yes
+Melbourne,4,Jan,20.0,20.383984,+0.384,yes
+Melbourne,4,Feb,20.0,19.608574,-0.391,yes
+Melbourne,4,Mar,18.0,17.450650,-0.549,yes
+Melbourne,4,Apr,15.0,14.501730,-0.498,yes
+Melbourne,4,May,11.0,11.551866,+0.552,yes
+Melbourne,4,Jun,9.0,9.391381,+0.391,yes
+Melbourne,4,Jul,8.0,8.612517,+0.613,yes
+Melbourne,4,Aug,10.0,9.416155,-0.584,yes
+Melbourne,4,Sep,12.0,11.548490,-0.452,yes
+Melbourne,4,Oct,15.0,14.500403,-0.500,yes
+Melbourne,4,Nov,17.0,17.451737,+0.452,yes
+Melbourne,4,Dec,19.0,19.582513,+0.583,yes
+Canberra,5,Jan,18.0,18.040534,+0.041,no
+Canberra,5,Feb,18.0,19.032222,+1.032,no
+Canberra,5,Mar,19.0,18.145521,-0.854,no
+Canberra,5,Apr,15.0,15.636166,+0.636,no
+Canberra,5,May,13.0,12.167168,-0.833,no
+Canberra,5,Jun,9.0,8.677208,-0.323,no
+Canberra,5,Jul,5.0,6.103482,+1.103,no
+Canberra,5,Aug,5.0,5.144956,+0.145,no
+Canberra,5,Sep,7.0,6.031016,-0.969,no
+Canberra,5,Oct,8.0,8.550106,+0.550,no
+Canberra,5,Nov,12.0,12.017302,+0.017,no
+Canberra,5,Dec,16.0,15.454320,-0.546,no
