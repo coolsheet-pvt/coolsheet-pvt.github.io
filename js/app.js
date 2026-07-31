@@ -1325,10 +1325,16 @@ async function fetchTMY(lat, lon){
     for (let attempt = 1; attempt <= endpoint.attempts; attempt++){
       try {
         await requireWeatherServiceHealth(endpoint);
+        // A woken instance answers in roughly 20 s; a cold one can take minutes,
+        // so the retry is given more room rather than repeating a timeout that
+        // has already proved too short.
+        const attemptTimeoutMs = endpoint.timeoutMs * attempt;
         if (/hosted/i.test(endpoint.label)){
-          setTmyLoadStatus("Contacting the hosted weather service - this can take up to ~1 minute if it is waking up…", true);
+          setTmyLoadStatus(attempt === 1
+            ? "Contacting the hosted weather service - this can take up to ~1 minute if it is waking up…"
+            : `The service is still waking up. Retrying with a longer wait (up to ${Math.round(attemptTimeoutMs / 1000)}s)…`, true);
         }
-        const resp = await fetchWithTimeout(endpoint.url + query, { headers:{"Accept":"application/json"} }, endpoint.timeoutMs);
+        const resp = await fetchWithTimeout(endpoint.url + query, { headers:{"Accept":"application/json"} }, attemptTimeoutMs);
         if (!resp.ok){
           let detail = "";
           try {
@@ -1345,20 +1351,24 @@ async function fetchTMY(lat, lon){
         return data;
       } catch(e){
         const message = e?.name === "AbortError"
-          ? `timed out after ${Math.round(endpoint.timeoutMs / 1000)}s`
+          ? `timed out after ${Math.round(endpoint.timeoutMs * attempt / 1000)}s`
           : (e?.message || String(e));
         console.warn(`TMY endpoint ${endpoint.url} failed (attempt ${attempt}/${endpoint.attempts}):`, message);
-        if (attempt < endpoint.attempts){
-          await delay(1500);
-        } else {
-          endpointErrors.push(`${endpoint.label} ${endpoint.url}: ${message}`);
-        }
+        // Every attempt is reported, not just the last: "timed out twice" and
+        // "timed out then returned HTTP 502" need different responses.
+        endpointErrors.push(`${endpoint.label} attempt ${attempt}/${endpoint.attempts}: ${message}`);
+        if (attempt < endpoint.attempts) await delay(1500);
       }
     }
   }
   throw new Error("TMY fetch failed. The hosted weather API may still be waking up, or PVGIS may be temporarily unavailable. Try again in about a minute. Details: " + endpointErrors.join("; "));
 }
 
+// The hosted weather service sleeps when idle, and waking it costs far longer
+// than serving a request once awake. Pinging /health as soon as the page loads
+// moves that wake-up into the time the user spends entering an address, so the
+// first real fetch usually meets an already-running instance. Fire-and-forget:
+// a failure here must never surface, because fetchTMY checks health properly.
 async function requireWeatherServiceHealth(endpoint){
   const healthUrl = endpoint.url.replace(/\/tmy$/, "/health");
   if (TMY_HEALTH_CACHE.get(healthUrl) === true) return;
@@ -1400,9 +1410,19 @@ function validateTMYContract(data){
   if (demandKeys.size !== 8760 || utcKeys.size !== 8760) throw new Error("Weather demand-clock or UTC keys are not unique across all 8760 hours.");
 }
 
+// The hosted service stops when idle and is slow to restart, so the wake-up is
+// started at page load and overlaps the time the user spends entering a site.
+//
+// The previous 8 s ping was shorter than a cold restart takes to answer, so it
+// triggered the wake-up but always aborted before the reply and never recorded
+// the result. Going through requireWeatherServiceHealth instead populates
+// TMY_HEALTH_CACHE, so the first real fetch skips its own health round-trip.
+// Only the hosted endpoint is warmed: a local backend does not sleep, and
+// probing one that is not running makes the browser log ERR_CONNECTION_REFUSED,
+// which the page cannot catch because the browser, not the caller, emits it.
 function warmHostedTMYService(){
-  const healthUrl = REMOTE_TMY_ENDPOINT.replace(/\/tmy$/, "/health");
-  fetchWithTimeout(healthUrl, { headers:{"Accept":"application/json"} }, 8000).catch(() => {});
+  const hosted = getTMYEndpoints().find(endpoint => /hosted/i.test(endpoint.label));
+  if (hosted) requireWeatherServiceHealth(hosted).catch(() => {});
 }
 
 // ================================================================
