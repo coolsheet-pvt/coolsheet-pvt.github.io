@@ -3,7 +3,14 @@
 
 // Single source of truth for the app version shown in the header + PDF/report.
 // Keep in sync with the ?v= cache-bust query on css/js in index.html.
-const APP_VERSION = "13.42";
+//
+// The 13.x numbers were development iterations. The counter is reset at the
+// point of submission so the version a marker sees on screen, and the one
+// printed on every exported report, names the build the thesis describes.
+const APP_VERSION = "1.0";
+const APP_RELEASE_LABEL = "Thesis Submission";
+// Built once so the header and the PDF cannot drift apart.
+const APP_VERSION_LABEL = `Version ${APP_VERSION} - ${APP_RELEASE_LABEL}`;
 
 // ================================================================
 //  DETAILS ANIMATION - replay slideDown every time a panel opens
@@ -525,7 +532,7 @@ function buildPdfTemplateDocument(){
   const industryKey = document.getElementById("industrySelect")?.value || "";
   const profileLabel = getSelectedOptionText("profileType") || "N/A";
   const reportFilename = buildReportFilename(locationName);
-  const reportVersion = document.querySelector(".brand-meta span")?.textContent?.trim() || `Version ${APP_VERSION}`;
+  const reportVersion = document.querySelector(".brand-meta span")?.textContent?.trim() || APP_VERSION_LABEL;
   const weatherRecords = Array.isArray(CURRENT_MET) ? CURRENT_MET.length : 0;
   const timezoneText = CURRENT_TZ ? getTimezoneDisplay(CURRENT_TZ) : "N/A";
   const mainsText = CURRENT_MAINS
@@ -7710,7 +7717,7 @@ onTestingModeChange();
 // Header version label comes from APP_VERSION so it (and the PDF) update in one place.
 {
   const versionLabel = document.getElementById("appVersionLabel");
-  if (versionLabel) versionLabel.textContent = `Version ${APP_VERSION}`;
+  if (versionLabel) versionLabel.textContent = APP_VERSION_LABEL;
 }
 document.getElementById("btnShareLink")?.addEventListener("click", copyShareLink);
 document.getElementById("btnResetInputs")?.addEventListener("click", resetInputsToDefaults);
