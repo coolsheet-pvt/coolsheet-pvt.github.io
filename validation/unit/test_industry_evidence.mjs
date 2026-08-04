@@ -29,7 +29,7 @@ for (const [id, value] of Object.entries({
 }
 assert.match(app, /pool_heating:\s*\{ kWhPerUnit: 4\.20 \}/, "hotel pool fallback default must be 4.2 kWh/occupied room-night");
 for (const id of ["dairyElectricKWhPerKL","dairyFattyWater","dairyCipWater","dairyBoilerWater","dairyTargetTemp",
-                  "breweryElectricKWhPerHL","breweryCipWater","breweryRinseWater","breweryBoilerWater","breweryCipTarget","breweryRinseTarget",
+                  "breweryElectricKWhPerHL","breweryWholeSiteWater","breweryCipWater","breweryRinseWater","breweryBoilerWater","breweryCipTarget","breweryRinseTarget",
                   "aquaticElectricKWhPerM2","aquaticEvaporationScale","aquaticMakeupScale"]){
   assert.match(html, new RegExp(`id="${id}"`), `${id} must be editable`);
 }
@@ -37,5 +37,9 @@ assert.match(app, /calcDairyHourlyDemand\([^)]*assumptions=null/);
 assert.match(app, /calcBreweryHourlyDemand\([^)]*assumptions=null/);
 assert.match(app, /not a NABERS rating/);
 assert.match(app, /WELS does not yet regulate commercial clothes washers/);
+assert.match(app, /Tooheys reported about 4 L/);
+assert.match(app, /PVT delivery caps, not claimed final CIP/);
+assert.match(app, /illustrative scenario, not a validated Australian brewery load model/);
+assert.match(app, /no retrievable public source for those coefficients was located/);
 assert.doesNotMatch(app, /process temperatures calibrated to Australian commercial conditions/);
 console.log("Industry evidence classification and editable-scenario tests passed.");

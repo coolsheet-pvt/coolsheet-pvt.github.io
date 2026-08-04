@@ -53,7 +53,7 @@ Industries covered:
 The live run verified:
 
 - live app load, industry selection, required input visibility, chart/table rendering, and no console/page errors
-- finite PV-only electricity, PVT electricity, PVT thermal, matched solar heat, industry demand, backup heat, coverage, savings, payback, NPV, LCOE, and LCOH outputs
+- finite PV-only electricity, modelled-scenario PVT electricity, PVT thermal, matched solar heat, industry demand, backup heat, coverage, demand-matched net benefit/payback/NPV, and combined gross-output cost
 - no `NaN`, `Infinity`, `undefined`, or visible `null` output text
 - industry-specific monotonic checks, such as higher throughput/occupancy/area/kg increasing demand
 - commercial laundry excludes drying/process electricity and covers hot-water washing demand only

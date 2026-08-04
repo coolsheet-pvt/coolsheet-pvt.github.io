@@ -1,7 +1,7 @@
 // Input-parsing tests: an explicit "0" typed into an economics field must be
 // honoured, and blank/invalid fields must fall back to the documented default.
 // Regression for the `parseFloat(x) || fallback` pattern (fixed in v13.12) that
-// treated 0 as falsy and silently substituted defaults (CAPEX 0 -> 800 AUD/m2,
+// treated 0 as falsy and silently substituted defaults (CAPEX 0 -> 540 AUD/m2,
 // OPEX 0% -> 1.5%/yr, discount 0% -> 6%).
 // Model coefficients use the same semantics: an explicit zero is a valid
 // coefficient, while blank or invalid values fall back to the documented default.
@@ -50,7 +50,7 @@ console.log("\n# economics semantics at the call sites (0 honoured after clamps)
 {
   // Mirror the calcAnnualPVT call-site expressions.
   FIELDS.capexInput = "0";
-  near("CAPEX 0 stays 0 (was silently 800)", Math.max(0, getInputNumber("capexInput", 800)), 0, 1e-12);
+  near("CAPEX 0 stays 0 (direct AUD/m2 basis)", Math.max(0, getInputNumber("capexInput", 540)), 0, 1e-12);
   FIELDS.opexRateInput = "0";
   near("OPEX 0%/yr stays 0 (was silently 1.5)", Math.max(0, getInputNumber("opexRateInput", 1.5))/100, 0, 1e-12);
   FIELDS.discountRateInput = "0";
@@ -63,15 +63,15 @@ console.log("\n# economics semantics at the call sites (0 honoured after clamps)
 
 console.log("\n# source locks: calcAnnualPVT reads economics via getInputNumber");
 for (const [id, def] of [
-  ["capexInput", "800"], ["opexRateInput", "1.5"],
+  ["capexInput", "540"], ["opexRateInput", "1.5"],
   ["discountRateInput", "6"], ["systemLifeInput", "25"],
   ["electricityPrice", "0"], ["feedInTariffInput", "0"],
   ["gasPriceInput", "0"], ["boilerEffInput", "0.85"]
 ]){
   ok(`${id} parsed with finite-check (default ${def})`, SRC.includes(`getInputNumber("${id}", ${def})`));
 }
-ok("no remaining `parseFloat(...capexInput...) || 800` pattern",
-  !/parseFloat\(document\.getElementById\("capexInput"\)\.value\)\s*\|\|\s*800/.test(SRC));
+ok("no remaining `parseFloat(...capexInput...) || 540` pattern",
+  !/parseFloat\(document\.getElementById\("capexInput"\)\.value\)\s*\|\|\s*540/.test(SRC));
 
 console.log("\n# model coefficient parsing");
 ok("Model A a0 still plain parseFloat", SRC.includes(`const a0           = parseFloat(document.getElementById("pvtA0").value);`));

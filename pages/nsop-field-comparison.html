@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>SOAC Field Data - Modelled vs Measured</title>
+  <title>NSOP Field Data - Modelled vs Measured</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet" />
@@ -41,14 +41,14 @@
 <body>
 <div class="wrap">
   <a class="back" href="../index.html">&larr; Back to calculator</a> &middot; <a class="back" href="validation-hub.html">Validation</a>
-  <h1>SOAC Field Data - Modelled vs Measured</h1>
-  <p class="sub">Sydney Olympic Aquatic Centre &middot; 534.7 m² PVT array (207 modules) &middot; 2&ndash;20 March 2026 &middot; aquatic (pool) preset</p>
+  <h1>NSOP Field Data - Modelled vs Measured</h1>
+  <p class="sub">North Sydney Olympic Pool at Milsons Point &middot; 534.7 m² PVT array (207 modules) &middot; 2&ndash;20 March 2026 &middot; aquatic (pool) preset</p>
   <div class="notice"><b>Not a validation:</b> the calculator models supply potential under typical weather; the field data is delivered heat from one real, intermittently-run array. The gap below is expected - its size and causes are the finding.</div>
 
   <div class="tiles">
     <div class="tile field"><span>Field measured</span><strong>5,888 kWh</strong><small>thermal, 19 days</small></div>
     <div class="tile"><span>Website estimate</span><strong>15,996 kWh</strong><small>same window &middot; default collector</small></div>
-    <div class="tile gap"><span>Model &divide; field</span><strong>2.7&times;</strong><small>3.9&times; with SOAC coefficients</small></div>
+    <div class="tile gap"><span>Model &divide; field</span><strong>2.7&times;</strong><small>3.9&times; with NSOP coefficients</small></div>
     <div class="tile"><span>Realised efficiency</span><strong>0.63&times;</strong><small>field &eta; 0.20 vs ISO-predicted 0.32</small></div>
   </div>
 
@@ -85,8 +85,8 @@
   </div>
 
   <div class="fine">
-    Field values extracted verbatim from the SOAC monitoring dashboard
-    (<code>validation/field-data/soac-mar-2026/</code>); website values from this calculator run for the same
+    Field values extracted verbatim from the NSOP monitoring dashboard
+    (<code>validation/field-data/nsop-mar-2026/</code>); website values from this calculator run for the same
     site, window, area and preset - method in <code>energy_comparison_method.md</code>.
   </div>
 </div>
@@ -98,14 +98,14 @@
   // 1) Window comparison
   new Chart(document.getElementById('cmpChart'), {
     type:'bar',
-    data:{ labels:['Field measured','Website - default','Website - SOAC coefficients'],
+    data:{ labels:['Field measured','Website - default','Website - NSOP coefficients'],
       datasets:[{ data:[5888,15996,22915], backgroundColor:[GREEN,BLUE,ORANGE], maxBarThickness:150 }]},
     options:{ responsive:true, maintainAspectRatio:false, indexAxis:'y',
       plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>c.parsed.x.toLocaleString()+' kWh'}} },
       scales:{ x:{beginAtZero:true, title:{display:true,text:'kWh (thermal)'}} } }
   });
 
-  // 2) Real daily energy (verbatim from soac_daily_energy.csv)
+  // 2) Real daily energy (verbatim from nsop_daily_energy.csv)
   const days=['02','03','04','05','06','07','08','09','10','11','12','13','14','15','16','17','18','19','20'];
   const daily=[0,285.9,557.8,615.8,564.7,492.7,54.7,51.9,260.2,685.7,321.9,10.4,377,582.4,432,282.6,0.3,151,161.4];
   new Chart(document.getElementById('dailyChart'), {
@@ -138,7 +138,7 @@
 
   // 5) Real operating cloud: eta vs G from the extracted CSV (thinned)
   try{
-    const txt=await (await fetch('../validation/field-data/soac-mar-2026/soac_scatter.csv')).text();
+    const txt=await (await fetch('../validation/field-data/nsop-mar-2026/nsop_scatter.csv')).text();
     const rows=txt.trim().split('\n').slice(1);
     const pts=[];
     for(let i=0;i<rows.length;i+=3){ // every 3rd point keeps the shape, lightens rendering

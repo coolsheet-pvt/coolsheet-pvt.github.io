@@ -4,10 +4,10 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 
 const root = process.cwd();
-const sourceDir = path.join(root, "validation", "field-data", "soac-mar-2026");
-const sourceDashboard = readFileSync(path.join(sourceDir, "CoolSheet_Dashboard_SOAC_Mar2026_WindCorrected.htm"));
+const sourceDir = path.join(root, "validation", "field-data", "nsop-mar-2026");
+const sourceDashboard = readFileSync(path.join(sourceDir, "CoolSheet_Dashboard_NSOP_Mar2026_WindCorrected.htm"));
 const sourceHash = createHash("sha256").update(sourceDashboard).digest("hex");
-assert.equal(sourceHash, "61b527e0652e4ffe79f564629c64d9c5d71398f7bd04a974f63613ebb397f788");
+assert.equal(sourceHash, "bb8735981b5e189b51a32aadebe21fa75eeccf3ac33568122c5154b0411d356e");
 
 function parseCsv(text) {
   const lines = text.trim().split(/\r?\n/);
@@ -22,7 +22,7 @@ function parseCsv(text) {
   });
 }
 
-const rows = parseCsv(readFileSync(path.join(sourceDir, "soac_timeseries.csv"), "utf8"));
+const rows = parseCsv(readFileSync(path.join(sourceDir, "nsop_timeseries.csv"), "utf8"));
 assert.equal(rows.length, 5472);
 
 const AREA_M2 = 534.733164;
@@ -55,11 +55,11 @@ assert.ok(Math.abs(result.modelA - 5522.2685) < 0.001);
 assert.ok(Math.abs(result.modelB - 9494.4446) < 0.001);
 assert.ok(Math.abs(result.modelBWind - 8894.6601) < 0.001);
 
-const validationPage = readFileSync(path.join(root, "pages", "soac-field-validation.html"), "utf8");
+const validationPage = readFileSync(path.join(root, "pages", "nsop-field-validation.html"), "utf8");
 const homePage = readFileSync(path.join(root, "index.html"), "utf8");
 assert.match(validationPage, /the core thermal equation is credible/i);
 assert.match(validationPage, /5,888\.4 kWh/);
 assert.match(validationPage, /thermal field-performance factor/i);
-assert.match(homePage, /pages\/soac-field-validation\.html/);
+assert.match(homePage, /pages\/nsop-field-validation\.html/);
 
-console.log("SOAC field-validation source, calculations, and page wiring passed.");
+console.log("NSOP field-validation source, calculations, and page wiring passed.");

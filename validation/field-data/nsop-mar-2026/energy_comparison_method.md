@@ -1,6 +1,6 @@
 # Field vs Website - PVT energy comparison (method & numbers)
 
-Records exactly how the numbers in `SOAC_field_vs_website_energy.docx` were
+Records exactly how the numbers in `NSOP_field_vs_website_energy.docx` were
 produced, so they are reproducible and traceable for the thesis.
 
 ## What was compared
@@ -11,7 +11,7 @@ website and the field cover the same calendar span. Annual website figures are
 
 ## Field (measured)
 
-From `soac_daily_energy.csv` / `soac_meta.json`:
+From `nsop_daily_energy.csv` / `nsop_meta.json`:
 
 - PVT thermal, 19-day total: **5,888.4 kWh**
 - PVT electricity: **not measured** - the field dataset has no PV-electricity
@@ -29,14 +29,14 @@ day-of-year 61–79 from the hourly-details CSV the calculator generates.
 | Config | March 2–20 thermal | March 2–20 electricity | Annual thermal | Annual electricity |
 |---|---|---|---|---|
 | **Default** (Model A, generic collector coefficients) | 15,995.6 kWh | 9,981.8 kWh | 307,725 kWh | 212,757 kWh |
-| **SOAC collector** (Model B, ISO η₀=0.4112, a₁=10.358, a₂=0) | 22,915.1 kWh | 10,168.7 kWh | 450,786 kWh | 216,874 kWh |
+| **NSOP collector** (Model B, ISO η₀=0.4112, a₁=10.358, a₂=0) | 22,915.1 kWh | 10,168.7 kWh | 450,786 kWh | 216,874 kWh |
 
 Model B input coefficients were entered through the existing UI fields
 (`isoEta0`, `isoA1`, `isoA2`) - the thermal models themselves were not modified.
 
 ## Result
 
-| Same 19-day window | Field | Website default | Website SOAC coeffs |
+| Same 19-day window | Field | Website default | Website NSOP coeffs |
 |---|---|---|---|
 | PVT thermal | 5,888 kWh | 15,996 kWh (**2.7×**) | 22,915 kWh (**3.9×**) |
 | PVT electricity | not measured | 9,982 kWh | 10,169 kWh |

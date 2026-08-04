@@ -108,11 +108,11 @@ Australian public data sources for washing appliances are WELS and Energy Rating
 
 ## Economics
 
-Economic calculations use editable tariffs, gas price, boiler efficiency, CAPEX, OPEX, lifetime, and discount rate. Thermal savings convert useful heat to displaced gas fuel as:
+Economic calculations use editable tariffs, gas price, boiler efficiency, CAPEX, OPEX, lifetime, and discount rate. The shipped financial inputs are screening assumptions until replaced by site bills, plant data, service estimates, and supplier quotes. Installed cost is entered directly in AUD/m2; the earlier thermal $/W conversion has been removed because it did not have a clear thermal-rating basis. Thermal savings convert useful heat to displaced gas fuel as:
 
 ```text
 gas_fuel_MJ = useful_heat_kWh * 3.6 / boiler_efficiency
 thermal_savings_AUD = gas_fuel_MJ * gas_price_AUD_per_MJ
 ```
 
-Simple payback, NPV, CRF, LCOE, LCOH, and combined LCOE are tested independently.
+The primary industry result values same-hour electricity and heat use plus electricity exports, deducts annual O&M, and then calculates demand-matched net payback and NPV. The all-generation pathway remains a labelled upper-bound diagnostic and uses the same O&M treatment. Separate LCOE and LCOH outputs were removed because the former 1:1 energy allocation made them algebraically identical; one combined gross-output screening cost remains. Cooling-enabled financial values are labelled as modelled scenarios because the cooling gain is not field validated.

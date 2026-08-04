@@ -1,6 +1,6 @@
-# SOAC March 2026 - Field-Data Analysis
+# NSOP March 2026 - Field-Data Analysis
 
-Analysis of the Sydney Olympic Aquatic Centre PVT array over 2026-03-02 to
+Analysis of the North Sydney Olympic Pool at Milsons Point PVT array over 2026-03-02 to
 2026-03-20 (19 days, 5-minute data). All figures below are computed directly
 from the extracted files; the extractor and stats are re-runnable. Where a
 dashboard headline figure differs from a recomputed one, **both are shown** and
@@ -17,9 +17,9 @@ the difference is explained rather than hidden.
 | Metric | Value | Source |
 |---|---|---|
 | Total thermal energy (reported) | **5,888.4 kWh** | `meta.total_kWh` (= sum of `daily.E_kWh`) |
-| Total by naive 5-min integration of `P_kW` | 6,425.8 kWh | recomputed from `soac_timeseries.csv` |
+| Total by naive 5-min integration of `P_kW` | 6,425.8 kWh | recomputed from `nsop_timeseries.csv` |
 | Best day | **2026-03-11 → 685.7 kWh** | `meta.best_day` |
-| Daily range (operating days, E > 1 kWh) | **10.4 kWh (03-13) … 685.7 kWh (03-11)** | `soac_daily_energy.csv` |
+| Daily range (operating days, E > 1 kWh) | **10.4 kWh (03-13) … 685.7 kWh (03-11)** | `nsop_daily_energy.csv` |
 | Operating days / total days | 17 / 19 | 2 zero-or-near-zero days (03-02 = 0, 03-18 = 0.3 kWh) |
 
 **Raw vs processed - a ~9 % gap.** Naively integrating the raw instantaneous
@@ -74,7 +74,7 @@ steady-state, behaviour**. They must be excluded from any steady-state check.
 
 ## 4. Relationships: irradiance, inlet temperature, efficiency, output
 
-Pearson correlations over the operating scatter cloud (`soac_scatter.csv`, n = 5,511):
+Pearson correlations over the operating scatter cloud (`nsop_scatter.csv`, n = 5,511):
 
 | Pair | r | Interpretation |
 |---|---|---|
@@ -132,7 +132,7 @@ and is not done here.**
 ### 6b. Defensible: ISO steady-state collector model vs field, at matched conditions
 
 The physics inside the calculator's ISO 9806 thermal model is
-η = η₀ − a₁·(Tₘ − Tₐ)/G. Driving **that formula with the SOAC certified
+η = η₀ − a₁·(Tₘ − Tₐ)/G. Driving **that formula with the NSOP certified
 coefficients** and the field's **own** measured conditions is a fair,
 like-for-like check of the collector model (not of the TMY pipeline):
 
@@ -157,7 +157,7 @@ the model onto the data.
 
 ### What would be needed for a *fair, quantitative* comparison
 
-1. **Load the SOAC collector coefficients into the calculator** (η₀ = 0.4112,
+1. **Load the NSOP collector coefficients into the calculator** (η₀ = 0.4112,
    a₁ = 10.358 / 12.106, F′ = 0.46, area 534.7 m²). The public defaults are a
    generic collector and will not match this array.
 2. **Drive the model with the field's measured G, Tₐ, T_in** at 5-min cadence -
@@ -181,5 +181,5 @@ mismatched inputs.
 - Keep and explain the **wind correction** (a₁ 10.358 → 12.106): it is directionally correct but small relative to the total field/model gap.
 - Add an explicit warning that **TMY annual estimates ≠ short-period field measurements.**
 
-See [`SOAC_field_validation_proposal.md`](SOAC_field_validation_proposal.md) for the
+See [`NSOP_field_validation_proposal.md`](NSOP_field_validation_proposal.md) for the
 proposed validation report and website changes.

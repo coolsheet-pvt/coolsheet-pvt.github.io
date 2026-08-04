@@ -282,7 +282,7 @@ for Australian sites.
 
 **Treat cautiously:**
 - PVT *electrical cooling gain* - the U_L-heuristic cell temperature is bounded
-  but not validated against measured PVT electrical data; the SOAC field work
+  but not validated against measured PVT electrical data; the NSOP field work
   showed field thermal η ≈ 0.63× certified ISO η, so datasheet-coefficient
   results are optimistic for real installations.
 - Industry demand absolute magnitudes (benchmarks are national averages; site
@@ -293,6 +293,6 @@ for Australian sites.
 
 **Validate next against measured data:** (1) PVT electrical output vs a real
 cooled installation (the weakest validated link); (2) one metered industry site
-per demand model, starting with the SOAC aquatic data you already have;
+per demand model, starting with the NSOP aquatic data you already have;
 (3) Model B with a real ISO 9806 datasheet coefficient set vs the collector's
 certified power curve at the standard test points (G=1000, ΔT=0/20/40 K).

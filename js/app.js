@@ -93,7 +93,6 @@ function escapeHtml(value){
   }[ch]));
 }
 
-const SQFT_PER_M2 = 10.76391041671;
 
 function getInputNumber(id, fallback=null){
   const value = parseFloat(document.getElementById(id)?.value);
@@ -151,44 +150,9 @@ function buildPvgisValidationLink({ latitude, longitude, areaM2, etaPv, tiltAngl
   };
 }
 
-function getInstalledCostBasis(){
-  const pvCostPerW = getInputNumber("pvInstalledCostPerW", 1.20);
-  const thermalCostPerW = getInputNumber("thermalInstalledCostPerW", 1.50);
-  const etaPv = getInputNumber("etaPv", 0.20);
-  if (![pvCostPerW, thermalCostPerW, etaPv].every(Number.isFinite) || pvCostPerW < 0 || thermalCostPerW < 0 || etaPv < 0) return null;
-  const ratedWpPerM2 = etaPv * 1000;
-  const capexPerM2 = (pvCostPerW + thermalCostPerW) * ratedWpPerM2;
-  return {
-    pvCostPerW,
-    thermalCostPerW,
-    ratedWpPerM2,
-    capexPerM2,
-    costPerFt2: capexPerM2 / SQFT_PER_M2
-  };
-}
-
-function syncInstalledCostInputs(){
-  const basis = getInstalledCostBasis();
-  const capexDisplay = document.getElementById("calculatedCapexPerM2");
-  const ft2Display = document.getElementById("installedCostPerFt2");
-  const capexInput = document.getElementById("capexInput");
-  const autoFill = document.getElementById("autoCapexFromWatts")?.checked;
-
-  if (!basis){
-    if (capexDisplay) capexDisplay.value = "";
-    if (ft2Display) ft2Display.value = "";
-    return;
-  }
-
-  if (capexDisplay) capexDisplay.value = basis.capexPerM2.toFixed(0);
-  if (ft2Display) ft2Display.value = basis.costPerFt2.toFixed(2);
-  if (autoFill && capexInput) capexInput.value = String(Math.round(basis.capexPerM2));
-}
-
 function getInstalledCostBasisSummary(){
-  const basis = getInstalledCostBasis();
-  if (!basis) return "N/A";
-  return `${basis.pvCostPerW.toFixed(2)} AUD/W PV + ${basis.thermalCostPerW.toFixed(2)} AUD/W thermal/PVT; ${basis.capexPerM2.toFixed(0)} AUD/m2 (${basis.costPerFt2.toFixed(2)} AUD/ft2)`;
+  const capexPerM2 = Math.max(0, getInputNumber("capexInput", 540));
+  return `${capexPerM2.toFixed(0)} AUD/m2 entered directly; assumed screening value until replaced by a supplier quote`;
 }
 
 function buildReportFilename(locationName){
@@ -255,7 +219,8 @@ function buildWeatherExportMetadata(){
 }
 
 function buildIndustryExportSummary(performanceOpts, energyOpts){
-  const savingsAud = isFiniteNumber(performanceOpts.savingsAud) ? performanceOpts.savingsAud : 0;
+  const finance = calculateProjectEconomics(performanceOpts);
+  const netBenefitAud = finance.netAnnualBenefitAud;
   const heatCoverage = isFiniteNumber(performanceOpts.solarHeatFraction) ? performanceOpts.solarHeatFraction : null;
   const elecCoverage = isFiniteNumber(performanceOpts.solarElecFraction) ? performanceOpts.solarElecFraction : null;
   const areaText = isFiniteNumber(performanceOpts.areaM2)
@@ -263,12 +228,15 @@ function buildIndustryExportSummary(performanceOpts, energyOpts){
     : "-";
   const energyValue = value => isFiniteNumber(value) ? `${formatSummaryWhole(value)} kWh/yr` : "-";
   return {
-    headline: `Save $${formatSummaryWhole(savingsAud)} AUD/yr with ${formatSummaryPercent(heatCoverage)} heat coverage`,
-    subhead: `${areaText} PVT collector at ${performanceOpts.locationName || "selected location"}`,
+    headline: `${netBenefitAud >= 0 ? "Net benefit" : "Net cost"} $${formatSummaryWhole(Math.abs(netBenefitAud))} AUD/yr with ${formatSummaryPercent(heatCoverage)} heat coverage`,
+    subhead: `${areaText} PVT collector at ${performanceOpts.locationName || "selected location"}; demand-matched modelled cooling scenario`,
     metrics: [
       exportMetricText("Solar electricity", formatSummaryPercent(elecCoverage), "Site electricity supplied by PV."),
       exportMetricText("Heat coverage", formatSummaryPercent(heatCoverage), "Process heat supplied by same-hour PVT heat."),
-      exportMetricText("Annual savings", `$${formatSummaryWhole(savingsAud)} /yr`, "Annual electricity and fuel value."),
+      exportMetricText("Gross energy value", `$${formatSummaryWhole(finance.grossSavingsAud)} /yr`, "Demand-matched electricity, export and fuel value."),
+      exportMetricText("Annual O&M", `$${formatSummaryWhole(finance.opexAnnualAud)} /yr`, "Assumed annual operating cost."),
+      exportMetricText("Net annual benefit", `$${formatSummaryWhole(netBenefitAud)} /yr`, "Gross demand-matched value less annual O&M."),
+      exportMetricText("Net simple payback", finance.simplePaybackYears == null ? "No payback" : `${finance.simplePaybackYears.toFixed(1)} years`, "CAPEX divided by demand-matched net annual benefit."),
       exportMetricText("Unused heat", energyValue(performanceOpts.unusedHeatKWh), "PVT heat above hourly demand."),
       exportMetricText("PV exported", energyValue(performanceOpts.unusedElectricityKWh), "PV above hourly site demand.")
     ],
@@ -575,13 +543,14 @@ function buildPdfTemplateDocument(){
     ["Coordinates", CURRENT_LOC ? `${CURRENT_LOC.lat.toFixed(6)}, ${CURRENT_LOC.lon.toFixed(6)} (${timezoneText})` : "N/A"],
     ["System", `${area || "N/A"} m2 collector/PV area; tilt ${getReportFieldValue("tiltAngle", "N/A")} deg; azimuth ${getReportFieldValue("azimuthAngle", "N/A")} deg`],
     ["Models", `${getCheckedThermalModelLabel()}; PV efficiency ${getReportFieldValue("etaPv", "N/A")}; flow ${getReportFieldValue("flowRate", "N/A")} L/s/m2`],
-    ["PV electrical boundary", `Gross DC module model to estimated net AC: ${getReportFieldValue("pvSystemLossPct","14")}% non-inverter losses, ${getReportFieldValue("pvInverterEfficiencyPct","96")}% inverter; PVT cooling effect ${document.getElementById("pvtCoolingSensitivityEnable")?.checked ? "included" : "disabled"}`],
+    ["PV electrical boundary", `Gross DC module model to estimated net AC: ${getReportFieldValue("pvSystemLossPct","14")}% non-inverter losses, ${getReportFieldValue("pvInverterEfficiencyPct","96")}% inverter; modelled PVT cooling scenario ${document.getElementById("pvtCoolingSensitivityEnable")?.checked ? "included (not field validated)" : "disabled"}`],
     ["Weather and mains", `${weatherRecords ? weatherRecords.toLocaleString() : "N/A"} PVGIS TMY hourly records; BC-Aus mains model, ${mainsText}`],
     ["Demand case", `${industryLabel}; ${profileLabel}`],
     ["Industry evidence status", industryEvidenceText(industryKey) || "No industry demand selected"],
     ["Prices", `Electricity ${getReportFieldValue("electricityPrice", "N/A")} AUD/kWh; feed-in ${getReportFieldValue("feedInTariffInput", "N/A")} AUD/kWh; gas ${getReportFieldValue("gasPriceInput", "N/A")} AUD/MJ; boiler efficiency ${getReportFieldValue("boilerEffInput", "N/A")}`],
     ["Installed cost basis", getInstalledCostBasisSummary()],
-    ["Finance", `CAPEX ${getReportFieldValue("capexInput", "N/A")} AUD/m2; OPEX ${getReportFieldValue("opexRateInput", "N/A")}%/yr; life ${getReportFieldValue("systemLifeInput", "N/A")} years; discount ${getReportFieldValue("discountRateInput", "N/A")}%`]
+    ["Finance", `CAPEX ${getReportFieldValue("capexInput", "N/A")} AUD/m2; OPEX ${getReportFieldValue("opexRateInput", "N/A")}%/yr; life ${getReportFieldValue("systemLifeInput", "N/A")} years; discount ${getReportFieldValue("discountRateInput", "N/A")}%`],
+    ["Financial input status", "CAPEX, tariffs, boiler efficiency, O&M, project life and discount rate are assumed screening inputs until replaced by supplier quotes, site bills and plant data; emissions factors are published."]
   ];
 
   return `<!doctype html>
@@ -1719,9 +1688,9 @@ const INDUSTRY_PROCESSES = {
     boiler_preheat:   { label: "Process C: Boiler Feedwater Pre-heating (kWater = 0.50)" }
   },
   brewery: {
-    cip_prerinse:      { label: "Process A: CIP Pre-Rinse (kWater = 0.80)" },
-    bottle_keg_rinse:  { label: "Process B: Bottle/Keg Rinsing (kWater = 0.45)" },
-    boiler_preheat:    { label: "Process C: Boiler Feedwater Pre-heating (kWater = 0.60)" }
+    cip_prerinse:      { label: "Process A: CIP/Cleaning Preheat (kWater = 0.80)" },
+    bottle_keg_rinse:  { label: "Process B: Packaging Rinse Preheat (kWater = 0.45)" },
+    boiler_preheat:    { label: "Process C: Boiler Makeup Preheat (kWater = 0.60)" }
   },
   aquatic_centres: {
     sauna:        { label: "Sauna" },
@@ -1751,8 +1720,8 @@ const INDUSTRY_UI = {
 };
 
 const INDUSTRY_EVIDENCE = Object.freeze({
-  dairy_farm: { evidenceClass:"Australian audit benchmark + engineering assumptions", range:"Electricity audit range 27–75 kWh/kL; process-water rates and schedules remain editable-site-data priorities", status:"scenario, not a certified site forecast" },
-  brewery: { evidenceClass:"Literature benchmark + engineering assumptions", range:"Facility size, packaging, refrigeration and CIP practice can materially change kWh/hL and water heat", status:"scenario, not Australian metered validation" },
+  dairy_farm: { evidenceClass:"Australian audit benchmark + traceable legacy assumptions", range:"Electricity audit range 27–75 kWh/kL; Australian guidance confirms the cleaning sequence but not the shipped L/L allocations", status:"illustrative scenario until site water, cleaning and interval energy data replace the defaults" },
+  brewery: { evidenceClass:"Australian process evidence + editable scenario allocations", range:"Australian sources report about 4 L/L at Tooheys and less than 4 L/L as an achievable whole-site target; the shipped 1.85 L/L is only a selected warm-water subset", status:"illustrative scenario, not a validated Australian brewery load model" },
   hotel: { evidenceClass:"NABERS boundary + engineering assumptions", range:"NABERS v4.3 is whole-building and does not validate the per-process kWh/occupied-room-night decomposition", status:"scenario, not a NABERS rating" },
   aquatic_centres: { evidenceClass:"Physics model + order-of-magnitude Australian cross-check", range:"Water-surface-area output must not be compared directly with conditioned-floor-area benchmarks", status:"scenario pending facility hold-out validation" },
   commercial_laundry: { evidenceClass:"First-principles water heating + user assumptions", range:"10, 12, 15, 17 and 22 L/kg sensitivity cases; use measured machine/site data when available", status:"hot-water washing only; WELS does not yet regulate commercial clothes washers" }
@@ -1819,8 +1788,16 @@ const DAIRY_PROCESS_SHORT_LABELS = {
 
 const DAIRY_PROCESS_STACK_ORDER = ["fatty_film_rinse","cip_preheating","boiler_preheat"];
 
-// Brewery seasonal scaling and direct-PVT process limits follow the brewery load-profile references [B1]-[B7].
+// Historical Australian production data justify seasonality as a national
+// shaping scenario, not as a schedule for an individual brewery. The facility
+// operating profile remains user-selectable and the annual throughput is
+// preserved under either profile.
 const BREWERY_SEASONAL = [1.25,1.10,0.95,0.85,0.80,0.75,0.78,0.88,1.05,1.15,1.22,1.35];
+const BREWERY_AUSTRALIAN_WATER_BENCHMARK = Object.freeze({
+  referenceLPerL: 4.0,
+  efficientTargetLPerL: 4.0,
+  highUseLPerL: 10.0
+});
 
 const BREWERY_PROCESS_PARAMS = {
   cip_prerinse: {
@@ -1848,6 +1825,7 @@ function getBreweryAssumptions(){
   const rinseTarget = clamp(getInputNumber("breweryRinseTarget",40),15,95);
   return {
     electricalKWhPerHL:Math.max(0,getInputNumber("breweryElectricKWhPerHL",BREWERY_ELEC_PARAMS.kWhPerHL)),
+    wholeSiteWaterLPerL:Math.max(0,getInputNumber("breweryWholeSiteWater",BREWERY_AUSTRALIAN_WATER_BENCHMARK.referenceLPerL)),
     processParams:{
       cip_prerinse:{...BREWERY_PROCESS_PARAMS.cip_prerinse,kWater:Math.max(0,getInputNumber("breweryCipWater",0.80)),T_target:cipTarget},
       bottle_keg_rinse:{...BREWERY_PROCESS_PARAMS.bottle_keg_rinse,kWater:Math.max(0,getInputNumber("breweryRinseWater",0.45)),T_target:rinseTarget},
@@ -1863,9 +1841,9 @@ const BREWERY_PROCESS_COLORS = {
 };
 
 const BREWERY_PROCESS_SHORT_LABELS = {
-  cip_prerinse: "CIP pre-rinse",
-  bottle_keg_rinse: "Bottle/keg rinse",
-  boiler_preheat: "Boiler pre-heat"
+  cip_prerinse: "CIP/cleaning preheat",
+  bottle_keg_rinse: "Packaging rinse preheat",
+  boiler_preheat: "Boiler makeup preheat"
 };
 
 const BREWERY_PROCESS_STACK_ORDER = ["cip_prerinse","bottle_keg_rinse","boiler_preheat"];
@@ -2469,6 +2447,18 @@ function getAquaticRelativeHumidity(record, processKey){
   return params.indoorRh ?? 0.55;
 }
 
+// Reads the four pool setpoint inputs into the shape calcAquaticHourlyDemand
+// expects. Kept separate so the annual calculator, the design explorer and the
+// model-basis panel all resolve the setpoints the same way.
+function readAquaticSetpoints(){
+  return {
+    indoor_pool:  getInputNumber("aquaticIndoorSetpoint",  AQUATIC_PROCESS_PARAMS.indoor_pool.targetTempC),
+    outdoor_pool: getInputNumber("aquaticOutdoorSetpoint", AQUATIC_PROCESS_PARAMS.outdoor_pool.targetTempC),
+    kids_pool:    getInputNumber("aquaticKidsSetpoint",    AQUATIC_PROCESS_PARAMS.kids_pool.targetTempC),
+    sauna:        getInputNumber("aquaticSaunaSetpoint",   AQUATIC_PROCESS_PARAMS.sauna.targetTempC)
+  };
+}
+
 function calcAquaticHourlyDemand(config){
   const met = Array.isArray(config?.met) ? config.met : [];
   const activeProcesses = Array.isArray(config?.activeProcesses) ? config.activeProcesses : [];
@@ -2477,6 +2467,18 @@ function calcAquaticHourlyDemand(config){
   const coverEnabled = !!config?.coverEnabled;
   const evaporationScale = clamp(Number(config?.evaporationScale ?? 1),0,3);
   const makeupScale = clamp(Number(config?.makeupScale ?? 1),0,3);
+  // Per-pool water setpoint. Operators publish these and they differ between
+  // venues (e.g. a 25 C outdoor / 29 C indoor split is common), so the model
+  // default is a starting point rather than a fixed property of the building.
+  // Every loss term below scales with it, so it must be overridable; omitted or
+  // non-numeric entries fall back to the AQUATIC_PROCESS_PARAMS default.
+  const setpointOverrides = config?.processSetpointsC || {};
+  // finiteNumberOr, not Number(): a blank field parses as 0, which would silently
+  // model an unheated pool instead of falling back to the documented default.
+  const setpointFor = key => {
+    const fallback = AQUATIC_PROCESS_PARAMS[key]?.targetTempC ?? 27;
+    return clamp(finiteNumberOr(setpointOverrides[key], fallback), 10, 45);
+  };
   const mainsTempC = Number(config?.mainsTempC);
   const safeMainsTempC = isFiniteNumber(mainsTempC) ? mainsTempC : 15;
   // Daily mains profile (same source as dairy/brewery/laundry). The scalar
@@ -2526,11 +2528,12 @@ function calcAquaticHourlyDemand(config){
       const params = AQUATIC_PROCESS_PARAMS[key];
       const areaM2 = processAreas[key] || 0;
       const { openNow, openHoursPerDay } = getAquaticSchedule(profileType, row.dayN, row.hourN);
+      const targetTempC = setpointFor(key);
       const airTempC = params.indoorAirTempOffsetC != null
-        ? Math.max(ambientTempC, params.targetTempC - params.indoorAirTempOffsetC)
+        ? Math.max(ambientTempC, targetTempC - params.indoorAirTempOffsetC)
         : ambientTempC;
       const rh = getAquaticRelativeHumidity(row, key);
-      const pWater = saturationVaporPressureKPa(params.targetTempC);
+      const pWater = saturationVaporPressureKPa(targetTempC);
       const pAir = saturationVaporPressureKPa(airTempC) * clamp(rh, 0, 1);
       const vaporDelta = Math.max(0, pWater - pAir);
       const splashMultiplier = openNow ? params.splashMultiplierOpen : params.splashMultiplierClosed;
@@ -2543,10 +2546,10 @@ function calcAquaticHourlyDemand(config){
 
       const makeupLitresPerDay = areaM2 * (params.makeupLitresPerM2Day || 0) * makeupScale;
       const makeupLitresThisHour = openNow ? makeupLitresPerDay / openHoursPerDay : 0;
-      const makeupKWh = makeupLitresThisHour * WATER_CP_KWH_PER_KG_C * Math.max(0, params.targetTempC - mainsForDay(row.dayN));
+      const makeupKWh = makeupLitresThisHour * WATER_CP_KWH_PER_KG_C * Math.max(0, targetTempC - mainsForDay(row.dayN));
 
       const sensibleU = (params.convectiveUWm2K || 0) + (params.radiativeUWm2K || 0);
-      const sensibleKWh = (sensibleU * areaM2 * Math.max(0, params.targetTempC - airTempC)) / 1000.0;
+      const sensibleKWh = (sensibleU * areaM2 * Math.max(0, targetTempC - airTempC)) / 1000.0;
 
       const totalKWh = evaporationKWh + makeupKWh + sensibleKWh;
       processByHour[key][i] = totalKWh;
@@ -2738,7 +2741,6 @@ function calcDairyHourlyDemand(throughput_L, profileType, selectedKeys, met, mai
 function calcBreweryHourlyDemand(throughput_L, profileType, selectedKeys, met, mains, assumptions=null){
   assumptions = assumptions || {};
   const processParams = assumptions.processParams || BREWERY_PROCESS_PARAMS;
-  // Brewery baseline currently assumes year-round operation; weekday shutdown scaling is not yet applied.
   const normW = {};
   for (const key of selectedKeys){
     const p = processParams[key];
@@ -2748,26 +2750,45 @@ function calcBreweryHourlyDemand(throughput_L, profileType, selectedKeys, met, m
   const seasonal = normalizeSeasonalFactors(BREWERY_SEASONAL);
   const electricalKWhPerHL = assumptions.electricalKWhPerHL ?? BREWERY_ELEC_PARAMS.kWhPerHL;
   const annualElec = (electricalKWhPerHL / 100) * throughput_L;
+  const rowContext = met.map(r => {
+    const mIdx = monthFromDayN(r.dayN) - 1;
+    return {
+      h: hourIndexFromHourN(r.hourN),
+      seas: seasonal[mIdx] ?? 1,
+      active: profileType !== "mon_fri" || isMonToFriDay(r.dayN)
+    };
+  });
+  const electricWeightSum = rowContext.reduce(
+    (sum, c) => sum + (c.active ? c.seas * (elecW[c.h] || 0) : 0), 0
+  );
+  const processWeightSums = {};
+  for (const key of selectedKeys){
+    processWeightSums[key] = rowContext.reduce(
+      (sum, c) => sum + (c.active ? c.seas * (normW[key]?.[c.h] || 0) : 0), 0
+    );
+  }
 
   const thermalHourly  = [];
   const electricHourly = [];
   const processByHour  = {};
   for (const k of selectedKeys) processByHour[k] = [];
 
-  for (const r of met){
-    const mIdx = monthFromDayN(r.dayN) - 1;
-    const h    = hourIndexFromHourN(r.hourN);
-    const seas = seasonal[mIdx] ?? 1;
+  for (let i = 0; i < met.length; i++){
+    const r = met[i];
+    const { h, seas, active } = rowContext[i];
     const Tm   = (mains?.byDay?.[r.dayN]) ?? (mains?.annualAvgC ?? 15);
-    const dayOn = 1;
-
-    electricHourly.push((annualElec / 365) * seas * (elecW[h] || 0) * dayOn);
+    const electricWeight = active ? seas * (elecW[h] || 0) : 0;
+    electricHourly.push(electricWeightSum > 0 ? annualElec * electricWeight / electricWeightSum : 0);
 
     let totTh = 0;
     for (const key of selectedKeys){
       const p = processParams[key];
       if (!p || !normW[key]){ processByHour[key].push(0); continue; }
-      const vol_h = (throughput_L * p.kWater / 365) * seas * (normW[key][h] || 0) * dayOn;
+      const processWeight = active ? seas * (normW[key][h] || 0) : 0;
+      const processWeightSum = processWeightSums[key] || 0;
+      const vol_h = processWeightSum > 0
+        ? throughput_L * p.kWater * processWeight / processWeightSum
+        : 0;
       const dT    = Math.max(0, p.T_target - Tm);
       const Q_h   = (vol_h * 4.184 * dT) / 3600;
       processByHour[key].push(Q_h);
@@ -3173,22 +3194,21 @@ function buildDairyModelBasisHtml(){
   const D = getDairyAssumptions();
   const DP = D.processParams;
   const electricalNorm = _normW(DAIRY_ELEC_PARAMS.weights24);
-  // Public source links restored. The internal justification PDF is not publicly
-  // hosted, so links pointing at it stay disabled until it has a public home.
-  const dairyPdfHref = "#"; // internal: "Dairy Farm Techno-Economic Model Justification" (unpublished)
+  const evidenceRecordHref = "docs/industry-demand-assumptions.md";
+  const agVicWaterHref = "https://agriculture.vic.gov.au/__data/assets/pdf_file/0006/595410/595410-Dairyshedwater_22082022.pdf";
+  const apvmaHref = "https://www.apvma.gov.au/registrations-and-permits/data-requirements/agricultural-data-guidelines/efficacy-crop-safety-part-8/specific/efficacy-dairy-cleansers-sanitisers";
   const raceHref = "https://www.racefor2030.com.au/content/uploads/B3-OA-Project-Final-Report-July-2021-20210721a-compressed.pdf";
   const ecoHref = "https://www.ecoefficiencygroup.com.au/wp-content/uploads/2020/10/Ecoefficiency-for-the-Dairy-Processing-Industry.pdf";
   const benchmarkHref = "https://northernaustraliandairyhub.com.au/wp-content/uploads/2020/10/Dairy-Shed-Energy-Use-Check.pdf";
   const ausAuditHref = "https://extensionaus.com.au/energysmartfarming/saving-energy-on-dairy-farms/";
-  const src = (label, href) => (href && href !== "#")
-    ? `<a href="${href}" target="_blank" rel="noopener">${label}</a>`
-    : `<a href="#" onclick="return false;" aria-disabled="true" title="Internal report - not published yet">${label}</a>`;
+  const src = (label, href) => `<a href="${href}" target="_blank" rel="noopener">${label}</a>`;
 
   return `
     <div class="panel" style="background:#fff;margin-bottom:10px;">
       <p style="margin:0 0 8px 0;"><b>Quick summary</b></p>
-      <p style="margin:0 0 6px 0;">Current scenario heated water is ${(DP.fatty_film_rinse.kWater+DP.cip_preheating.kWater+DP.boiler_preheat.kWater).toFixed(2)} L per L of milk. These rates are editable assumptions. ${src("Source context", dairyPdfHref)} ${src("Eco-efficiency", ecoHref)}</p>
-      <p style="margin:0 0 6px 0;">Current PVT preheat target is ${DP.fatty_film_rinse.T_target.toFixed(0)} C. ${src("Source context", dairyPdfHref)} ${src("RACE", raceHref)}</p>
+      <p style="margin:0 0 6px 0;">Current scenario heated water is ${(DP.fatty_film_rinse.kWater+DP.cip_preheating.kWater+DP.boiler_preheat.kWater).toFixed(2)} L per L of milk. The exact process rates and hourly weights are retained legacy project assumptions; no retrievable public source for those coefficients was located. ${src("Evidence record", evidenceRecordHref)}</p>
+      <p style="margin:0 0 6px 0;">Agriculture Victoria recommends measuring each dairy process because water use varies widely. The APVMA confirms the Australian pre-rinse, detergent-wash and post-rinse/sanitising sequence, but does not support the shipped L/L allocations. ${src("Agriculture Victoria", agVicWaterHref)} ${src("APVMA", apvmaHref)}</p>
+      <p style="margin:0 0 6px 0;">Current PVT preheat cap is ${DP.fatty_film_rinse.T_target.toFixed(0)} C. It is not a sanitation temperature: APVMA guidance gives about 85 C where hot water, rather than chemical sanitiser, performs the sanitising step. ${src("APVMA", apvmaHref)} ${src("RACE", raceHref)}</p>
       <p style="margin:0;">Current electrical scenario is ${D.electricalKWhPerKL.toFixed(1)} kWh/kL with the assumed morning and afternoon shape. ${src("Audit context", benchmarkHref)}</p>
     </div>
     <h4 style="margin:0 0 8px 0;">How it works</h4>
@@ -3208,17 +3228,17 @@ function buildDairyModelBasisHtml(){
     <div id="dairyWeightingGraphWrap" style="display:none;margin:0 0 10px 0;"></div>
     <table class="method-table">
       <tr><th>Item</th><th>Weighting used</th><th>Source</th></tr>
-      <tr><td>Fatty film rinse</td><td>50% at 07:00 and 50% at 17:00</td><td>${src("Source", dairyPdfHref)}</td></tr>
-      <tr><td>CIP pre-heating</td><td>25% at 08:00, 09:00, 17:00, and 18:00</td><td>${src("Source", dairyPdfHref)}</td></tr>
-      <tr><td>Boiler feedwater</td><td>Evenly spread across all 24 hours</td><td>${src("Source", dairyPdfHref)} ${src("RACE", raceHref)}</td></tr>
-      <tr><td>Electrical profile</td><td>Peaks at 05:00-07:00 and 15:00-17:00</td><td>${src("Source", dairyPdfHref)} ${src("Benchmark", benchmarkHref)}</td></tr>
+      <tr><td>Fatty film rinse</td><td>50% at 07:00 and 50% at 17:00</td><td>Legacy scenario; ${src("evidence record", evidenceRecordHref)}</td></tr>
+      <tr><td>CIP pre-heating</td><td>25% at 08:00, 09:00, 17:00, and 18:00</td><td>Legacy scenario; ${src("APVMA process context", apvmaHref)}</td></tr>
+      <tr><td>Boiler feedwater</td><td>Evenly spread across all 24 hours</td><td>Legacy scenario; ${src("RACE context", raceHref)}</td></tr>
+      <tr><td>Electrical profile</td><td>Peaks at 05:00-07:00 and 15:00-17:00</td><td>Legacy scenario; ${src("Australian audit context", benchmarkHref)}</td></tr>
     </table>
     <h4 style="margin:12px 0 8px 0;">Key values</h4>
     <table class="method-table">
       <tr><th>Item</th><th>Value used</th><th>Source</th></tr>
-      <tr><td>Seasonal factors</td><td>[${DAIRY_SEASONAL.join(", ")}] (normalised so the annual total matches the benchmarks)</td><td>${src("Source", dairyPdfHref)}</td></tr>
-      <tr><td>Fatty film rinse</td><td>${DP.fatty_film_rinse.kWater.toFixed(2)} L/L milk, ${DP.fatty_film_rinse.T_target.toFixed(0)} C</td><td>Editable assumption</td></tr>
-      <tr><td>CIP pre-heating</td><td>${DP.cip_preheating.kWater.toFixed(2)} L/L milk, ${DP.cip_preheating.T_target.toFixed(0)} C</td><td>Editable assumption</td></tr>
+      <tr><td>Seasonal factors</td><td>[${DAIRY_SEASONAL.join(", ")}] (normalised so the annual total matches the benchmarks)</td><td>Legacy scenario; ${src("evidence record", evidenceRecordHref)}</td></tr>
+      <tr><td>Fatty film rinse</td><td>${DP.fatty_film_rinse.kWater.toFixed(2)} L/L milk, ${DP.fatty_film_rinse.T_target.toFixed(0)} C</td><td>Editable legacy assumption</td></tr>
+      <tr><td>CIP pre-heating</td><td>${DP.cip_preheating.kWater.toFixed(2)} L/L milk, ${DP.cip_preheating.T_target.toFixed(0)} C</td><td>Editable legacy assumption; ${src("APVMA process context", apvmaHref)}</td></tr>
       <tr><td>Boiler feedwater pre-heat</td><td>${DP.boiler_preheat.kWater.toFixed(2)} L/L milk, ${DP.boiler_preheat.T_target.toFixed(0)} C</td><td>Editable assumption; ${src("RACE context", raceHref)}</td></tr>
       <tr><td>Electrical intensity</td><td>${D.electricalKWhPerKL.toFixed(1)} kWh/kL</td><td>Editable scenario; ${src("Australian audit range", benchmarkHref)}</td></tr>
     </table>
@@ -3228,43 +3248,44 @@ function buildDairyModelBasisHtml(){
 function buildBreweryModelBasisHtml(){
   const B = getBreweryAssumptions();
   const BP = B.processParams;
-  const seasonalHref1 = "https://rpubs.com/Holikma/Beer_Analysis";
-  const seasonalHref2 = "https://www.kaggle.com/code/ashmib/time-series-forecast-australian-beer-production";
-  const cipHref = "https://www.idpublications.org/wp-content/uploads/2017/10/Full-Paper-OPTIMIZATION-OF-CLEANING-PROCESS-IN-BREWERIES-AN-IMPORTANT-TOOL.pdf";
-  const rinseHref1 = "https://www.asianbeernetwork.com/pasteurization-equipment-for-small-breweries/";
-  const rinseHref2 = "https://skoge.folk.ntnu.no/prost/proceedings/icheap8-pres07/pres07webpapers/93%20Tokos.pdf";
-  const boilerHref1 = "https://www.osti.gov/servlets/purl/881595";
-  const boilerHref2 = "https://www.mdpi.com/1996-1073/17/10/2300";
+  const greenIndustriesHref = "https://www.greenindustries.sa.gov.au/Sustainability%20Guide.pdf";
+  const tooheysHref = "https://majorprojects.planningportal.nsw.gov.au/prweb/PRRestService/mp/01/getContent?AttachRef=MP06_0303-MOD-3%2120190826T021556.763+GMT";
+  const arenaHref = "https://arena.gov.au/assets/2020/06/renewable-energy-for-process-heat-opportunity-study.pdf";
+  const absHref = "https://www.abs.gov.au/AUSSTATS/abs%40.nsf/DSSbyCollectionid/87E111C47BE15BB2CA256BD00026FB74";
   const elecHref1 = "https://satec-global.com.au/smart-metering-for-breweries-distilleries-reduce-energy-costs-and-improve-uptime/";
   const elecHref2 = "https://www.researchgate.net/publication/228472802_Efficient_Use_of_Energy_in_the_Brewhouse";
-  const schedHref1 = "https://www.asianbeernetwork.com/brewery-schedule-planning-brewing-like-a-pro/";
-  const schedHref2 = "https://rockstarbrewer.com/the-5-critical-things-you-need-to-consider-when-building-a-brewery/";
-  const pvtHref1 = "https://www.researchgate.net/publication/273489554_Manufacture_of_Malt_and_Beer_with_Low_Temperature_Solar_Process_Heat";
-  const pvtHref2 = "https://www.racefor2030.com.au/content/uploads/B3-OA-Project-Final-Report-July-2021-20210721a-compressed.pdf";
+  const profileType = document.getElementById("profileType")?.value || "continuous";
+  const profileLabel = profileType === "mon_fri" ? "Mon-Fri" : "24/7";
+  const warmWaterLPerL = BP.cip_prerinse.kWater + BP.bottle_keg_rinse.kWater + BP.boiler_preheat.kWater;
+  const waterSharePct = B.wholeSiteWaterLPerL > 0 ? 100 * warmWaterLPerL / B.wholeSiteWaterLPerL : 0;
+  const waterStatus = B.wholeSiteWaterLPerL > 0 && warmWaterLPerL > B.wholeSiteWaterLPerL
+    ? "Warning: the selected warm-water subset exceeds the entered whole-site water benchmark."
+    : `The selected warm-water subset is ${waterSharePct.toFixed(1)}% of the entered whole-site benchmark.`;
   const src = (label, href) => `<a href="${href}" target="_blank" rel="noopener">${label}</a>`;
 
   return `
     <div class="panel" style="background:#fff;margin-bottom:10px;">
       <p style="margin:0 0 8px 0;"><b>Quick summary</b></p>
-      <p style="margin:0 0 6px 0;">Current warm-water scenario is ${(BP.cip_prerinse.kWater+BP.bottle_keg_rinse.kWater+BP.boiler_preheat.kWater).toFixed(2)} L per L of beer. The process rates are editable assumptions. ${src("CIP context", cipHref)} ${src("Bottle/keg context", rinseHref2)} ${src("Boiler context", boilerHref1)}</p>
-      <p style="margin:0 0 6px 0;">All three processes are capped at 40-45 C, so the brewery model is explicitly limited to direct PVT-eligible pre-heating rather than full steam duty. ${src("Solar brewery heat", pvtHref1)} ${src("RACE", pvtHref2)}</p>
+      <p style="margin:0 0 6px 0;">Australian evidence supports the process categories and a whole-site water check, but not a universal process split. Tooheys reported about 4 L of potable water per L of beer, covering brewhouse, fermentation, filtration, packaging, boiler/cooling makeup and CIP. A South Australian guide reports that efficient breweries can reduce whole-site use below 4 L/L, while some use up to 10 L/L. ${src("Tooheys planning assessment", tooheysHref)} ${src("Green Industries SA guide", greenIndustriesHref)}</p>
+      <p style="margin:0 0 6px 0;">Current selected warm-water scenario is ${warmWaterLPerL.toFixed(2)} L/L against an entered whole-site benchmark of ${B.wholeSiteWaterLPerL.toFixed(2)} L/L. ${waterStatus} The three process allocations remain editable scenario assumptions.</p>
+      <p style="margin:0 0 6px 0;">The 40-45 C values are PVT delivery caps, not claimed final CIP, sanitation or brewing temperatures. ARENA's Australian brewery case confirms hot-water opportunities for brewhouse heating, cleaning, bottling CIP and boiler displacement, while wort boiling remains above 100 C. ${src("ARENA process-heat study", arenaHref)}</p>
       <p style="margin:0;">Electrical demand uses the editable ${B.electricalKWhPerHL.toFixed(2)} kWh/hL scenario with an assumed 24/7 refrigeration baseload and daytime brewing/packaging peaks. ${src("Metering context", elecHref1)} ${src("Brewhouse context", elecHref2)}</p>
     </div>
     <h4 style="margin:0 0 8px 0;">How it works</h4>
     <div class="panel" style="background:#fff;margin-bottom:10px;">
       <p style="margin:0 0 6px 0;">1. Start with annual beer throughput in litres.</p>
-      <p style="margin:0 0 6px 0;">2. Apply the brewery seasonal production factor and each process's own hourly schedule.</p>
-      <p style="margin:0 0 6px 0;">3. Heat that process water from local mains temperature up to the brewery process target temperature.</p>
-      <p style="margin:0 0 6px 0;"><code>V_h = (Throughput_L x kWater / 365) x brewerySeasonalFactor x normalisedHourlyWeight[h]</code></p>
+      <p style="margin:0 0 6px 0;">2. Apply the historical Australian seasonal shaping scenario, the selected ${profileLabel} operating calendar, and each process's hourly weight. The weights are renormalised so annual throughput is unchanged.</p>
+      <p style="margin:0 0 6px 0;">3. Heat that selected process-water subset from local mains temperature to the editable PVT delivery cap.</p>
+      <p style="margin:0 0 6px 0;"><code>V_h = Throughput_L x kWater x normalised(season x operating-day x hourly weight)</code></p>
       <p style="margin:0 0 6px 0;"><code>Q_h = (V_h x 4.184 x max(0, T_target - T_mains)) / 3600</code></p>
-      <p style="margin:0;"><code>Electrical_h = (${(B.electricalKWhPerHL/100).toFixed(3)} x Throughput_L / 365) x brewerySeasonalFactor x normalisedElectricalWeight[h]</code></p>
+      <p style="margin:0;"><code>Electrical_h = ${(B.electricalKWhPerHL/100).toFixed(3)} x Throughput_L x normalised(season x operating-day x hourly weight)</code></p>
     </div>
-    <p class="note" style="margin:0 0 10px 0;">Normalisation makes the annual warm-water volume and electricity equal the benchmark totals; the thermal energy (kWh) then follows Q = m c_p ΔT with the <b>daily</b> mains temperature, so it varies with the local climate.</p>
+    <p class="note" style="margin:0 0 10px 0;">Normalisation preserves annual throughput under either operating profile. Thermal energy follows Q = m c_p dT with the <b>daily</b> mains temperature. The schedule remains a scenario until replaced by facility batch and cleaning records.</p>
     <h4 style="margin:0 0 8px 0;">Why these three processes</h4>
     <div class="panel" style="background:#fff;margin-bottom:10px;">
-      <p style="margin:0 0 6px 0;"><b>CIP pre-rinse:</b> warm water helps strip yeast, proteins, and hop residues without jumping to caustic/steam conditions. ${src("CIP source", cipHref)}</p>
-      <p style="margin:0 0 6px 0;"><b>Bottle/keg rinsing:</b> moderate-temperature rinse water helps avoid thermal shock and supports packaging-line cleanliness before filling. ${src("Packaging source", rinseHref1)} ${src("Water minimisation", rinseHref2)}</p>
-      <p style="margin:0;"><b>Boiler feedwater pre-heat:</b> PVT only handles the low-temperature lift to 45 C, so the boiler still provides the final steam lift. ${src("Boiler source", boilerHref1)} ${src("Energies review", boilerHref2)}</p>
+      <p style="margin:0 0 6px 0;"><b>CIP/cleaning preheat:</b> CIP and general washing are documented Australian brewery water and heat uses. The 0.80 L/L split is an editable allocation, not a measured sector coefficient. ${src("Green Industries SA", greenIndustriesHref)} ${src("Tooheys", tooheysHref)}</p>
+      <p style="margin:0 0 6px 0;"><b>Packaging rinse preheat:</b> Australian site evidence identifies bottle, can and keg packaging as a wastewater-generating process. The model does not claim all packaging rinse water must be hot. ${src("Tooheys", tooheysHref)}</p>
+      <p style="margin:0;"><b>Boiler makeup preheat:</b> Australian evidence identifies boiler makeup and renewable preheating as valid integration points. PVT supplies only the low-temperature lift; the boiler or other plant supplies the final duty. ${src("Tooheys", tooheysHref)} ${src("ARENA", arenaHref)}</p>
     </div>
     <h4 style="margin:0 0 8px 0;">Normalised weighting</h4>
     <div class="note" style="margin:0 0 8px 0;">
@@ -3273,18 +3294,19 @@ function buildBreweryModelBasisHtml(){
     <div id="breweryWeightingGraphWrap" style="display:none;margin:0 0 10px 0;"></div>
     <table class="method-table">
       <tr><th>Item</th><th>Weighting used</th><th>Reasoning / source</th></tr>
-      <tr><td>CIP pre-rinse</td><td>${buildWeightSummary(BREWERY_PROCESS_PARAMS.cip_prerinse.weights24)}</td><td>Single extended shift with strongest afternoon cleanup activity. ${src("Schedule", schedHref1)} ${src("Brewery planning", schedHref2)} ${src("CIP source", cipHref)}</td></tr>
-      <tr><td>Bottle/keg rinsing</td><td>${buildWeightSummary(BREWERY_PROCESS_PARAMS.bottle_keg_rinse.weights24)}</td><td>Packaging line centred on the working day with a mid-shift plateau. ${src("Packaging source", rinseHref1)} ${src("Brewery planning", schedHref2)}</td></tr>
-      <tr><td>Boiler feedwater pre-heat</td><td>${buildWeightSummary(BREWERY_PROCESS_PARAMS.boiler_preheat.weights24)}</td><td>Boiler makeup follows wort boiling and later wash/CIP activity. ${src("Boiler source", boilerHref1)} ${src("Schedule", schedHref1)}</td></tr>
+      <tr><td>CIP/cleaning preheat</td><td>${buildWeightSummary(BREWERY_PROCESS_PARAMS.cip_prerinse.weights24)}</td><td>Illustrative extended-shift allocation; replace with facility CIP records. Australian guidance confirms cleaning as a major water-use driver but does not prescribe one schedule. ${src("Green Industries SA", greenIndustriesHref)}</td></tr>
+      <tr><td>Packaging rinse preheat</td><td>${buildWeightSummary(BREWERY_PROCESS_PARAMS.bottle_keg_rinse.weights24)}</td><td>Illustrative daytime packaging allocation; replace with line records. ${src("Tooheys process list", tooheysHref)}</td></tr>
+      <tr><td>Boiler makeup preheat</td><td>${buildWeightSummary(BREWERY_PROCESS_PARAMS.boiler_preheat.weights24)}</td><td>Illustrative daytime allocation; replace with boiler makeup or hot-liquor-tank data. ${src("ARENA brewery case", arenaHref)}</td></tr>
       <tr><td>Electrical profile</td><td>${buildWeightSummary(BREWERY_ELEC_PARAMS.weights24)}</td><td>Refrigeration baseload overnight, then brewhouse and packaging demand through the day. ${src("Benchmark", elecHref1)} ${src("Brewhouse energy", elecHref2)}</td></tr>
     </table>
     <h4 style="margin:12px 0 8px 0;">Key values</h4>
     <table class="method-table">
       <tr><th>Item</th><th>Value used</th><th>Source</th></tr>
-      <tr><td>Seasonal factors</td><td>[${BREWERY_SEASONAL.join(", ")}] (normalised so the annual total matches the benchmarks)</td><td>${src("RPubs", seasonalHref1)} ${src("Kaggle", seasonalHref2)}</td></tr>
-      <tr><td>CIP pre-rinse</td><td>${BP.cip_prerinse.kWater.toFixed(2)} L/L beer, ${BP.cip_prerinse.T_target.toFixed(0)} C</td><td>Editable assumption; ${src("CIP context", cipHref)}</td></tr>
-      <tr><td>Bottle/keg rinsing</td><td>${BP.bottle_keg_rinse.kWater.toFixed(2)} L/L beer, ${BP.bottle_keg_rinse.T_target.toFixed(0)} C</td><td>Editable assumption; ${src("Packaging context", rinseHref1)}</td></tr>
-      <tr><td>Boiler feedwater pre-heat</td><td>${BP.boiler_preheat.kWater.toFixed(2)} L/L beer, ${BP.boiler_preheat.T_target.toFixed(0)} C</td><td>Editable assumption; ${src("Boiler context", boilerHref1)}</td></tr>
+      <tr><td>Whole-site water cross-check</td><td>${B.wholeSiteWaterLPerL.toFixed(2)} L/L beer (editable)</td><td>About 4 L/L at Tooheys; less than 4 L/L achievable and up to 10 L/L reported. ${src("Tooheys", tooheysHref)} ${src("Green Industries SA", greenIndustriesHref)}</td></tr>
+      <tr><td>Seasonal factors</td><td>[${BREWERY_SEASONAL.join(", ")}] (annual total preserved)</td><td>Historical Australian production shaping scenario, not a facility forecast. ${src("ABS manufacturing production", absHref)}</td></tr>
+      <tr><td>CIP/cleaning preheat</td><td>${BP.cip_prerinse.kWater.toFixed(2)} L/L beer, ${BP.cip_prerinse.T_target.toFixed(0)} C delivery cap</td><td>Editable scenario allocation; ${src("Australian cleaning context", greenIndustriesHref)}</td></tr>
+      <tr><td>Packaging rinse preheat</td><td>${BP.bottle_keg_rinse.kWater.toFixed(2)} L/L beer, ${BP.bottle_keg_rinse.T_target.toFixed(0)} C delivery cap</td><td>Editable scenario allocation; ${src("Australian packaging context", tooheysHref)}</td></tr>
+      <tr><td>Boiler makeup preheat</td><td>${BP.boiler_preheat.kWater.toFixed(2)} L/L beer, ${BP.boiler_preheat.T_target.toFixed(0)} C delivery cap</td><td>Editable scenario allocation; ${src("Australian process-heat context", arenaHref)}</td></tr>
       <tr><td>Electrical intensity</td><td>${B.electricalKWhPerHL.toFixed(2)} kWh/hL</td><td>Editable literature scenario; ${src("Metering context", elecHref1)}</td></tr>
     </table>`;
 }
@@ -3302,6 +3324,7 @@ function buildAquaticModelBasisHtml(){
   const electricIntensity = Math.max(0,getInputNumber("aquaticElectricKWhPerM2",AQUATIC_ELEC_KWH_PER_M2_PER_YEAR));
   const evaporationScale = clamp(getInputNumber("aquaticEvaporationScale",1),0,3);
   const makeupScale = clamp(getInputNumber("aquaticMakeupScale",1),0,3);
+  const sp = readAquaticSetpoints();
 
   return `
     <div class="panel" style="background:#fff;margin-bottom:10px;">
@@ -3319,7 +3342,7 @@ function buildAquaticModelBasisHtml(){
     <h4 style="margin:0 0 8px 0;">Key values &amp; sources</h4>
     <table class="method-table">
       <tr><th>Item</th><th>Value used</th><th>Source / basis</th></tr>
-      <tr><td>Setpoint temperatures</td><td>Indoor ${p.indoor_pool.targetTempC}, outdoor ${p.outdoor_pool.targetTempC}, kids ${p.kids_pool.targetTempC}, sauna ${p.sauna.targetTempC} &deg;C</td><td>${src("NSW Govt guide", nswHref)}</td></tr>
+      <tr><td>Setpoint temperatures</td><td>Indoor ${sp.indoor_pool}, outdoor ${sp.outdoor_pool}, kids ${sp.kids_pool}, sauna ${sp.sauna} &deg;C (editable; defaults ${p.indoor_pool.targetTempC}/${p.outdoor_pool.targetTempC}/${p.kids_pool.targetTempC}/${p.sauna.targetTempC})</td><td>${src("NSW Govt guide", nswHref)}</td></tr>
       <tr><td>Evaporation form &amp; coefficient</td><td>coeff 0.060&ndash;0.105, wind factor (1 + 0.22u)</td><td>${src("ASHRAE/Shah 2014", ashraeHref)} ${src("EnergyPlus", eplusHref)}</td></tr>
       <tr><td>Makeup water</td><td>${p.indoor_pool.makeupLitresPerM2Day}&ndash;${p.outdoor_pool.makeupLitresPerM2Day} L/m&sup2;/day (incl. backwash &amp; splash-out)</td><td>${src("Sydney Water best practice", sydWaterHref)} ${src("Sydney evap ~6.4 L/m2/day", daisyHref)}</td></tr>
       <tr><td>Convective + radiative U</td><td>${(p.indoor_pool.convectiveUWm2K+p.indoor_pool.radiativeUWm2K).toFixed(1)}&ndash;${(p.outdoor_pool.convectiveUWm2K+p.outdoor_pool.radiativeUWm2K).toFixed(1)} W/m&sup2;K</td><td>${src("ASHRAE pool method", ashraeHref)}</td></tr>
@@ -3459,9 +3482,9 @@ function buildDairyWeightingGraphHtml(){
 
 function buildBreweryWeightingGraphHtml(){
   const series = [
-    { label:"CIP pre-rinse", color:BREWERY_PROCESS_COLORS.cip_prerinse, values:_normW(BREWERY_PROCESS_PARAMS.cip_prerinse.weights24).map(v => v * 100) },
-    { label:"Bottle/keg rinsing", color:BREWERY_PROCESS_COLORS.bottle_keg_rinse, values:_normW(BREWERY_PROCESS_PARAMS.bottle_keg_rinse.weights24).map(v => v * 100) },
-    { label:"Boiler pre-heat", color:BREWERY_PROCESS_COLORS.boiler_preheat, values:_normW(BREWERY_PROCESS_PARAMS.boiler_preheat.weights24).map(v => v * 100) },
+    { label:"CIP/cleaning preheat", color:BREWERY_PROCESS_COLORS.cip_prerinse, values:_normW(BREWERY_PROCESS_PARAMS.cip_prerinse.weights24).map(v => v * 100) },
+    { label:"Packaging rinse preheat", color:BREWERY_PROCESS_COLORS.bottle_keg_rinse, values:_normW(BREWERY_PROCESS_PARAMS.bottle_keg_rinse.weights24).map(v => v * 100) },
+    { label:"Boiler makeup preheat", color:BREWERY_PROCESS_COLORS.boiler_preheat, values:_normW(BREWERY_PROCESS_PARAMS.boiler_preheat.weights24).map(v => v * 100) },
     { label:"Electrical profile", color:"#7b1fa2", values:_normW(BREWERY_ELEC_PARAMS.weights24).map(v => v * 100) }
   ];
 
@@ -4051,7 +4074,8 @@ function buildPercentageBar(percent, label){
 }
 
 function buildIndustryPerformanceSummary(opts){
-  const savingsAud = isFiniteNumber(opts.savingsAud) ? opts.savingsAud : 0;
+  const finance = calculateProjectEconomics(opts);
+  const netBenefitAud = finance.netAnnualBenefitAud;
   const heatCoveragePct = isFiniteNumber(opts.solarHeatFraction) ? opts.solarHeatFraction * 100 : null;
   const electricCoveragePct = isFiniteNumber(opts.solarElecFraction) ? opts.solarElecFraction * 100 : null;
   const heatCoverage = isFiniteNumber(heatCoveragePct) ? `${heatCoveragePct.toFixed(1)}%` : "-";
@@ -4065,14 +4089,14 @@ function buildIndustryPerformanceSummary(opts){
 
   return `
     <div class="insight-hero" style="margin-bottom:16px;">
-      <div class="insight-kicker">Performance summary</div>
-      <div class="insight-title">Save $${formatSummaryWhole(savingsAud)} AUD/yr with ${heatCoverage} heat coverage</div>
+      <div class="insight-kicker">Demand-matched performance - modelled cooling scenario</div>
+      <div class="insight-title">${netBenefitAud >= 0 ? "Net benefit" : "Net cost"} $${formatSummaryWhole(Math.abs(netBenefitAud))} AUD/yr with ${heatCoverage} heat coverage</div>
       <div class="insight-sub">${areaText} PVT collector at ${locationText}</div>
-      <p class="coverage-definition-note">Heat coverage = same-hour PVT heat used / annual process heat demand. Excess heat requires storage.</p>
+      <p class="coverage-definition-note">Heat coverage = same-hour PVT heat used / annual process heat demand. Net benefit deducts annual O&amp;M. Electricity and financial results include the modelled PVT cooling gain, which is not field validated.</p>
       <div class="insight-strip">
         <div class="insight-pill insight-pill-percentage"><div class="eyebrow">Solar electricity</div><div class="big">${electricCoverage}</div>${buildPercentageBar(electricCoveragePct, "Solar electricity coverage")}<small>Site electricity supplied by PV.</small></div>
         <div class="insight-pill insight-pill-percentage"><div class="eyebrow">Heat coverage</div><div class="big">${heatCoverage}</div>${buildPercentageBar(heatCoveragePct, "Heat coverage")}<small>Process heat supplied by PVT.</small></div>
-        <div class="insight-pill"><div class="eyebrow">Annual savings</div><div class="big">$${formatSummaryWhole(savingsAud)} /yr</div><small>Annual electricity and fuel value.</small></div>
+        <div class="insight-pill"><div class="eyebrow">Net annual benefit</div><div class="big">$${formatSummaryWhole(netBenefitAud)} /yr</div><small>Gross value less $${formatSummaryWhole(finance.opexAnnualAud)} annual O&amp;M.</small><div class="eyebrow" style="margin-top:12px;">Net simple payback</div><div class="big">${finance.simplePaybackYears == null ? "No payback" : `${finance.simplePaybackYears.toFixed(1)} yr`}</div></div>
         <div class="insight-pill"><div class="eyebrow">Unused heat</div><div class="big">${unusedHeat}</div><div class="eyebrow" style="margin-top:12px;">PV exported</div><div class="big">${unusedElectricity}</div></div>
       </div>
     </div>`;
@@ -5361,12 +5385,8 @@ function updateProfileTypeRules(industryKey){
     monFriOption.textContent = `${strikeText("5 days/week (Mon-Fri)")} (dairies operate 365 days/year)`;
     monFriOption.style.color = "#666";
   } else if (industryKey === "brewery"){
-    profileType.value = "continuous";
-    monFriOption.disabled = true;
-    monFriOption.textContent = `${strikeText("5 days/week (Mon-Fri)")} (brewery weekday scaling not yet applied)`;
-    monFriOption.style.color = "#666";
-    note.style.display = "none";
-    note.textContent = "";
+    note.style.display = "block";
+    note.textContent = "Brewery schedules are site-specific. Choose 24/7 or Mon-Fri; either option preserves the entered annual beer throughput and redistributes it across the selected operating days.";
   } else if (industryKey === "commercial_laundry"){
     profileType.value = "continuous";
     monFriOption.disabled = true;
@@ -5495,7 +5515,7 @@ const HOW_IT_WORKS_DETAIL = {
   },
   results: {
     title: "7. Results",
-    body: "Annual totals are summed across all 8,760 hours and converted to economics using the tariff and gas price inputs. Payback and NPV use the Capital Recovery Factor over the system lifetime. Thermal savings assume 100% utilisation of PVT heat output - see footnotes.",
+    body: "Annual totals are summed across all 8,760 hours. The primary industry economics value only same-hour heat and electricity use plus electricity exports, deduct annual operating cost, and report demand-matched net payback and NPV. Gross-supply economics remain a labelled upper-bound diagnostic. Cooling-enabled financial values are modelled scenarios, not field-validated outcomes.",
     inputs: ["Annual energy flows (kWh)", "Electricity tariff (¢/kWh)", "Gas price ($/GJ)", "System cost, lifetime, discount rate"],
     outputs: ["Annual PV + thermal yield (kWh)", "Bill savings ($/yr)", "Simple payback (years)", "NPV ($)", "CO₂-e avoided (t/yr)"]
   }
@@ -5745,6 +5765,30 @@ function openHowItWorks(ev){
 // 51.4 kg CO2, 0.1 kg CO2-e methane and 0.03 kg CO2-e nitrous oxide per GJ.
 const NATURAL_GAS_KG_CO2E_PER_GJ = 51.53;
 
+function calculateProjectEconomics(opts){
+  const grossSavingsAud = Math.max(0, finiteNumberOr(opts?.grossSavingsAud ?? opts?.savingsAud ?? opts?.totalSavingsAud, 0));
+  const capexAud = Math.max(0, finiteNumberOr(opts?.capexAud, 0));
+  const opexAnnualAud = Math.max(0, finiteNumberOr(opts?.opexAnnualAud, 0));
+  const discountRate = Math.max(0, finiteNumberOr(opts?.discountRate, 0));
+  const systemLife = Math.max(1, Math.floor(finiteNumberOr(opts?.systemLife, 1)));
+  const netAnnualBenefitAud = grossSavingsAud - opexAnnualAud;
+  const simplePaybackYears = netAnnualBenefitAud > 1e-9 ? capexAud / netAnnualBenefitAud : null;
+  const annuityFactor = discountRate > 1e-9
+    ? (1 - Math.pow(1 + discountRate, -systemLife)) / discountRate
+    : systemLife;
+  const npvAud = -capexAud + netAnnualBenefitAud * annuityFactor;
+  return {
+    grossSavingsAud,
+    capexAud,
+    opexAnnualAud,
+    netAnnualBenefitAud,
+    simplePaybackYears,
+    npvAud,
+    discountRate,
+    systemLife
+  };
+}
+
 function calculateAvoidedEmissionsTonnes(opts){
   const boilerEfficiency = Math.max(1e-9, finiteNumberOr(opts?.boilerEff, 1));
   const gasGJ = (Math.max(0, finiteNumberOr(opts?.solarHeatUsedKWh, 0)) * 3.6 / boilerEfficiency) / 1000;
@@ -5757,14 +5801,23 @@ function buildSavingsTable(opts){
   // CO2 avoided = on-site solar electricity x grid factor, plus the gas the
   // boiler no longer burns (heat / boiler efficiency) x gas factor.
   const co2Tonnes = calculateAvoidedEmissionsTonnes(opts);
+  const finance = calculateProjectEconomics(opts);
+  const coolingLabel = opts?.coolingScenarioEnabled === false
+    ? "cooling disabled"
+    : "modelled cooling scenario";
   return `
         <table class="result-table" style="margin-bottom:12px;">
-          <tr><th colspan="2">Savings (Current Estimate)</th></tr>
+          <tr><th colspan="2">Demand-matched economics - ${coolingLabel}</th></tr>
           <tr><td>Thermal fuel savings (gas displaced at ${(opts.boilerEff*100).toFixed(0)}% boiler efficiency)</td><td class="num">$${formatSummaryWhole(opts.thermalFuelSavingsAud)} AUD/yr</td></tr>
           <tr><td>Electricity bill savings from PV used on site</td><td class="num">$${formatSummaryWhole(opts.electricalSavingsAud)} AUD/yr</td></tr>
           <tr><td>Feed-in electricity export value</td><td class="num">$${formatSummaryWhole(opts.exportSavingsAud)} AUD/yr</td></tr>
-          <tr><td><b>Total industry savings counted</b></td><td class="num"><b>$${formatSummaryWhole(opts.totalSavingsAud)} AUD/yr</b></td></tr>
+          <tr><td><b>Gross demand-matched energy value</b></td><td class="num"><b>$${formatSummaryWhole(finance.grossSavingsAud)} AUD/yr</b></td></tr>
+          <tr><td>Annual O&amp;M (${formatExportNumber(finiteNumberOr(opts?.opexRate, 0) * 100, 1)}% of CAPEX)</td><td class="num">-$${formatSummaryWhole(finance.opexAnnualAud)} AUD/yr</td></tr>
+          <tr><td><b>Net annual benefit</b></td><td class="num"><b>$${formatSummaryWhole(finance.netAnnualBenefitAud)} AUD/yr</b></td></tr>
+          <tr><td>Demand-matched net simple payback</td><td class="num">${finance.simplePaybackYears == null ? "No payback" : `${finance.simplePaybackYears.toFixed(1)} years`}</td></tr>
+          <tr><td>Demand-matched NPV (${finance.systemLife} yr at ${(finance.discountRate * 100).toFixed(1)}%)</td><td class="num">$${formatSummaryWhole(finance.npvAud)} AUD</td></tr>
           <tr><td>Estimated CO&#8322;-e avoided (on-site PV + displaced gas, NGA Factors 2025)</td><td class="num">${co2Tonnes.toFixed(1)} t/yr</td></tr>
+          <tr><td colspan="2" class="note">Financial result status: modelled scenario. CAPEX, tariffs, boiler efficiency, O&amp;M, project life and discount rate remain editable assumptions until replaced by site bills, plant data and supplier quotes.</td></tr>
         </table>`;
 }
 
@@ -5963,8 +6016,6 @@ async function calcAnnualPVT(){
     document.getElementById("calcHint").style.display = "inline";
     resetExportActions();
     CURRENT_DESIGN_EXPLORER = null;
-    syncInstalledCostInputs();
-
     // 1) Read inputs
     const tiltAngle    = parseFloat(document.getElementById("tiltAngle").value);
     const azimuthAngle = parseFloat(document.getElementById("azimuthAngle").value);
@@ -5987,7 +6038,7 @@ async function calcAnnualPVT(){
     const a2           = parseFloat(document.getElementById("pvtA2").value);
     // Economics inputs use getInputNumber (finite-check) so an explicit "0" is
     // honoured. The old `parseFloat(x) || fallback` pattern treated 0 as invalid
-    // and silently substituted the default (e.g. CAPEX 0 became 800 AUD/m2,
+    // and silently substituted the default (e.g. CAPEX 0 became 540 AUD/m2,
     // discount rate 0% became 6%). Blank/invalid fields still get the default.
     const electricityPrice = Math.max(0, getInputNumber("electricityPrice", 0));
     const feedInTariff    = Math.max(0, getInputNumber("feedInTariffInput", 0));
@@ -5996,7 +6047,7 @@ async function calcAnnualPVT(){
     // fuel than the heat it delivers), so savings are heat x 3.6 MJ/kWh / eta x AUD/MJ.
     const boilerEff       = clamp(getInputNumber("boilerEffInput", 0.85), 0.5, 1);
     const gridEmissionFactor = Math.max(0, getInputNumber("gridEmissionFactor", 0.62));
-    const capexPerM2   = Math.max(0, getInputNumber("capexInput", 800));
+    const capexPerM2   = Math.max(0, getInputNumber("capexInput", 540));
     const opexRate     = (Math.max(0, getInputNumber("opexRateInput", 1.5))) / 100;
     const systemLife   = Math.max(1, Math.floor(getInputNumber("systemLifeInput", 25)));
     const discountRate = (Math.max(0, getInputNumber("discountRateInput", 6))) / 100;
@@ -6161,21 +6212,23 @@ async function calcAnnualPVT(){
     const CRF = discountRate > 1e-9
       ? discountRate * Math.pow(1 + discountRate, N) / (Math.pow(1 + discountRate, N) - 1)
       : 1 / N;
-    // f_th2e converts thermal kWh to electrical-equivalent kWh for the CAPEX split only.
-    // = 1 treats 1 kWh of heat as equal in value to 1 kWh of electricity (a simplifying
-    // assumption, NOT an exergy/quality weighting). Affects only the PV/thermal CAPEX share.
-    const f_th2e      = 1;
-    const totalEnergyEq = E_pv_kWh + E_th_kWh * f_th2e;
-    const pvShare     = totalEnergyEq > 1e-9 ? E_pv_kWh / totalEnergyEq : 0.5;
-    const thShare     = 1 - pvShare;
-    const lcoe        = E_pv_kWh > 1e-9 ? (capex * pvShare * CRF + opexAnnual * pvShare) / E_pv_kWh : null;
-    const lcoh        = E_th_kWh > 1e-9 ? (capex * thShare * CRF + opexAnnual * thShare) / E_th_kWh : null;
-    const lcoeCombo   = totalEnergyEq > 1e-9 ? (capex * CRF + opexAnnual) / totalEnergyEq : null;
     const spp         = netAnnualBenefit > 1e-9 ? capex / netAnnualBenefit : null;
     const npv         = discountRate > 1e-9
       ? -capex + netAnnualBenefit * (1 - Math.pow(1 + discountRate, -N)) / discountRate
       : -capex + netAnnualBenefit * N;
     const totalEnergy    = E_pv_kWh + E_th_kWh;
+    const levelisedGrossSupplyCost = totalEnergy > 1e-9
+      ? (capex * CRF + opexAnnual) / totalEnergy
+      : null;
+    const demandMatchedFinanceOpts = grossSavingsAud => ({
+      grossSavingsAud,
+      capexAud: capex,
+      opexAnnualAud: opexAnnual,
+      opexRate,
+      discountRate,
+      systemLife: N,
+      coolingScenarioEnabled: pvtCoolingSensitivityEnable
+    });
     const fmtNumber = (v, d=2) => Number(v).toLocaleString(undefined, { minimumFractionDigits:d, maximumFractionDigits:d });
     const fmtE = (v, d=2, unit='') => v != null ? `${fmtNumber(v, d)}${unit ? ' '+unit : ''}` : '-';
     const fmtC = (v) => v != null ? `$${fmtNumber(v, 2)}` : '-';
@@ -6221,7 +6274,7 @@ async function calcAnnualPVT(){
     const tempModelText = `${pvTempCorrEnable
       ? `NOCT ${pvNoctC.toFixed(1)}&deg;C, &gamma;=${(pvTempCoeffPerC*100).toFixed(2)}%/&deg;C, STC reference ${PV_STC_CELL_TEMP_C}&deg;C`
       : `Temperature correction disabled; DC electricity uses constant &eta;<sub>STC</sub>`}; ` +
-      `${pvtCoolingSensitivityEnable ? "PVT cooling effect included" : "PVT cooling effect disabled"}; ` +
+      `${pvtCoolingSensitivityEnable ? "modelled PVT cooling scenario included (not field validated)" : "PVT cooling effect disabled"}; ` +
       `annual cards, savings and site matching use estimated net AC; gross DC remains in detail. AC factor ${pvAcDeliveryFactor.toFixed(3)} = (1-${pvSystemLossPct.toFixed(1)}% system loss) &times; ${pvInverterEfficiencyPct.toFixed(1)}% inverter.`;
     const pvgisValidation = buildPvgisValidationLink({
       latitude,
@@ -6234,10 +6287,10 @@ async function calcAnnualPVT(){
       inverterEfficiencyPct: pvInverterEfficiencyPct
     });
     const pvtElectricityNote = pvtCoolingSensitivityEnable
-      ? "Estimated net AC, cooled yield"
+      ? "Estimated net AC - modelled cooling scenario"
       : "Estimated net AC, uncooled yield";
     const coolingNote = pvtCoolingSensitivityEnable
-      ? `${gainSign}${pvtElectricGainPct.toFixed(1)}% vs PV-only`
+      ? `${gainSign}${pvtElectricGainPct.toFixed(1)}% modelled gain vs PV-only; not field validated`
       : "Cooling effect disabled";
     const outletTempNote = isFiniteNumber(daytimeToutAvg)
       ? `Inlet ${isFiniteNumber(daytimeTinAvg) ? daytimeTinAvg.toFixed(1) : "-"}&deg;C | Rise ${isFiniteNumber(daytimeWaterRiseAvg) && daytimeWaterRiseAvg >= 0 ? "+" : ""}${isFiniteNumber(daytimeWaterRiseAvg) ? daytimeWaterRiseAvg.toFixed(1) : "-"}&deg;C${outletTooLow ? " | Below 20&deg;C" : ""}`
@@ -6254,7 +6307,7 @@ async function calcAnnualPVT(){
       <div class="annual-summary-grid">
         <div class="annual-summary-item annual-electricity-summary">
           <div class="annual-electricity-main">
-            <span>PVT electricity</span>
+              <span>PVT electricity - modelled cooling scenario</span>
             <strong>${fmtE(E_pv_kWh,1,'kWh')}</strong>
             <small>${pvtElectricityNote}</small>
           </div>
@@ -6285,7 +6338,7 @@ async function calcAnnualPVT(){
         <div class="annual-summary-item annual-finance ${netAnnualBenefit>=0?'':'negative'}">
           <div class="annual-finance-grid">
             <div class="annual-finance-metric">
-              <span>PVT supply value</span>
+              <span>Gross-supply upper-bound value</span>
               <strong>${fmtC(netAnnualBenefit)} /yr</strong>
               <small>Upper-bound annual value (100% utilisation)</small>
             </div>
@@ -6309,7 +6362,7 @@ async function calcAnnualPVT(){
         <tr><td><b>PVT estimated net AC electricity</b></td><td class="num"><span class="ok">${fmtE(E_pvt_ac_kWh,1,'kWh AC')}</span> <span style="color:#6b6b6b;">(${pvtAcDeliveryDeltaPct >= 0 ? '+' : ''}${pvtAcDeliveryDeltaPct.toFixed(1)}% vs gross PVT)</span></td></tr>
         <tr><td><b>PV-only gross DC electricity</b></td><td class="num">${fmtE(E_pv_standalone_dc_kWh,1,'kWh DC')}</td></tr>
         <tr><td><b>PV-only estimated net AC electricity</b></td><td class="num"><span class="ok">${fmtE(E_pv_standalone_ac_kWh,1,'kWh AC')}</span> <span style="color:#6b6b6b;">(${pvOnlyAcDeliveryDeltaPct >= 0 ? '+' : ''}${pvOnlyAcDeliveryDeltaPct.toFixed(1)}% vs gross PV-only)</span></td></tr>
-        <tr><td><b>Electricity from PVT cooling</b></td><td class="num">${pvtCoolingSensitivityEnable ? `<span class="${pvtElectricGainKWh>=0?'ok':'err'}">${gainSign}${fmtE(Math.abs(pvtElectricGainKWh),1,'kWh')} (${gainSign}${pvtElectricGainPct.toFixed(1)}%)</span>` : 'Disabled; 0 kWh included'}</td></tr>
+        <tr><td><b>Electricity from modelled PVT cooling scenario</b></td><td class="num">${pvtCoolingSensitivityEnable ? `<span class="${pvtElectricGainKWh>=0?'ok':'err'}">${gainSign}${fmtE(Math.abs(pvtElectricGainKWh),1,'kWh')} (${gainSign}${pvtElectricGainPct.toFixed(1)}%; not field validated)</span>` : 'Disabled; 0 kWh included'}</td></tr>
         <tr><td><b>Thermal Energy (PVT model)</b></td><td class="num"><span class="ok">${fmtE(E_th_kWh,1,'kWh')}</span></td></tr>
         <tr><td><b>Total Energy</b></td><td class="num"><span class="ok">${fmtE(totalEnergy,1,'kWh')}</span></td></tr>
       </table>
@@ -6324,37 +6377,33 @@ async function calcAnnualPVT(){
         <tr><td><b>Daytime Tin / Tout</b></td><td class="num">${fmtE(daytimeTinAvg,1,'&deg;C')} / ${fmtE(daytimeToutAvg,1,'&deg;C')}</td></tr>
         <tr><td><b>Average water temperature rise (Tout - Tin)</b></td><td class="num">${isFiniteNumber(daytimeWaterRiseAvg) && daytimeWaterRiseAvg >= 0 ? '+' : ''}${fmtE(daytimeWaterRiseAvg,1,'&deg;C')}</td></tr>
       </table>
-      <h4 style="margin:14px 0 6px;color:#1a5276;">Economic Analysis</h4>
+      <h4 style="margin:14px 0 6px;color:#1a5276;">Gross-supply economic upper bound - modelled cooling scenario</h4>
       <table class="result-table">
-        <tr><td><b>CAPEX</b> (${fmtE(capexPerM2,0,'AUD/m\u00B2')} &times; ${fmtE(A,1,'m\u00B2')})</td><td class="num">${fmtC(capex)}</td></tr>
+        <tr><td><b>CAPEX</b> (${fmtE(capexPerM2,0,'AUD/m\u00B2')} direct assumed cost &times; ${fmtE(A,1,'m\u00B2')})</td><td class="num">${fmtC(capex)}</td></tr>
         <tr><td><b>OPEX (annual)</b></td><td class="num">${fmtC(opexAnnual)} /yr</td></tr>
-        <tr><td><b>Annual PVT Electricity Saving</b> (estimated net AC)</td><td class="num"><span class="ok">${fmtC(annualSavingPV)} /yr</span></td></tr>
-        <tr><td><b>Annual Heat Saving</b> (gas displaced @ ${(boilerEff*100).toFixed(0)}% boiler)</td><td class="num"><span class="ok">${fmtC(annualSavingHeat)} /yr</span></td></tr>
-        <tr><td><b>Annual Net Benefit</b></td><td class="num"><span class="${netAnnualBenefit>=0?'ok':'err'}">${fmtC(netAnnualBenefit)} /yr</span></td></tr>
-        <tr><td><b>Simple Payback Period (SPP)</b></td><td class="num">${spp != null ? fmtE(spp,1,'years') : '-'}</td></tr>
-        <tr><td><b>NPV (${N} yr @ ${fmtE(discountRate*100,1,'%')})</b></td><td class="num"><span class="${npv>=0?'ok':'err'}">${fmtC(npv)}</span></td></tr>
+        <tr><td><b>All-generation electricity value</b> (estimated net AC)</td><td class="num"><span class="ok">${fmtC(annualSavingPV)} /yr</span></td></tr>
+        <tr><td><b>All-generation heat value</b> (gas displaced @ ${(boilerEff*100).toFixed(0)}% boiler)</td><td class="num"><span class="ok">${fmtC(annualSavingHeat)} /yr</span></td></tr>
+        <tr><td><b>Upper-bound net annual benefit</b></td><td class="num"><span class="${netAnnualBenefit>=0?'ok':'err'}">${fmtC(netAnnualBenefit)} /yr</span></td></tr>
+        <tr><td><b>Upper-bound simple payback</b></td><td class="num">${spp != null ? fmtE(spp,1,'years') : '-'}</td></tr>
+        <tr><td><b>Upper-bound NPV (${N} yr @ ${fmtE(discountRate*100,1,'%')})</b></td><td class="num"><span class="${npv>=0?'ok':'err'}">${fmtC(npv)}</span></td></tr>
+        <tr><td colspan="2" class="note">Diagnostic only: this upper bound values every generated kWh and is not the primary site investment result. Use the industry card's demand-matched net payback.</td></tr>
       </table>
-      <h4 style="margin:14px 0 6px;color:#1a5276;">Levelised Cost</h4>
+      <h4 style="margin:14px 0 6px;color:#1a5276;">Levelised cost of gross combined supply</h4>
       <table class="result-table">
-        <tr><td><b>LCOE</b> (estimated net AC electricity)</td><td class="num">${lcoe != null ? fmtC(lcoe)+' /kWh_e' : '-'}</td></tr>
-        <tr><td><b>LCOH</b> (heat only)</td><td class="num">${lcoh != null ? fmtC(lcoh)+' /kWh_th' : '-'}</td></tr>
-        <tr><td><b>Combined LCOE</b> (heat&rarr;electricity equiv.)</td><td class="num">${lcoeCombo != null ? fmtC(lcoeCombo)+' /kWh_eq' : '-'}</td></tr>
-        <tr style="background:#fffbe6;"><td style="font-size:11px;color:#888;" colspan="2">
-          CAPEX split: PV ${fmtE(pvShare*100,1,'%')} / Thermal ${fmtE(thShare*100,1,'%')} &nbsp;|&nbsp;
-          CRF = ${fmtE(CRF,5)} &nbsp;|&nbsp; Heat-to-elec equiv. = ${fmtE(f_th2e,3)} (1 kWh heat valued as 1 kWh electricity for the split)
-        </td></tr>
+        <tr><td><b>Combined gross-output levelised cost</b></td><td class="num">${levelisedGrossSupplyCost != null ? fmtC(levelisedGrossSupplyCost)+' /kWh total output' : '-'}</td></tr>
+        <tr style="background:#fffbe6;"><td style="font-size:11px;color:#888;" colspan="2">CRF = ${fmtE(CRF,5)}. Electricity and heat are added as delivered energy; no artificial PV/thermal capital allocation is claimed.</td></tr>
       </table>
       </div>
       </div>`;
     const annualMetrics = [
-      exportMetric("PVT electricity", E_pv_kWh, "kWh AC", 1, `Estimated net AC; temperature-corrected gross DC ${formatExportNumber(E_pvt_dc_kWh,1)} kWh`),
+      exportMetric("PVT electricity - modelled cooling scenario", E_pv_kWh, "kWh AC", 1, `Estimated net AC; cooling gain is not field validated; temperature-corrected gross DC ${formatExportNumber(E_pvt_dc_kWh,1)} kWh`),
       exportMetric("PVT thermal", E_th_kWh, "kWh", 1, "Annual thermal yield"),
       exportMetric("PV-only baseline", E_pv_standalone_kWh, "kWh AC", 1, `Estimated net AC; temperature-corrected gross DC ${formatExportNumber(E_pv_standalone_dc_kWh,1)} kWh`),
-      exportMetricText("Electricity from cooling", `${gainSign}${formatExportNumber(Math.abs(pvtElectricGainKWh), 1)} kWh`, coolingNote),
+      exportMetricText("Electricity from modelled cooling scenario", `${gainSign}${formatExportNumber(Math.abs(pvtElectricGainKWh), 1)} kWh`, coolingNote),
       exportMetric("Total output", totalEnergy, "kWh", 1, "Electrical + thermal combined"),
       exportMetric("Avg daytime outlet temp", daytimeToutAvg, "degC", 1, `Inlet ${formatExportValue(exportMetric("", daytimeTinAvg, "degC", 1))}`),
       exportMetric("Avg water temperature rise", daytimeWaterRiseAvg, "degC", 1, "Daytime outlet minus inlet"),
-      exportMetric("PVT supply value", netAnnualBenefit, "", 2, "Upper-bound annual value (100% utilisation)", { prefix:"$", suffix:" /yr" })
+      exportMetric("Gross-supply upper-bound value", netAnnualBenefit, "", 2, "Diagnostic only; values 100% of generation and includes modelled cooling", { prefix:"$", suffix:" /yr" })
     ];
     const annualTables = [
       {
@@ -6364,7 +6413,7 @@ async function calcAnnualPVT(){
           ["PVT estimated net AC electricity", formatExportValue(exportMetric("", E_pvt_ac_kWh, "kWh AC", 1))],
           ["PV-only gross DC electricity", formatExportValue(exportMetric("", E_pv_standalone_dc_kWh, "kWh DC", 1))],
           ["PV-only estimated net AC electricity", formatExportValue(exportMetric("", E_pv_standalone_ac_kWh, "kWh AC", 1))],
-          ["Electricity from PVT cooling", pvtCoolingSensitivityEnable ? `${gainSign}${formatExportNumber(Math.abs(pvtElectricGainKWh), 1)} kWh (${gainSign}${pvtElectricGainPct.toFixed(1)}%)` : "Disabled; excluded"],
+          ["Electricity from modelled PVT cooling scenario", pvtCoolingSensitivityEnable ? `${gainSign}${formatExportNumber(Math.abs(pvtElectricGainKWh), 1)} kWh (${gainSign}${pvtElectricGainPct.toFixed(1)}%; not field validated)` : "Disabled; excluded"],
           ["AC delivery boundary", `${pvSystemLossPct.toFixed(1)}% non-inverter DC losses; ${pvInverterEfficiencyPct.toFixed(1)}% inverter efficiency`],
           ["Thermal Energy (PVT model)", formatExportValue(exportMetric("", E_th_kWh, "kWh", 1))],
           ["Total Energy", formatExportValue(exportMetric("", totalEnergy, "kWh", 1))]
@@ -6386,23 +6435,22 @@ async function calcAnnualPVT(){
         ]
       },
       {
-        title: "Economic Analysis",
+        title: "Gross-supply economic upper bound - modelled cooling scenario",
         rows: [
-          ["CAPEX", formatExportValue(exportMetric("", capex, "", 2, "", { prefix:"$" }))],
+          ["CAPEX (direct assumed AUD/m2 basis)", formatExportValue(exportMetric("", capex, "", 2, "", { prefix:"$" }))],
           ["OPEX (annual)", formatExportValue(exportMetric("", opexAnnual, "", 2, "", { prefix:"$", suffix:" /yr" }))],
-          ["Annual PVT Electricity Saving", formatExportValue(exportMetric("", annualSavingPV, "", 2, "", { prefix:"$", suffix:" /yr" }))],
-          ["Annual Heat Saving", formatExportValue(exportMetric("", annualSavingHeat, "", 2, "", { prefix:"$", suffix:" /yr" }))],
-          ["Annual Net Benefit", formatExportValue(exportMetric("", netAnnualBenefit, "", 2, "", { prefix:"$", suffix:" /yr" }))],
-          ["Simple Payback Period (SPP)", spp != null ? formatExportValue(exportMetric("", spp, "years", 1)) : "-"],
-          [`NPV (${N} yr @ ${formatExportNumber(discountRate * 100, 1)}%)`, formatExportValue(exportMetric("", npv, "", 2, "", { prefix:"$" }))]
+          ["All-generation electricity value", formatExportValue(exportMetric("", annualSavingPV, "", 2, "", { prefix:"$", suffix:" /yr" }))],
+          ["All-generation heat value", formatExportValue(exportMetric("", annualSavingHeat, "", 2, "", { prefix:"$", suffix:" /yr" }))],
+          ["Upper-bound net annual benefit", formatExportValue(exportMetric("", netAnnualBenefit, "", 2, "", { prefix:"$", suffix:" /yr" }))],
+          ["Upper-bound simple payback", spp != null ? formatExportValue(exportMetric("", spp, "years", 1)) : "-"],
+          [`Upper-bound NPV (${N} yr @ ${formatExportNumber(discountRate * 100, 1)}%)`, formatExportValue(exportMetric("", npv, "", 2, "", { prefix:"$" }))]
         ]
       },
       {
-        title: "Levelised Cost",
+        title: "Levelised cost of gross combined supply",
         rows: [
-          ["LCOE (electricity only)", lcoe != null ? formatExportValue(exportMetric("", lcoe, "/kWh_e", 2, "", { prefix:"$" })) : "-"],
-          ["LCOH (heat only)", lcoh != null ? formatExportValue(exportMetric("", lcoh, "/kWh_th", 2, "", { prefix:"$" })) : "-"],
-          ["Combined LCOE", lcoeCombo != null ? formatExportValue(exportMetric("", lcoeCombo, "/kWh_eq", 2, "", { prefix:"$" })) : "-"]
+          ["Combined gross-output levelised cost", levelisedGrossSupplyCost != null ? formatExportValue(exportMetric("", levelisedGrossSupplyCost, "/kWh total output", 2, "", { prefix:"$" })) : "-"],
+          ["Allocation status", "Electricity and heat are added as delivered energy; no separate PV/thermal cost allocation is claimed."]
         ]
       }
     ];
@@ -6510,7 +6558,7 @@ async function calcAnnualPVT(){
         sharedScale: true
       });
       industryReportSummary = buildIndustryExportSummary({
-        savingsAud: totalSavingsAud,
+        ...demandMatchedFinanceOpts(totalSavingsAud),
         solarHeatFraction: solarFraction,
         solarElecFraction: elecSolarFrac,
         unusedHeatKWh: excess,
@@ -6530,7 +6578,7 @@ async function calcAnnualPVT(){
       industryHtml += `
         <div class="output-card output-card-industry">
         ${buildIndustryPerformanceSummary({
-          savingsAud: totalSavingsAud,
+          ...demandMatchedFinanceOpts(totalSavingsAud),
           solarHeatFraction: solarFraction,
           solarElecFraction: elecSolarFrac,
           unusedHeatKWh: excess,
@@ -6574,7 +6622,7 @@ async function calcAnnualPVT(){
         ${buildStorageNote(solarFraction, storageBound.solarFraction)}
         ${buildHeatBalanceTable("Heat Balance (hourly direct use)", demandMet, unmet, excess, solarFraction)}
         ${buildElecBalanceTable(`Total yearly electricity use (${dairyAssumptions.electricalKWhPerKL.toFixed(1)} kWh/kL assumption)`, totalElectric_kWh, elecMetByPv, elecUnmet, elecExcess, elecSolarFrac)}
-        ${buildSavingsTable({ boilerEff, gridEmissionFactor, solarHeatUsedKWh: demandMet, solarElecUsedKWh: elecMetByPv, thermalFuelSavingsAud, electricalSavingsAud, exportSavingsAud, totalSavingsAud })}
+        ${buildSavingsTable({ boilerEff, gridEmissionFactor, solarHeatUsedKWh: demandMet, solarElecUsedKWh: elecMetByPv, thermalFuelSavingsAud, electricalSavingsAud, exportSavingsAud, ...demandMatchedFinanceOpts(totalSavingsAud) })}
         <div class="industry-chart-group">
           ${chartSet}
         </div>
@@ -6590,7 +6638,7 @@ async function calcAnnualPVT(){
       if (!selectedKeys.length){
         setOutput("Select at least one brewery thermal process to calculate demand.", true); return;
       }
-      const breweryProfileType = "continuous";
+      const breweryProfileType = profileType;
       const breweryAssumptions = getBreweryAssumptions();
 
       const demand = calcBreweryHourlyDemand(throughput_L, breweryProfileType, selectedKeys, met, CURRENT_MAINS, breweryAssumptions);
@@ -6616,14 +6664,14 @@ async function calcAnnualPVT(){
       configureDesignExplorer(thermalHourly);
 
       const procLabels = {
-        cip_prerinse: `Process A: CIP Pre-Rinse (kWater = ${breweryAssumptions.processParams.cip_prerinse.kWater.toFixed(2)})`,
-        bottle_keg_rinse: `Process B: Bottle/Keg Rinsing (kWater = ${breweryAssumptions.processParams.bottle_keg_rinse.kWater.toFixed(2)})`,
-        boiler_preheat: `Process C: Boiler Feedwater Pre-heating (kWater = ${breweryAssumptions.processParams.boiler_preheat.kWater.toFixed(2)})`
+        cip_prerinse: `Process A: CIP/Cleaning Preheat (kWater = ${breweryAssumptions.processParams.cip_prerinse.kWater.toFixed(2)})`,
+        bottle_keg_rinse: `Process B: Packaging Rinse Preheat (kWater = ${breweryAssumptions.processParams.bottle_keg_rinse.kWater.toFixed(2)})`,
+        boiler_preheat: `Process C: Boiler Makeup Preheat (kWater = ${breweryAssumptions.processParams.boiler_preheat.kWater.toFixed(2)})`
       };
       const procRowMeta = {
-        cip_prerinse: { name: "Process A: CIP Pre-Rinse", kWater: breweryAssumptions.processParams.cip_prerinse.kWater.toFixed(2) },
-        bottle_keg_rinse: { name: "Process B: Bottle/Keg Rinsing", kWater: breweryAssumptions.processParams.bottle_keg_rinse.kWater.toFixed(2) },
-        boiler_preheat: { name: "Process C: Boiler Feedwater Pre-heating", kWater: breweryAssumptions.processParams.boiler_preheat.kWater.toFixed(2) }
+        cip_prerinse: { name: "Process A: CIP/Cleaning Preheat", kWater: breweryAssumptions.processParams.cip_prerinse.kWater.toFixed(2) },
+        bottle_keg_rinse: { name: "Process B: Packaging Rinse Preheat", kWater: breweryAssumptions.processParams.bottle_keg_rinse.kWater.toFixed(2) },
+        boiler_preheat: { name: "Process C: Boiler Makeup Preheat", kWater: breweryAssumptions.processParams.boiler_preheat.kWater.toFixed(2) }
       };
       const procColors = BREWERY_PROCESS_COLORS;
 
@@ -6662,7 +6710,7 @@ async function calcAnnualPVT(){
         sharedScale: true
       });
       industryReportSummary = buildIndustryExportSummary({
-        savingsAud: totalSavingsAud,
+        ...demandMatchedFinanceOpts(totalSavingsAud),
         solarHeatFraction: solarFraction,
         solarElecFraction: elecSolarFrac,
         unusedHeatKWh: excess,
@@ -6683,7 +6731,7 @@ async function calcAnnualPVT(){
       industryHtml += `
         <div class="output-card output-card-industry">
         ${buildIndustryPerformanceSummary({
-          savingsAud: totalSavingsAud,
+          ...demandMatchedFinanceOpts(totalSavingsAud),
           solarHeatFraction: solarFraction,
           solarElecFraction: elecSolarFrac,
           unusedHeatKWh: excess,
@@ -6725,7 +6773,7 @@ async function calcAnnualPVT(){
         ${buildHeatBalanceTable("Heat Balance (hourly direct use)", demandMet, unmet, excess, solarFraction)}
         ${buildElecBalanceTable(`Total yearly electricity use (${breweryAssumptions.electricalKWhPerHL.toFixed(2)} kWh/hL assumption)`, totalElectric_kWh, elecMetByPv, elecUnmet, elecExcess, elecSolarFrac)}
         <p class="note" style="margin-top:6px;">Brewery demand uses its own seasonal factors, process water intensities, and schedule reasoning from brewery-specific references rather than the dairy model basis.</p>
-        ${buildSavingsTable({ boilerEff, gridEmissionFactor, solarHeatUsedKWh: demandMet, solarElecUsedKWh: elecMetByPv, thermalFuelSavingsAud, electricalSavingsAud, exportSavingsAud, totalSavingsAud })}
+        ${buildSavingsTable({ boilerEff, gridEmissionFactor, solarHeatUsedKWh: demandMet, solarElecUsedKWh: elecMetByPv, thermalFuelSavingsAud, electricalSavingsAud, exportSavingsAud, ...demandMatchedFinanceOpts(totalSavingsAud) })}
         <div class="industry-chart-group">
           ${chartSet}
         </div>
@@ -6881,7 +6929,7 @@ async function calcAnnualPVT(){
         sharedScale: true
       });
       industryReportSummary = buildIndustryExportSummary({
-        savingsAud: totalSavingsAud,
+        ...demandMatchedFinanceOpts(totalSavingsAud),
         solarHeatFraction: solarFraction,
         solarElecFraction: elecSolarFrac,
         unusedHeatKWh: excess,
@@ -6903,7 +6951,7 @@ async function calcAnnualPVT(){
       industryHtml += `
         <div class="output-card output-card-industry">
         ${buildIndustryPerformanceSummary({
-          savingsAud: totalSavingsAud,
+          ...demandMatchedFinanceOpts(totalSavingsAud),
           solarHeatFraction: solarFraction,
           solarElecFraction: elecSolarFrac,
           unusedHeatKWh: excess,
@@ -6942,7 +6990,7 @@ async function calcAnnualPVT(){
         ${realityCheck.applied ? `<p class="note" style="margin-top:6px;">Meter calibration scales every selected hotel heat process by ${heatDemandScale.toFixed(3)} to align annual useful heat with the entered meter data; it does not replace the modelled hourly demand shape.</p>` : ""}
         ${buildHeatBalanceTable(thermalSectionTitle, demandMet, unmet, excess, solarFraction)}
         ${buildElecBalanceTable(`Total yearly electricity use (${hotelElectricalIntensity} kWh/room-night assumption)`, totalElecDemandKWh, elecMetByPv, elecUnmet, elecExcess, elecSolarFrac)}
-        ${buildSavingsTable({ boilerEff, gridEmissionFactor, solarHeatUsedKWh: demandMet, solarElecUsedKWh: elecMetByPv, thermalFuelSavingsAud, electricalSavingsAud, exportSavingsAud, totalSavingsAud })}
+        ${buildSavingsTable({ boilerEff, gridEmissionFactor, solarHeatUsedKWh: demandMet, solarElecUsedKWh: elecMetByPv, thermalFuelSavingsAud, electricalSavingsAud, exportSavingsAud, ...demandMatchedFinanceOpts(totalSavingsAud) })}
         <div class="industry-chart-group">
           ${chartSet}
         </div>
@@ -6978,6 +7026,7 @@ async function calcAnnualPVT(){
         coverEnabled,
         evaporationScale:getInputNumber("aquaticEvaporationScale",1),
         makeupScale:getInputNumber("aquaticMakeupScale",1),
+        processSetpointsC: readAquaticSetpoints(),
         mains: CURRENT_MAINS,
         mainsTempC: CURRENT_MAINS?.annualAvgC ?? 15
       });
@@ -7063,7 +7112,7 @@ async function calcAnnualPVT(){
           ${processes[key]?.label || key}
         </span>`).join("");
       industryReportSummary = buildIndustryExportSummary({
-        savingsAud: annualSavings,
+        ...demandMatchedFinanceOpts(annualSavings),
         solarHeatFraction: solarFraction,
         solarElecFraction: aquaticElecSolarFrac,
         unusedHeatKWh: excess,
@@ -7084,7 +7133,7 @@ async function calcAnnualPVT(){
       industryHtml += `
         <div class="output-card output-card-industry">
         ${buildIndustryPerformanceSummary({
-          savingsAud: annualSavings,
+          ...demandMatchedFinanceOpts(annualSavings),
           solarHeatFraction: solarFraction,
           solarElecFraction: aquaticElecSolarFrac,
           unusedHeatKWh: excess,
@@ -7123,7 +7172,7 @@ async function calcAnnualPVT(){
         ${buildStorageNote(solarFraction, storageBound.solarFraction)}
         ${buildHeatBalanceTable(thermalSectionTitle, demandMet, unmet, excess, solarFraction)}
         ${buildElecBalanceTable(`Total yearly electricity use (${aquaticElectricIntensity} kWh/m² water area/yr assumption)`, totalAquaticElecKWh, aquaticElecMetByPv, aquaticElecUnmet, aquaticElecExcess, aquaticElecSolarFrac)}
-        ${buildSavingsTable({ boilerEff, gridEmissionFactor, solarHeatUsedKWh: demandMet, solarElecUsedKWh: aquaticElecMetByPv, thermalFuelSavingsAud, electricalSavingsAud: aquaticElectricalSavingsAud, exportSavingsAud: aquaticExportSavingsAud, totalSavingsAud: annualSavings })}
+        ${buildSavingsTable({ boilerEff, gridEmissionFactor, solarHeatUsedKWh: demandMet, solarElecUsedKWh: aquaticElecMetByPv, thermalFuelSavingsAud, electricalSavingsAud: aquaticElectricalSavingsAud, exportSavingsAud: aquaticExportSavingsAud, ...demandMatchedFinanceOpts(annualSavings) })}
         <div class="assumption-callout">
           <strong>Physics assumptions used</strong>
           Evaporation is modeled hourly from water temperature, air temperature and wind speed. Outdoor pools use validated hourly PVGIS relative humidity; indoor pools retain their controlled design RH (50&ndash;62%). PVGIS IR(h) is retained in weather provenance and exports but is deliberately not passed into frozen Model B. Makeup-water heating uses 18-30 L/m&sup2;/day depending on pool type, heated from local mains temperature to the pool setpoint. Convective and radiative losses are added with fixed U-values, and the cover toggle reduces off-hour evaporation by 60%.
@@ -7226,7 +7275,7 @@ async function calcAnnualPVT(){
         sharedScale: false
       });
       industryReportSummary = buildIndustryExportSummary({
-        savingsAud: totalSavingsAud,
+        ...demandMatchedFinanceOpts(totalSavingsAud),
         solarHeatFraction: solarFraction,
         solarElecFraction: elecSolarFrac,
         unusedHeatKWh: excess,
@@ -7247,7 +7296,7 @@ async function calcAnnualPVT(){
       industryHtml += `
         <div class="output-card output-card-industry">
         ${buildIndustryPerformanceSummary({
-          savingsAud: totalSavingsAud,
+          ...demandMatchedFinanceOpts(totalSavingsAud),
           solarHeatFraction: solarFraction,
           solarElecFraction: elecSolarFrac,
           unusedHeatKWh: excess,
@@ -7291,7 +7340,7 @@ async function calcAnnualPVT(){
         ${buildStorageNote(solarFraction, storageBound.solarFraction)}
         ${buildHeatBalanceTable("Heat Balance (hourly direct use, no storage)", demandMet, unmet, excess, solarFraction)}
         ${buildElecBalanceTable("Total yearly electricity use (not modeled for laundry)", totalElectricDemandKWh, elecMetByPv, elecUnmet, elecExcess, elecSolarFrac)}
-        ${buildSavingsTable({ boilerEff, gridEmissionFactor, solarHeatUsedKWh: demandMet, solarElecUsedKWh: elecMetByPv, thermalFuelSavingsAud, electricalSavingsAud, exportSavingsAud, totalSavingsAud })}
+        ${buildSavingsTable({ boilerEff, gridEmissionFactor, solarHeatUsedKWh: demandMet, solarElecUsedKWh: elecMetByPv, thermalFuelSavingsAud, electricalSavingsAud, exportSavingsAud, ...demandMatchedFinanceOpts(totalSavingsAud) })}
         <div class="industry-chart-group">
           ${chartSet}
         </div>
@@ -7330,9 +7379,7 @@ async function calcAnnualPVT(){
         netAnnualBenefitAud: netAnnualBenefit,
         capexAud: capex,
         opexAnnualAud: opexAnnual,
-        lcoeAudPerKWh: lcoe,
-        lcohAudPerKWh: lcoh,
-        combinedLcoeAudPerKWh: lcoeCombo,
+        combinedGrossSupplyCostAudPerKWh: levelisedGrossSupplyCost,
         daytimeInletTempC: daytimeTinAvg,
         daytimeOutletTempC: daytimeToutAvg,
         daytimeWaterTempRiseC: daytimeWaterRiseAvg
@@ -7450,7 +7497,7 @@ async function calcAnnualPVT(){
 // ================================================================
 const INPUT_STORE_KEY = "pvtCalcInputs.v1";
 const INPUT_DEFAULTS_VERSION_KEY = "pvtCalcInputs.defaultsVersion";
-const INPUT_DEFAULTS_VERSION = "2026-07-hotel-scenario-defaults";
+const INPUT_DEFAULTS_VERSION = "2026-08-direct-capex-and-net-payback";
 
 // Serialize every user-set input/select.
 function collectInputState(){
@@ -7727,7 +7774,6 @@ function syncPvEfficiencyFraction(){
   if (!etaPvPercentInput || !etaPvFractionInput) return;
   const percent = clamp(Number(etaPvPercentInput.value), 0, 100);
   etaPvFractionInput.value = Number.isFinite(percent) ? String(percent / 100) : "0.20";
-  syncInstalledCostInputs();
 }
 etaPvPercentInput?.addEventListener("input", syncPvEfficiencyFraction);
 etaPvPercentInput?.addEventListener("change", syncPvEfficiencyFraction);
@@ -7746,14 +7792,6 @@ document.querySelectorAll('input[name="thermalModel"]').forEach(radio => {
     }
   });
 });
-
-["pvInstalledCostPerW","thermalInstalledCostPerW","etaPv","autoCapexFromWatts"].forEach(id => {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.addEventListener("input", syncInstalledCostInputs);
-  el.addEventListener("change", syncInstalledCostInputs);
-});
-syncInstalledCostInputs();
 
 // Custom monthly mains overrides: seed from model on enable, recompute live on edit.
 document.getElementById("mainsCustomEnable")?.addEventListener("change", () => {

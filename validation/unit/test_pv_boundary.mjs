@@ -17,7 +17,7 @@ assert.ok(calc(20,95) < calc(10,95));
 
 assert.match(html,/id="pvtCoolingSensitivityEnable"\s+checked\s*\/>/,
   "PVT cooling effect must be included by default for the annual PVT result");
-assert.match(app,/INPUT_DEFAULTS_VERSION\s*=\s*"2026-07-hotel-scenario-defaults"/,
+assert.match(app,/INPUT_DEFAULTS_VERSION\s*=\s*"2026-08-direct-capex-and-net-payback"/,
   "Saved browser inputs must be migrated when calculator defaults change");
 assert.match(app,/data\.pvtCoolingSensitivityEnable\s*=\s*true/,
   "Old saved inputs must not keep the PVT cooling effect disabled by accident");
@@ -48,7 +48,7 @@ assert.match(app,/annual-summary-item annual-electricity-summary/,
   "Related electricity results should share one annual summary card");
 assert.match(app,/annual-electricity-breakdown[^]*?<span>PV-only baseline<\/span>[^]*?<span>Cooling gain<\/span>/,
   "The combined electricity card should explain the baseline and cooling gain");
-assert.match(app,/annual-finance-grid[^]*?<span>PVT supply value<\/span>[^]*?<span>Avg daytime outlet temp<\/span>/,
+assert.match(app,/annual-finance-grid[^]*?<span>Gross-supply upper-bound value<\/span>[^]*?<span>Avg daytime outlet temp<\/span>/,
   "Supply value and average outlet temperature should share one annual summary card");
 assert.match(app,/function applySuggestedFlowRate\(nextFlowRate\)[^]*?void calcAnnualPVT\(\)/,
   "The winter flow suggestion should update the input and immediately recalculate");

@@ -68,7 +68,7 @@ important_data_sources:
   - OpenStreetMap Nominatim geocoding
   - CER DomDecks legacy zone decks (mains-water fitting fixtures)
   - EnergyPlus/OneBuilding TMYx .stat files (ground-temperature cross-check)
-  - SOAC (Sydney Olympic Aquatic Centre) 19-day field dataset (Mar 2026)
+  - NSOP (North Sydney Olympic Pool at Milsons Point) 19-day field dataset (Mar 2026)
   - pvlib-generated golden references; PVGIS/PVWatts/Renewables.ninja PV benchmarks
 main_engineering_outputs:
   - annual PVT electricity (net AC), PV-only baseline, thermal heat (kWh/yr)
@@ -90,7 +90,7 @@ audit_scope: >
 
 CoolSheet is a **static-frontend web calculator** (plain HTML/JS, no build step) with a **small Python weather backend**. The user enters an Australian address and system parameters; the app geocodes the address (Nominatim), fetches an 8,760-hour Typical Meteorological Year (TMY) weather dataset from the backend (which wraps PVGIS 5.3 via pvlib), and then simulates every hour of a representative year in the browser: plane-of-array irradiance from an isotropic transposition model, thermal output from one of two frozen PVT collector models (Model A simple-linear or Model B ISO 9806), PV electricity with NOCT-based cell-temperature correction (NOCT = Nominal Operating Cell Temperature) plus an optional PVT cooling gain, and a fitted mains-water temperature model supplying the collector inlet temperature. Optionally, one of five industry demand models (dairy farm, brewery, hotel, aquatic centre, commercial laundry) generates an hourly thermal + electrical demand series, matched hour-by-hour against supply with **no storage** assumed. Economics — savings, simple payback period (SPP), net present value (NPV), capital recovery factor (CRF), levelised costs of electricity and heat (LCOE/LCOH) — and avoided emissions are computed from the matched energy. All results render as cards, tables, SVG/Chart.js charts, CSV exports, a report window, and shareable links. **[VERIFIED-CODE]**
 
-Evidence quality is unusually explicit for a research prototype: a `validation/` tree holds locked weather fixtures, pvlib golden references, equation-lock tests for the frozen thermal models, an executed-in-this-audit offline suite of 21 test scripts (all passing, §19), field data from a real PVT installation (SOAC, Sydney Olympic Aquatic Centre), and three internal audit documents. The supply side (geometry, POA, PV-only annual energy) is validated against pvlib to ≤0.2%; the demand-side industry defaults are explicitly labelled engineering scenarios, not certified benchmarks; the PVT electrical cooling gain and the absolute thermal yield under real field conditions are the least-validated links (SOAC field efficiency ≈ 0.63× the certified steady-state curve). **[VERIFIED-RUN]** for the offline suite; **[VERIFIED-CODE]** elsewhere.
+Evidence quality is unusually explicit for a research prototype: a `validation/` tree holds locked weather fixtures, pvlib golden references, equation-lock tests for the frozen thermal models, an executed-in-this-audit offline suite of 21 test scripts (all passing, §19), field data from a real PVT installation (NSOP, North Sydney Olympic Pool at Milsons Point), and three internal audit documents. The supply side (geometry, POA, PV-only annual energy) is validated against pvlib to ≤0.2%; the demand-side industry defaults are explicitly labelled engineering scenarios, not certified benchmarks; the PVT electrical cooling gain and the absolute thermal yield under real field conditions are the least-validated links (NSOP field efficiency ≈ 0.63× the certified steady-state curve). **[VERIFIED-RUN]** for the offline suite; **[VERIFIED-CODE]** elsewhere.
 
 ---
 
@@ -223,7 +223,7 @@ All of the above is implemented in `js/app.js`; the backend's only calculation d
 2. **Industry matching**: select an industry, enter its inputs, select thermal processes → the same calculation additionally produces demand series, coverage fractions, savings, process breakdowns, per-industry charts, model-basis modals citing sources, and (hotel) an optional meter-calibration "Reality Check". **[VERIFIED-CODE]**
 3. **Design explorer**: after an industry run, a slider recomputes the full hourly thermal model at alternative collector areas (`calculateDesignExplorerScenario()`, `findDesignExplorerTargetArea()` bisection to hit a target coverage), with monthly bars and an hourly heatmap. **[VERIFIED-CODE]**
 4. **Exports**: hourly CSV (per-hour G, η_th, DC/AC electricity, thermal, temperatures), summary CSV, a print-ready report window (`buildPdfTemplateDocument()`), report email via backend, and share links (`#s=` base64 payload with schema version, inputs, location/weather metadata, compact results, reproducibility note). **[VERIFIED-CODE]**
-5. **Validation pages** (`pages/`, linked from the header): validation hub; BC-Aus vs CER comparisons (+6°F and 0°F variants); BC-Aus vs EnergyPlus ground temperatures (0.5 m, 2.0 m); mains formula explainer; interactive CER comparison tool; SOAC field validation + comparison; PV external validation across five Australian cities. **[VERIFIED-CODE]** (titles verified; page internals not audited line-by-line.)
+5. **Validation pages** (`pages/`, linked from the header): validation hub; BC-Aus vs CER comparisons (+6°F and 0°F variants); BC-Aus vs EnergyPlus ground temperatures (0.5 m, 2.0 m); mains formula explainer; interactive CER comparison tool; NSOP field validation + comparison; PV external validation across five Australian cities. **[VERIFIED-CODE]** (titles verified; page internals not audited line-by-line.)
 6. **"How this calculator works"** modal with step-by-step SVG pipeline diagrams (`openHowItWorks()`, `HOW_IT_WORKS_DETAIL`). **[VERIFIED-CODE]**
 7. A hidden "Testing" checkbox (`chkHideMains` → `isTestingMode()`) toggles extra diagnostics. **[VERIFIED-CODE]**
 
@@ -542,7 +542,7 @@ A fuller assumptions table with UI-disclosure status is maintained in `docs/audi
 | CER DomDecks `.inc` decks (5 zones) | mains-model fitting + fixtures (SHA-256-pinned) | `validation/fixtures/cer/`, `tools/fit_bc_aus_by_zone.py` |
 | EnergyPlus/OneBuilding TMYx `.stat` (5 sites) | ground-temperature cross-check pages | `validation/fixtures/energyplus/` |
 | PVGIS/PVWatts/Renewables.ninja/GSA JSON extracts | PV external benchmark | `validation/reference/pv-benchmark/` |
-| SOAC field dataset (19 days, 5-min) | field validation | `validation/field-data/soac-mar-2026/` |
+| NSOP field dataset (19 days, 5-min) | field validation | `validation/field-data/nsop-mar-2026/` |
 | DCCEEW NGA Factors 2025 | emission factors (dropdown + gas constant) | `index.html`, `js/app.js` |
 | NABERS / SA Water / Sydney Water / ASHRAE / WELS etc. | industry model bases (cited in model-basis modals) | `build*ModelBasisHtml()` |
 
@@ -577,10 +577,10 @@ Backend provenance: every `/tmy` response embeds `provenance` (contract version,
 | `validation3.html` / `validation4.html` | BC-Aus vs EnergyPlus ground temperatures at 0.5 m / 2.0 m |
 | `validation5.html` | Step-by-step BC-Aus formula explainer |
 | `cer_comparison.html` | Interactive CER DomDecks comparison tool |
-| `soac-field-validation.html`, `soac-field-comparison.html` | SOAC measured-field validation, model-gap analysis |
+| `nsop-field-validation.html`, `nsop-field-comparison.html` | NSOP measured-field validation, model-gap analysis |
 | `pv-external-validation.html` | PV-only comparison vs PVGIS/PVWatts/regional benchmark across five Australian cities |
 
-Page titles and linkage verified; page-internal computations were **not** audited line-by-line (they are cross-checked by `test:pv-external-validation` and `test:soac-validation`, both executed and passing). **[VERIFIED-RUN]** for those wirings.
+Page titles and linkage verified; page-internal computations were **not** audited line-by-line (they are cross-checked by `test:pv-external-validation` and `test:nsop-validation`, both executed and passing). **[VERIFIED-RUN]** for those wirings.
 
 ---
 
@@ -602,7 +602,7 @@ Page titles and linkage verified; page-internal computations were **not** audite
 | Solar E2E | `verify_js_e2e.mjs` | table only (no assertions) | app-vs-pvlib annual kWh: Sydney −0.02%, Melbourne +0.01%, Perth −0.08% | — |
 | Golden reference | `test_golden_reference.mjs` | 9/9 | POA + PV-only within 0.2% of pvlib isotropic (3 cities); Perez stays benchmark-only | agreement with Perez/PVWatts (≈4% higher by design) |
 | PVT model locks | `test_pvt_models.mjs` | 11/11 | Model A/B equations byte/numerically locked | **scientific validity of the models** (explicitly: locks ≠ validation) |
-| SOAC validation | `test_soac_field_validation.mjs` | pass | field-data extraction/statistics/page wiring | that the model matches the field (it doesn't — 0.63×, §19.3) |
+| NSOP validation | `test_nsop_field_validation.mjs` | pass | field-data extraction/statistics/page wiring | that the model matches the field (it doesn't — 0.63×, §19.3) |
 | Weather fixtures | `test_weather_fixtures.mjs` | 119/119 | 7 locked 8,760-h fixtures: schema, fields, solarHour, checksums | that live PVGIS still returns identical data |
 | Weather contract | `test_weather_contract.mjs` | pass | 2.1 release-gate + RH/IR separation logic | live deployment state |
 | Backend solarHour | `validation/backend/test_backend_solarhour.py` | 6/6 (Python unittest, mocked PVGIS) | contract fields, DST-free clock, rotation, thread-pool routing | live PVGIS interaction |
@@ -633,12 +633,12 @@ Also executed: live read-only `GET /health` on the hosted backend — contract 2
 |---|---|---|
 | Numerical verification vs independent software | pvlib golden references (POA, PV annual ≤0.2%; zenith RMS ≈0.4° after solar-time fix) | strong for the supply side **[VERIFIED-RUN]** (tests) + **[DOC-ONLY]** (zenith RMS magnitudes) |
 | Comparison vs published/online tools | `validation/pv-only-benchmark.md`, PV external validation page (PVGIS/PVWatts/ninja extracts, five cities); isotropic ≈4% below Perez-based tools by design | documented modelling choice, not error **[DOC-ONLY]** |
-| Validation vs measured physical data | SOAC Mar-2026: 19 days, 5-min data, 5,888 kWh processed thermal energy; field median η 0.196 vs certified-ISO-driven 0.30–0.32 at matched conditions ⇒ **field ≈ 0.63× certified**; transients ≈25% of samples; T_in↔η correlation is confounded (must not be cited causally) | the calculator's certified-coefficient results are an optimistic envelope for real installations; ratio presented as real-world derating, not model refit **[VERIFIED-CODE]** (analysis documents + data files present; statistics not independently recomputed in this audit) |
+| Validation vs measured physical data | NSOP Mar-2026: 19 days, 5-min data, 5,888 kWh processed thermal energy; field median η 0.196 vs certified-ISO-driven 0.30–0.32 at matched conditions ⇒ **field ≈ 0.63× certified**; transients ≈25% of samples; T_in↔η correlation is confounded (must not be cited causally) | the calculator's certified-coefficient results are an optimistic envelope for real installations; ratio presented as real-world derating, not model refit **[VERIFIED-CODE]** (analysis documents + data files present; statistics not independently recomputed in this audit) |
 | Mains-water model | fit RMSE 0.50–0.95 °C per zone vs CER decks; CER/EnergyPlus cross-check pages | good agreement with its *reference decks*; not validated against measured Australian mains temperatures **[VERIFIED-CODE]** (constants) / **[MISSING]** (measured-data validation) |
 | Regression/behaviour locks | equation locks, source locks, fixture checksums, no-NaN, aggregation locks | comprehensive; note that behaviour locks characterize current behaviour and are not independent scientific validation (a point the repository's own independent audit makes) |
 | System/browser tests | Playwright smoke + live industry matrix | exist; not run here **[DOC-ONLY]** |
 
-**Key epistemic rule stated across the repo docs and honoured here: passing tests lock behaviour; they do not prove physical validity.** The weakest-validated links are (1) the PVT electrical cooling gain and (2) absolute thermal yield under real operating conditions (SOAC 0.63× finding).
+**Key epistemic rule stated across the repo docs and honoured here: passing tests lock behaviour; they do not prove physical validity.** The weakest-validated links are (1) the PVT electrical cooling gain and (2) absolute thermal yield under real operating conditions (NSOP 0.63× finding).
 
 ---
 
@@ -651,7 +651,7 @@ Also executed: live read-only `GET /health` on the hosted backend — contract 2
 5. **[CONFLICT — historical, now consistent]** BC-Aus zone identity: the independent audit (2026-07-10) reported zone 1/zone 2 identities (Rockhampton/Alice Springs) reversed between raw decks and the registries. The current `js/bc_aus_zone_constants.js` declares zone1 = Rockhampton, zone2 = Alice Springs with per-zone fixture SHA-256 identity, and `test:mains-zones` ("reference identity … tests passed") executed green. The issue appears remediated after that audit; the audit document describes a superseded state. Residual: no measured-mains validation (§24.4).
 6. **[MISSING/minor]** Version cache-busting: `index.html` loads `css/styles.css?v=13.43` but `js/app.js?v=13.42`, `APP_VERSION = "13.42"` and the visible label say 13.42. Cosmetic inconsistency only.
 7. **[INFERRED/minor]** `INDUSTRY_UI` still carries throughput defaults for hotel (60,000 room-nights) and aquatic ("Water volume (L)", 5,000,000) although those industries now use rooms×occupancy and pool areas respectively; the generic values are vestigial for those two industries.
-8. **[DOC-ONLY caveat]** `docs/test-matrix.md` and `docs/validation-report.md` list older, smaller assertion counts (e.g. industry 30/30, economics 12/12) than the currently executed suite (43/43, 15/15, plus suites added since: pv-boundary, panel-temperature, pv-external-validation, soac-validation, weather-contract, mains-zones, supply-aggregation, input-parsing, design-explorer, hotel-reality). The docs describe an earlier snapshot; `package.json` + the executed run are authoritative.
+8. **[DOC-ONLY caveat]** `docs/test-matrix.md` and `docs/validation-report.md` list older, smaller assertion counts (e.g. industry 30/30, economics 12/12) than the currently executed suite (43/43, 15/15, plus suites added since: pv-boundary, panel-temperature, pv-external-validation, nsop-validation, weather-contract, mains-zones, supply-aggregation, input-parsing, design-explorer, hotel-reality). The docs describe an earlier snapshot; `package.json` + the executed run are authoritative.
 9. **[VERIFIED-CODE]** `data/bc_aus_constants.js` and `data/bc_zone_corrections.js` are artefacts of an earlier fitting approach (single national fit + per-zone corrections, RMSE 3.6–4.6 °C); production uses the per-zone constants in `js/bc_aus_zone_constants.js` (RMSE 0.70 °C). The older files remain in `data/` — historical, not wired into `index.html`.
 
 ---
@@ -667,7 +667,7 @@ Physics/modelling (all acknowledged somewhere in-repo):
 - **Model B**: no divergence guard beyond iteration cap; no convergence flag; "0 restores default" parsing trap on η0/a1/a2/Tout0/iterMax (frozen behaviour, deliberately preserved).
 - **PVT cooling gain** heuristic (U_L = |a1|) is bounded but unvalidated against paired field measurements; it feeds headline electricity and economics unless the user disables the toggle.
 - **No storage** in headline matching (conservative); monthly "ideal storage" bound is an idealization.
-- **TMY vs reality**: annual TMY estimates cannot be compared to short-period field measurements (explicit SOAC scope note); SOAC found field thermal efficiency ≈0.63× certified steady-state — certified coefficients are optimistic for real, intermittently operated arrays.
+- **TMY vs reality**: annual TMY estimates cannot be compared to short-period field measurements (explicit NSOP scope note); NSOP found field thermal efficiency ≈0.63× certified steady-state — certified coefficients are optimistic for real, intermittently operated arrays.
 - **Industry defaults** are national/literature scenarios with explicit evidence classes; site variation is large; hotel process decomposition is not NABERS-validated; the laundry 10 L/kg default sits at the optimistic (high-reuse) end of Sydney Water's published ranges.
 - **Mains model** is a nearest-reference engineering approximation of legacy CER decks (in-sample fit), not measured mains data nor AS/NZS 4234:2021.
 - **Weekday convention**: dayN 1 = Monday is arbitrary (TMY carries no weekday).
@@ -690,7 +690,7 @@ Software/operational:
 - **[MISSING]** Measured Australian mains-water temperature validation for BC-Aus (validation is against CER reference decks and EnergyPlus ground temperatures, both models themselves).
 - **[MISSING]** Any automated numeric golden test of the *full* in-browser `calcAnnualPVT()` annual outputs (browser smoke checks structure, not physics numbers) — noted as a gap in `docs/audit-report-2026-07.md` §G.
 - **[MISSING]** PDF/report snapshot tests.
-- **[AMBIGUOUS]** The per-sample steady-state mask for SOAC (the dataset lacks a per-sample transient flag; the analysis used a pragmatic bright-sun filter).
+- **[AMBIGUOUS]** The per-sample steady-state mask for NSOP (the dataset lacks a per-sample transient flag; the analysis used a pragmatic bright-sun filter).
 - **[AMBIGUOUS]** Whether the deployed GitHub Pages frontend is currently in sync with `main` (not checked in this audit; CI + Pages auto-deploy make it likely).
 - **[AMBIGUOUS]** `validation/reference/deep_results.json` and some benchmark extracts: generation date/parameters are embedded in the files but were not re-derived here.
 
@@ -702,7 +702,7 @@ Software/operational:
 2. **The frozen-model governance is unusually rigorous**: equation source locks + numeric locks + explicit change policy for Model A/B, separating "another student's models" from this project's contributions.
 3. **The solar-time fix is a quantified original contribution**: labelling hours in clock time vs solar time caused up to 18.8° zenith error and ~1 h hourly-profile shift; the `solarHour` backend contract collapsed it (documented before/after in `validation/VALIDATION_RECORD.md`).
 4. **BC-Aus mains model**: a zone-refitted Burch–Christensen sinusoid (RMSE ≈0.70 °C vs CER decks) with cryptographic fixture identity and a transparent nearest-reference selector — presentable as a reusable Australian mains-temperature approximation, with clearly stated non-official status.
-5. **The SOAC field campaign** provides the honest headline: certified steady-state collector curves over-predict real intermittent-operation efficiency by ~55–60% (field ≈0.63×). A thesis should present this as a real-world derating band, not force-fit the model — and must not cite the confounded T_in↔η correlation causally.
+5. **The NSOP field campaign** provides the honest headline: certified steady-state collector curves over-predict real intermittent-operation efficiency by ~55–60% (field ≈0.63×). A thesis should present this as a real-world derating band, not force-fit the model — and must not cite the confounded T_in↔η correlation causally.
 6. **Demand models are scenario generators with explicit evidence classes** — suitable for coverage/sensitivity analysis, not facility prediction; the in-app evidence labelling is itself a defensible methodology contribution.
 7. **The audit trail** (internal audit → adversarial independent audit → remediations traceable in code: emissions factor 51.4→51.53, outdoor-pool RH adoption, zone-identity fix, versioned PVGIS URL, pinned dependencies, DC→AC boundary) demonstrates an engineering-quality improvement loop worth narrating.
 8. **Reproducibility discipline** (locked fixtures, dataset SHA-256, contract gating, share-link schema with reproducibility note) directly supports thesis-figure reproducibility claims.
@@ -715,7 +715,7 @@ Software/operational:
 2. Update `docs/model-specification.md` (hotel storage-tank sentence) and `docs/audit-report-2026-07.md` (gas factor, humidity statements) or mark them as superseded snapshots (§20.2–4).
 3. Obtain/record the provenance of Model A's default coefficients (fitted dataset, conditions) before relying on its absolute yields in the thesis (§22).
 4. Validate Model B against a certified ISO 9806 datasheet collector at G=1000 W/m², ΔT = 0/20/40 K (repo-recommended, still open).
-5. Decide how to surface the SOAC ~0.6–0.65× real-world derating in the public calculator (currently a validation-page finding, not applied to results).
+5. Decide how to surface the NSOP ~0.6–0.65× real-world derating in the public calculator (currently a validation-page finding, not applied to results).
 6. Verify NGA-2025 grid factors and the 51.53 kg CO2-e/GJ gas factor against the published DCCEEW tables (offline verification impossible in tests).
 7. Consider a full-pipeline numeric golden test for `calcAnnualPVT()` annual outputs (§22).
 8. Reconcile the cosmetic version-string mismatch (13.42 vs 13.43) at the next release.
@@ -752,7 +752,7 @@ Software/operational:
 | Inputs (all DOM ids) | `index.html` (§10 of this document) |
 | Deployment | `render.yaml`; `.github/workflows/validation.yml`; `.nojekyll` |
 | Test commands | `package.json` → `scripts`; suites under `validation/unit|backend|browser|scripts` |
-| Field data | `validation/field-data/soac-mar-2026/` → `analysis_report.md`, `soac_timeseries.csv`, `soac_daily_energy.csv`, `soac_scatter.csv`, `soac_meta.json`, `extract_soac.mjs` |
+| Field data | `validation/field-data/nsop-mar-2026/` → `analysis_report.md`, `nsop_timeseries.csv`, `nsop_daily_energy.csv`, `nsop_scatter.csv`, `nsop_meta.json`, `extract_nsop.mjs` |
 | Golden references | `validation/reference/reference_summary.json`, `validation/fixtures/weather/*.json`, `validation/fixtures/backend/*.json` |
 
 ---

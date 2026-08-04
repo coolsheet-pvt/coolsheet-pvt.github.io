@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="description" content="Field validation case study comparing the CoolSheet PVT calculator with measured Sydney Olympic Aquatic Centre performance." />
-  <title>SOAC Field Validation | CoolSheet PVT Calculator</title>
+  <meta name="description" content="Field validation case study comparing the CoolSheet PVT calculator with measured North Sydney Olympic Pool at Milsons Point performance." />
+  <title>NSOP Field Validation | CoolSheet PVT Calculator</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet" />
@@ -114,7 +114,7 @@
 
   <header class="hero">
     <div class="eyebrow">Field validation case study</div>
-    <h1>SOAC field result compared with CoolSheet</h1>
+    <h1>NSOP field result compared with CoolSheet</h1>
     <p class="lead">A 19-day check of measured PVT heat against the calculator's thermal models.</p>
     <div class="chips" aria-label="Study scope">
       <span class="chip">Data supplied by CoolSheet</span>
@@ -161,12 +161,12 @@
           <article class="chart-card">
             <h3>Public supply estimate vs delivered heat</h3>
             <p>Useful for showing the effect of different weather and plant availability, not for judging the equation alone.</p>
-            <div class="chart"><canvas id="potentialChart" role="img" aria-label="Field heat compared with website default and SOAC coefficient estimates"></canvas></div>
+            <div class="chart"><canvas id="potentialChart" role="img" aria-label="Field heat compared with website default and NSOP coefficient estimates"></canvas></div>
           </article>
           <article class="chart-card">
             <h3>Measured heat by day</h3>
             <p>Five days were at or near zero, showing the effect of actual site operation.</p>
-            <div class="chart"><canvas id="dailyChart" role="img" aria-label="Measured daily SOAC thermal energy from 2 to 20 March 2026"></canvas></div>
+            <div class="chart"><canvas id="dailyChart" role="img" aria-label="Measured daily NSOP thermal energy from 2 to 20 March 2026"></canvas></div>
           </article>
         </div>
       </details>
@@ -186,7 +186,7 @@
           <tbody>
             <tr><td>Processed field result</td><td class="num">5,888.4 kWh</td><td class="num">Reference</td><td>Delivered plant heat after CoolSheet's processing</td></tr>
             <tr><td>Website default, TMY window</td><td class="num">15,995.6 kWh</td><td class="num bad-text">+171.7%</td><td>Supply potential with different weather and assumed availability</td></tr>
-            <tr><td>Website with SOAC Model B coefficients</td><td class="num">22,915.1 kWh</td><td class="num bad-text">+289.2%</td><td>Certified collector curve inside the same supply-potential boundary</td></tr>
+            <tr><td>Website with NSOP Model B coefficients</td><td class="num">22,915.1 kWh</td><td class="num bad-text">+289.2%</td><td>Certified collector curve inside the same supply-potential boundary</td></tr>
             <tr><td>Model A, measured inputs and operation</td><td class="num" id="modelAEnergyCell">5,522.3 kWh</td><td class="num good-text" id="modelAErrorCell">&minus;6.2%</td><td>Default thermal equation response under field conditions</td></tr>
             <tr><td>Model B certified, measured inputs and operation</td><td class="num" id="modelBEnergyCell">9,494.4 kWh</td><td class="num bad-text" id="modelBErrorCell">+61.2%</td><td>Laboratory curve translated to the field with measured flow</td></tr>
             <tr><td>Model B wind-adjusted, measured inputs and operation</td><td class="num" id="modelBWindEnergyCell">8,894.7 kWh</td><td class="num bad-text" id="modelBWindErrorCell">+51.1%</td><td>Same check with a<sub>1</sub> increased from 10.358 to 12.106</td></tr>
@@ -214,11 +214,11 @@
 
     <section aria-labelledby="calibrationTitle">
       <h2 id="calibrationTitle">Calibration sensitivity, not a hidden correction</h2>
-      <p class="section-intro">The control below demonstrates the field-performance factor required to bring the certified Model B prediction under recorded operation toward measured heat. It is a transparent SOAC sensitivity, not a recommended universal default.</p>
+      <p class="section-intro">The control below demonstrates the field-performance factor required to bring the certified Model B prediction under recorded operation toward measured heat. It is a transparent NSOP sensitivity, not a recommended universal default.</p>
       <div class="calibrator">
         <div>
           <h3>Explore a Model B field-performance factor</h3>
-          <p>SOAC evidence supports examining approximately 0.60&ndash;0.75 for this unglazed aquatic installation. The exact campaign ratio is about 0.62 against processed energy.</p>
+          <p>NSOP evidence supports examining approximately 0.60&ndash;0.75 for this unglazed aquatic installation. The exact campaign ratio is about 0.62 against processed energy.</p>
           <label for="fieldFactor"><b>Field-performance factor</b></label>
           <div class="control-row">
             <input id="fieldFactor" type="range" min="0.40" max="1.00" step="0.01" value="0.62" />
@@ -238,7 +238,7 @@
       <div class="recommendation">
         <h3>Preserve the scientific models; add an explicit delivery layer.</h3>
         <ul>
-          <li>Add an optional, clearly labelled <b>thermal field-performance factor</b>, default 1.00. Offer 0.60&ndash;0.75 only as a SOAC-like aquatic sensitivity until more sites and seasons are available.</li>
+          <li>Add an optional, clearly labelled <b>thermal field-performance factor</b>, default 1.00. Offer 0.60&ndash;0.75 only as a NSOP-like aquatic sensitivity until more sites and seasons are available.</li>
           <li>Add aquatic-centre <b>plant availability or pump operating hours</b>. The campaign generated for only 110.8 of 456 hours.</li>
           <li>Allow the supply model to use <b>pool-return inlet temperature</b> rather than mains water when evaluating a pool-heating array.</li>
           <li>Keep Model A and Model B coefficients unchanged and separately report gross collector potential, available plant heat and heat actually matched to demand.</li>
@@ -250,12 +250,12 @@
     <section aria-labelledby="sourceTitle">
       <h2 id="sourceTitle">Source and reproducibility</h2>
       <div class="source-box">
-        <div><b>Source of truth:</b> the original CoolSheet dashboard supplied for SOAC. The repository copy has the same SHA-256 as the supplied file. Extracted CSV values are verbatim; derived model checks are recomputed in this page from the preserved 5-minute records when served over HTTP.</div>
+        <div><b>Source of truth:</b> the original CoolSheet dashboard supplied for NSOP. The repository copy has the same SHA-256 as the supplied file. Extracted CSV values are verbatim; derived model checks are recomputed in this page from the preserved 5-minute records when served over HTTP.</div>
         <div class="source-links">
-          <a href="../validation/field-data/soac-mar-2026/analysis_report.md">Analysis notes</a>
-          <a href="../validation/field-data/soac-mar-2026/energy_comparison_method.md">Comparison method</a>
-          <a href="../validation/field-data/soac-mar-2026/soac_daily_energy.csv">Daily CSV</a>
-          <a href="../validation/field-data/soac-mar-2026/soac_scatter.csv">Scatter CSV</a>
+          <a href="../validation/field-data/nsop-mar-2026/analysis_report.md">Analysis notes</a>
+          <a href="../validation/field-data/nsop-mar-2026/energy_comparison_method.md">Comparison method</a>
+          <a href="../validation/field-data/nsop-mar-2026/nsop_daily_energy.csv">Daily CSV</a>
+          <a href="../validation/field-data/nsop-mar-2026/nsop_scatter.csv">Scatter CSV</a>
         </div>
       </div>
     </section>
@@ -269,7 +269,7 @@
 <script>
 (function(){
   "use strict";
-  const FIELD=5888.4, WEBSITE_DEFAULT=15995.6, WEBSITE_SOAC=22915.1;
+  const FIELD=5888.4, WEBSITE_DEFAULT=15995.6, WEBSITE_NSOP=22915.1;
   const FALLBACK={modelA:5522.2685, modelB:9494.4446, modelBWind:8894.6601};
   const C={field:"#187b55",blue:"#267fc1",orange:"#d85b20",purple:"#7451a3",grey:"#a9b7c3",grid:"#d8e2ea",ink:"#132332"};
   let matchedChart;
@@ -287,7 +287,7 @@
     });
   }
 
-  barChart("potentialChart",["Field delivered","Website default","Website - SOAC coefficients"],[FIELD,WEBSITE_DEFAULT,WEBSITE_SOAC],[C.field,C.blue,C.orange]);
+  barChart("potentialChart",["Field delivered","Website default","Website - NSOP coefficients"],[FIELD,WEBSITE_DEFAULT,WEBSITE_NSOP],[C.field,C.blue,C.orange]);
   matchedChart=barChart("matchedChart",["Measured field heat","Model A"],[FIELD,FALLBACK.modelA],[C.field,C.blue]);
   new Chart(document.getElementById("efficiencyChart"),{
     type:"bar",
@@ -355,8 +355,8 @@
     const status=document.getElementById("dataStatus");
     try{
       const [timeResponse,scatterResponse]=await Promise.all([
-        fetch("../validation/field-data/soac-mar-2026/soac_timeseries.csv"),
-        fetch("../validation/field-data/soac-mar-2026/soac_scatter.csv")
+        fetch("../validation/field-data/nsop-mar-2026/nsop_timeseries.csv"),
+        fetch("../validation/field-data/nsop-mar-2026/nsop_scatter.csv")
       ]);
       if(!timeResponse.ok||!scatterResponse.ok)throw new Error("field CSV unavailable");
       const rows=parseCsv(await timeResponse.text()); const scatter=parseCsv(await scatterResponse.text());

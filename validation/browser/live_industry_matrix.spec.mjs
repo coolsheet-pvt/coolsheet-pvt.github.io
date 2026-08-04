@@ -371,7 +371,7 @@ async function collectScenarioOutputs(page, city, industry, target, options = {}
     const backupHeatKWh = energyCards["Backup heat"]?.value;
     const electricDemandKWh = energyCards["Site electricity"]?.value;
     const solarHeatCoveragePct = insightPairs["Heat coverage"]?.value;
-    const savingsAud = insightPairs["Annual savings"]?.value;
+    const savingsAud = insightPairs["Net annual benefit"]?.value;
     const processTotalText = document.querySelector("#industryOutput .process-breakdown-total .process-kwh")?.textContent || "";
 
     let hourlyCsv = null;
@@ -441,10 +441,9 @@ async function collectScenarioOutputs(page, city, industry, target, options = {}
         solarHeatCoveragePct,
         savingsAud,
         processTotalKWh: parseNumber(processTotalText),
-        lcoeAudPerKWh: annualRaw.lcoeAudPerKWh ?? tableMetric("LCOE") ?? parseAfter("LCOE"),
-        lcohAudPerKWh: annualRaw.lcohAudPerKWh ?? tableMetric("LCOH") ?? parseAfter("LCOH"),
-        npvAud: annualRaw.npvAud ?? tableMetric("NPV") ?? parseAfter("NPV"),
-        paybackYears: annualRaw.paybackYears ?? tableMetric("Simple Payback Period") ?? parseAfter("Simple Payback Period")
+        combinedGrossSupplyCostAudPerKWh: annualRaw.combinedGrossSupplyCostAudPerKWh ?? tableMetric("Combined gross-output levelised cost") ?? parseAfter("Combined gross-output levelised cost"),
+        npvAud: tableMetric("Demand-matched NPV") ?? parseAfter("Demand-matched NPV") ?? annualRaw.npvAud,
+        paybackYears: tableMetric("Demand-matched net simple payback") ?? parseAfter("Demand-matched net simple payback") ?? annualRaw.paybackYears
       },
       ui: {
         selectedIndustry: document.querySelector("#industrySelect")?.value || "",
@@ -503,8 +502,7 @@ function validateScenario(row) {
     ["savings", o.savingsAud],
     ["payback", o.paybackYears],
     ["NPV", o.npvAud],
-    ["LCOE", o.lcoeAudPerKWh],
-    ["LCOH", o.lcohAudPerKWh]
+    ["combined gross-output levelised cost", o.combinedGrossSupplyCostAudPerKWh]
   ];
   for (const [name, value] of finiteRequired) {
     if (!Number.isFinite(value)) failures.push(`${name} is not finite (${value})`);

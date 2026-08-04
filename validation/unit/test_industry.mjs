@@ -35,7 +35,7 @@ function extract(name, kind){
 }
 
 const SYMBOLS = [
-  ["isFiniteNumber","func"],["clamp","func"],["monthFromDayN","func"],["isMonToFriDay","func"],
+  ["isFiniteNumber","func"],["finiteNumberOr","func"],["clamp","func"],["monthFromDayN","func"],["isMonToFriDay","func"],
   ["hourIndexFromHourN","func"],["_normW","func"],["normalizeSeasonalFactors","func"],
   ["MONTH_DAYS","const"],
   ["DAIRY_SEASONAL","const"],["DAIRY_PROCESS_PARAMS","const"],["DAIRY_ELEC_PARAMS","const"],
@@ -53,7 +53,7 @@ const SYMBOLS = [
   ["laundryOperatingDayWeight","func"],["calcCommercialLaundryHourlyDemand","func"],
 ];
 const code = SYMBOLS.map(([n,k]) => extract(n,k)).join("\n");
-const mod = new Function(code + "\nreturn {calcDairyHourlyDemand,calcBreweryHourlyDemand,calcAquaticHourlyDemand,getAquaticRelativeHumidity,calcCommercialLaundryHourlyDemand,calcHotelElectricalHourlyDemand,calcHotelElectricalWeatherFactor,DAIRY_PROCESS_PARAMS,BREWERY_PROCESS_PARAMS,DAIRY_ELEC_PARAMS,BREWERY_ELEC_PARAMS,HOTEL_PROCESS_PARAMS,HOTEL_ELECTRICAL_KWH_PER_UNIT,LAUNDRY_DEFAULTS,LAUNDRY_PROCESS_STACK_ORDER,normalizeSeasonalFactors,DAIRY_SEASONAL,MONTH_DAYS,WATER_CP_KWH_PER_KG_C};")();
+const mod = new Function(code + "\nreturn {calcDairyHourlyDemand,calcBreweryHourlyDemand,calcAquaticHourlyDemand,getAquaticRelativeHumidity,calcCommercialLaundryHourlyDemand,calcHotelElectricalHourlyDemand,calcHotelElectricalWeatherFactor,DAIRY_PROCESS_PARAMS,BREWERY_PROCESS_PARAMS,DAIRY_ELEC_PARAMS,BREWERY_ELEC_PARAMS,HOTEL_PROCESS_PARAMS,HOTEL_ELECTRICAL_KWH_PER_UNIT,LAUNDRY_DEFAULTS,LAUNDRY_PROCESS_STACK_ORDER,normalizeSeasonalFactors,DAIRY_SEASONAL,MONTH_DAYS,WATER_CP_KWH_PER_KG_C,AQUATIC_PROCESS_PARAMS};")();
 
 // --- synthetic full-year weather + constant mains so thermal totals are predictable ---
 const MAINS_C = 18;
@@ -99,6 +99,14 @@ console.log("\n# BREWERY  (throughput 500,000 L beer; mains "+MAINS_C+"C)");
   const custom=mod.calcBreweryHourlyDemand(T,"continuous",keys,met,mains,{electricalKWhPerHL:8,processParams:customParams});
   near("editable brewery electricity intensity is applied", sum(custom.electricHourly), 0.08*T, 0.5);
   near("editable brewery water rates scale thermal demand", sum(custom.thermalHourly), th*0.5, 1);
+  const weekdays=mod.calcBreweryHourlyDemand(T,"mon_fri",keys,met,mains);
+  near("Mon-Fri profile preserves annual brewery electricity", sum(weekdays.electricHourly), elec, 0.5);
+  near("Mon-Fri profile preserves annual process-water heat at constant mains", sum(weekdays.thermalHourly), th, 1);
+  const dayTotal=(arr,d)=>sum(arr.slice((d-1)*24,d*24));
+  near("Mon-Fri profile has zero Saturday electrical demand", dayTotal(weekdays.electricHourly,6), 0, 1e-9);
+  near("Mon-Fri profile has zero Saturday thermal demand", dayTotal(weekdays.thermalHourly,6), 0, 1e-9);
+  ok("Mon-Fri profile redistributes annual demand into active weekdays",
+    dayTotal(weekdays.thermalHourly,1)>dayTotal(r.thermalHourly,1));
 }
 
 console.log("\n# AQUATIC  (indoor pool 500 m2; physics heat-loss model)");
@@ -126,6 +134,38 @@ console.log("\n# AQUATIC  (indoor pool 500 m2; physics heat-loss model)");
   });
   near("editable evaporation multiplier scales evaporation component", halfEvap.processBreakdownAnnuals.indoor_pool.evaporation, b.evaporation*0.5, 0.01);
   console.log(`        (info) indoor pool heating = ${perM2.toFixed(0)} kWh/m2 surface; split evap ${(b.evaporation/total*100).toFixed(0)}% / makeup ${(b.makeup/total*100).toFixed(0)}% / sensible ${(b.sensible/total*100).toFixed(0)}%`);
+
+  // Pool setpoint override. Every loss term is driven by the water temperature,
+  // so an operator's published setpoint has to reach all three of them and must
+  // not silently fall back to the model default.
+  const runAt = setpoints => mod.calcAquaticHourlyDemand({
+    met:amet, activeProcesses:["indoor_pool","outdoor_pool"], profileType:"continuous",
+    processAreas:{indoor_pool:500, outdoor_pool:500}, coverEnabled:false, mainsTempC:18,
+    processSetpointsC: setpoints
+  });
+  const baseBoth = runAt(undefined);
+  const defaultsEcho = runAt({ indoor_pool: mod.AQUATIC_PROCESS_PARAMS.indoor_pool.targetTempC,
+                               outdoor_pool: mod.AQUATIC_PROCESS_PARAMS.outdoor_pool.targetTempC });
+  near("passing the default setpoints reproduces the default result exactly",
+       sum(defaultsEcho.thermalHourly), sum(baseBoth.thermalHourly), 1e-9);
+  const blank = runAt({ indoor_pool: "", outdoor_pool: null });
+  near("blank or non-numeric setpoints fall back to the model default",
+       sum(blank.thermalHourly), sum(baseBoth.thermalHourly), 1e-9);
+  const cooler = runAt({ indoor_pool:27, outdoor_pool:25 });
+  ok("a cooler outdoor setpoint lowers outdoor demand",
+     cooler.processAnnuals.outdoor_pool < baseBoth.processAnnuals.outdoor_pool,
+     `cool=${cooler.processAnnuals.outdoor_pool.toFixed(0)} base=${baseBoth.processAnnuals.outdoor_pool.toFixed(0)}`);
+  near("changing only the outdoor setpoint leaves the indoor pool untouched",
+       cooler.processAnnuals.indoor_pool, baseBoth.processAnnuals.indoor_pool, 1e-9);
+  const cb = cooler.processBreakdownAnnuals.outdoor_pool;
+  const bb = baseBoth.processBreakdownAnnuals.outdoor_pool;
+  ok("setpoint reaches all three loss terms, not just evaporation",
+     cb.evaporation < bb.evaporation && cb.makeup < bb.makeup && cb.sensible < bb.sensible,
+     `evap ${cb.evaporation.toFixed(0)}<${bb.evaporation.toFixed(0)} makeup ${cb.makeup.toFixed(0)}<${bb.makeup.toFixed(0)} sens ${cb.sensible.toFixed(0)}<${bb.sensible.toFixed(0)}`);
+  const absurd = runAt({ outdoor_pool: 999 });
+  const clamped = runAt({ outdoor_pool: 45 });
+  near("out-of-range setpoints are clamped rather than propagated",
+       absurd.processAnnuals.outdoor_pool, clamped.processAnnuals.outdoor_pool, 1e-9);
 }
 
 console.log("\n# AQUATIC MAINS PROFILE  (daily byDay drives makeup-water dT, v13.12)");

@@ -386,7 +386,7 @@ NatHERS 2022 has BOM-derived hourly Reference Meteorological Year files for 69 c
 - Functional unit is inconsistently used: heat is per pool-water surface; the cited Deakin range is total energy per conditioned floor area; the electrical default is applied per water surface.
 - PVGIS supplies RH, but `getAquaticRelativeHumidity` always returns a fixed process value. Outdoor vapour pressure therefore ignores actual climate humidity.
 - 10 m wind is used at the water surface without terrain/building/indoor correction.
-- SOAC field evidence covers only 19 days and reportedly yields about 0.63× the certified thermal curve. It cannot validate national annual defaults or the electrical cooling heuristic.
+- NSOP field evidence covers only 19 days and reportedly yields about 0.63× the certified thermal curve. It cannot validate national annual defaults or the electrical cooling heuristic.
 - Classification: engineering model with assumptions, not independently calibrated national model.
 
 ### 9.5 Commercial laundry
@@ -435,7 +435,7 @@ No source reviewed supports treating national ABS/Australian Energy Statistics a
 | H3 High - historical-DST duplicate/missing demand hour | `coerce_year=1990`, zone conversion; unique-key audit | hourly matching and schedules | Annual record count unchanged; one duplicated and one missing local key in tested DST locations. Timing effect scenario-dependent. |
 | H4 High - BC zone-family/selector unsupported | generic five-zone runtime; climate-fingerprint selection | national mains profile and downstream outputs | Unknown outside anchors; can choose a non-regulatory zone anywhere in Australia. |
 | H5 High - industry exact defaults not substantiated | §9 and source register | demand, coverage, savings, sizing claims | Potentially order-one. Laundry alone is 20–120% higher volume heat at current official efficient ranges versus 10 L/kg. |
-| H6 High - PV cooling heuristic unvalidated | `calcPvtPanelTempC`; SOAC evidence too short | PV gain, total energy, value, emissions | Sydney audited cooling gain is 5,839–7,772 kWh/year (6.8–9.0% over PV-only), all currently unsupported as an independently validated annual gain. |
+| H6 High - PV cooling heuristic unvalidated | `calcPvtPanelTempC`; NSOP evidence too short | PV gain, total energy, value, emissions | Sydney audited cooling gain is 5,839–7,772 kWh/year (6.8–9.0% over PV-only), all currently unsupported as an independently validated annual gain. |
 | H7 High - aquatic boundary and climate inputs | fixed RH; 10 m wind; floor/surface denominator | aquatic demand and savings | Direction varies. Electrical default may be materially mis-scaled because area and energy boundary differ. |
 | H8 High - non-deterministic/broken regeneration | scripts write under `tools/`, runtime under `data/`/`js/` | BC constants and validation claims | Stale runtime artifacts can persist after a “successful” refit. |
 | M1 Medium - natural-gas factor boundary | 51.4 labelled CO2-e versus NGA combined 51.53 | avoided emissions | Combined Scope 1 would be +0.253% versus current gas avoided-emission number; Scope 3 would add more and is location-specific. |

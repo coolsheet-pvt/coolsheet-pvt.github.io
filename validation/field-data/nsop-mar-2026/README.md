@@ -1,4 +1,4 @@
-# SOAC March 2026 - Field Dataset
+# NSOP March 2026 - Field Dataset
 
 Real-world monitoring data from an operating PVT (photovoltaic-thermal) collector
 array, extracted from a CoolSheet monitoring dashboard and used here as an
@@ -8,11 +8,19 @@ array, extracted from a CoolSheet monitoring dashboard and used here as an
 > the calculator does **not** by itself validate the calculator. See
 > [`analysis_report.md`](analysis_report.md) for what can and cannot be compared.
 
+> **Site-name correction:** The author confirmed that this campaign is from
+> North Sydney Olympic Pool at Milsons Point. The dashboard copy in this
+> archive was updated only to correct its legacy site label. Its numerical
+> payload and all extracted CSV values are unchanged. The supplied dashboard's
+> SHA-256 was `61b527e0652e4ffe79f564629c64d9c5d71398f7bd04a974f63613ebb397f788`;
+> the label-corrected copy is
+> `bb8735981b5e189b51a32aadebe21fa75eeccf3ac33568122c5154b0411d356e`.
+
 ## Site & system
 
 | Field | Value |
 |---|---|
-| Site | Sydney Olympic Aquatic Centre (SOAC) |
+| Site | North Sydney Olympic Pool at Milsons Point (NSOP) |
 | Monitoring period | 2026-03-02 to 2026-03-20 (19 days) |
 | Commissioning day excluded | 2026-03-01 (not present in the dataset; excluded upstream) |
 | Collector / PV area | 534.733164 m² |
@@ -36,25 +44,25 @@ increases, so the first-order loss coefficient a₁ rises with wind speed. The
 certified a₁ = 10.358 W/m²K is measured at the standard 1 m/s test wind; the
 dashboard re-derives a₁ = 12.106 W/m²K for the windier 2 m/s site condition,
 which lowers predicted efficiency (see the two η-vs-Tᵢₙ curves in the source
-dashboard). Both values are recorded verbatim in `soac_meta.json`.
+dashboard). Both values are recorded verbatim in `nsop_meta.json`.
 
 ## Files in this folder
 
 | File | What it is | Provenance |
 |---|---|---|
-| `CoolSheet_Dashboard_SOAC_Mar2026_WindCorrected.htm` | Original dashboard (source of truth) | as supplied |
-| `extract_soac.mjs` | Re-runnable extractor (`node extract_soac.mjs`) | - |
-| `soac_meta.json` | Site + certified-model metadata | **verbatim** from dashboard `DATA.meta` |
-| `soac_timeseries.csv` | 5-min series: `t, T_in, T_out, T_amb, T1, T2, flow, delta_T, P_kW, P_roll15, eta, eta_roll, G, buf_high, buf_low` | **verbatim** from `DATA.ts` |
-| `soac_daily_energy.csv` | Daily thermal energy `date, E_kWh` (19 rows) | **verbatim** from `DATA.daily` |
-| `soac_scatter.csv` | Operating scatter cloud `G, eta, P_kW, delta_T, T_in` (5,511 rows) | **verbatim** from `DATA.scatter` |
+| `CoolSheet_Dashboard_NSOP_Mar2026_WindCorrected.htm` | Dashboard source with corrected site label | numerical payload preserved |
+| `extract_nsop.mjs` | Re-runnable extractor (`node extract_nsop.mjs`) | - |
+| `nsop_meta.json` | Site + certified-model metadata | site label corrected; numerical fields verbatim from dashboard `DATA.meta` |
+| `nsop_timeseries.csv` | 5-min series: `t, T_in, T_out, T_amb, T1, T2, flow, delta_T, P_kW, P_roll15, eta, eta_roll, G, buf_high, buf_low` | **verbatim** from `DATA.ts` |
+| `nsop_daily_energy.csv` | Daily thermal energy `date, E_kWh` (19 rows) | **verbatim** from `DATA.daily` |
+| `nsop_scatter.csv` | Operating scatter cloud `G, eta, P_kW, delta_T, T_in` (5,511 rows) | **verbatim** from `DATA.scatter` |
 | `analysis_report.md` | Analysis, caveats, and the fair-comparison assessment | derived |
-| `SOAC_field_validation_proposal.md` | Proposed "SOAC March 2026 Field Validation" report/page | derived |
-| `../../../pages/soac-field-validation.html` | Field-validation case-study page | derived from the preserved CSV data |
+| `NSOP_field_validation_proposal.md` | Proposed "NSOP March 2026 Field Validation" report/page | derived |
+| `../../../pages/nsop-field-validation.html` | Field-validation case-study page | derived from the preserved CSV data |
 
-No values in the CSV/JSON files were rounded, rescaled, or recomputed. Nulls in
+No numerical values in the CSV/JSON files were rounded, rescaled, or recomputed. Nulls in
 the source (e.g. efficiency at night when there is no irradiance) are written as
-**blank cells**. Re-run `extract_soac.mjs` to regenerate them from the raw HTML.
+**blank cells**. Re-run `extract_nsop.mjs` to regenerate them from the raw HTML.
 
 ## Three data layers - keep them distinct
 

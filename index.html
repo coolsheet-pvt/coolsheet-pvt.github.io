@@ -45,7 +45,7 @@
           <a role="menuitem" href="pages/validation4.html" target="_blank" rel="noopener" title="BC-Aus vs EnergyPlus 2.0 m ground temperatures">Validation 4 - ground 2.0 m</a>
           <a role="menuitem" href="pages/validation5.html" target="_blank" rel="noopener" title="The BC-Aus mains-water formula explained step by step">Validation 5 - formula</a>
           <a role="menuitem" href="pages/cer_comparison.html" target="_blank" rel="noopener" title="Interactive CER DomDecks comparison tool">CER comparison tool</a>
-          <a role="menuitem" href="pages/soac-field-validation.html" target="_blank" rel="noopener" title="Measured CoolSheet PVT performance at Sydney Olympic Aquatic Centre">SOAC field validation</a>
+          <a role="menuitem" href="pages/nsop-field-validation.html" target="_blank" rel="noopener" title="Measured CoolSheet PVT performance at North Sydney Olympic Pool at Milsons Point">NSOP field validation</a>
           <a role="menuitem" href="pages/pv-external-validation.html" target="_blank" rel="noopener" title="PV-only comparison across five Australian cities using PVGIS, PVWatts and an Australian regional benchmark">PV external validation</a>
         </div>
       </div>
@@ -162,7 +162,7 @@
                   </label>
                   <label class="tempcorr-toggle">
                     <input type="checkbox" id="pvtCoolingSensitivityEnable" checked />
-                    <span><b>Include PVT electrical cooling effect</b> <span class="pv-toggle-note">(cooled PVT vs PV-only baseline)</span></span>
+                    <span><b>Include modelled PVT electrical cooling scenario</b> <span class="pv-toggle-note">(not field validated; compared with the PV-only baseline)</span></span>
                   </label>
                 </div>
                 <label for="pvTempCoeff">PV temperature loss (%/&deg;C):</label>
@@ -357,7 +357,7 @@
             <input id="dairyBoilerWater" type="number" min="0" step="0.01" value="0.50" />
             <label for="dairyTargetTemp"><b>Preheat target (&deg;C):</b></label>
             <input id="dairyTargetTemp" type="number" min="15" max="95" step="1" value="35" />
-            <div class="note full-row">The Australian audit electricity range is approximately 27&ndash;75 kWh/kL. Water rates, target and schedules are scenario assumptions: replace them with site meter/CIP data where available.</div>
+            <div class="note full-row">The Australian audit electricity range is approximately 27&ndash;75 kWh/kL. The water rates and schedules are traceable legacy project assumptions, not published Australian coefficients. The 35 &deg;C value is a PVT preheat cap, not the final sanitising temperature. Replace all of them with site meter and cleaning-cycle data where available.</div>
           </div>
         </div>
       </div>
@@ -367,17 +367,19 @@
           <div class="grid">
             <label for="breweryElectricKWhPerHL"><b>Electricity intensity (kWh/hL beer):</b></label>
             <input id="breweryElectricKWhPerHL" type="number" min="0" step="0.1" value="11.5" />
-            <label for="breweryCipWater"><b>CIP pre-rinse water (L/L beer):</b></label>
+            <label for="breweryWholeSiteWater"><b>Whole-site water cross-check (L/L beer):</b></label>
+            <input id="breweryWholeSiteWater" type="number" min="0" step="0.1" value="4.0" />
+            <label for="breweryCipWater"><b>CIP/cleaning preheat water (L/L beer):</b></label>
             <input id="breweryCipWater" type="number" min="0" step="0.01" value="0.80" />
-            <label for="breweryRinseWater"><b>Bottle/keg rinse water (L/L beer):</b></label>
+            <label for="breweryRinseWater"><b>Packaging rinse preheat water (L/L beer):</b></label>
             <input id="breweryRinseWater" type="number" min="0" step="0.01" value="0.45" />
-            <label for="breweryBoilerWater"><b>Boiler preheat water (L/L beer):</b></label>
+            <label for="breweryBoilerWater"><b>Boiler makeup preheat water (L/L beer):</b></label>
             <input id="breweryBoilerWater" type="number" min="0" step="0.01" value="0.60" />
-            <label for="breweryCipTarget"><b>CIP/boiler preheat target (&deg;C):</b></label>
+            <label for="breweryCipTarget"><b>Cleaning/boiler PVT delivery cap (&deg;C):</b></label>
             <input id="breweryCipTarget" type="number" min="15" max="95" step="1" value="45" />
-            <label for="breweryRinseTarget"><b>Bottle/keg rinse target (&deg;C):</b></label>
+            <label for="breweryRinseTarget"><b>Packaging-rinse PVT delivery cap (&deg;C):</b></label>
             <input id="breweryRinseTarget" type="number" min="15" max="95" step="1" value="40" />
-            <div class="note full-row">These are editable literature-based scenarios, not a universal Australian brewery benchmark. Use facility production, CIP, packaging and refrigeration meter data where available.</div>
+            <div class="note full-row">Australian evidence supports the whole-site 4 L/L cross-check and the process categories, not the three process allocations. The 40-45 &deg;C values are PVT delivery caps, not final CIP or brewing temperatures. Use facility batch schedules, CIP records, packaging data and meters where available.</div>
           </div>
         </div>
       </div>
@@ -470,6 +472,18 @@
             </label>
             <input id="aquaticSaunaArea" type="number" min="0" step="0.1" value="25" />
 
+            <label for="aquaticIndoorSetpoint"><b>Indoor pool water temperature (&deg;C):</b></label>
+            <input id="aquaticIndoorSetpoint" type="number" min="10" max="45" step="0.5" value="27" />
+
+            <label for="aquaticOutdoorSetpoint"><b>Outdoor pool water temperature (&deg;C):</b></label>
+            <input id="aquaticOutdoorSetpoint" type="number" min="10" max="45" step="0.5" value="27" />
+
+            <label for="aquaticKidsSetpoint"><b>Kids pool water temperature (&deg;C):</b></label>
+            <input id="aquaticKidsSetpoint" type="number" min="10" max="45" step="0.5" value="30" />
+
+            <label for="aquaticSaunaSetpoint"><b>Sauna / spa water temperature (&deg;C):</b></label>
+            <input id="aquaticSaunaSetpoint" type="number" min="10" max="45" step="0.5" value="35" />
+
             <label for="aquaticPoolCover"><b>Pool cover used off-hours:</b></label>
             <label style="display:inline-flex;align-items:center;gap:8px;font-weight:600;white-space:nowrap;">
               <input id="aquaticPoolCover" type="checkbox" checked style="width:auto;margin:0;" />
@@ -484,7 +498,7 @@
             <input id="aquaticMakeupScale" type="number" min="0" max="3" step="0.05" value="1" />
 
             <div class="full-row note" style="margin-top:2px;">
-              Area-based aquatic demand uses hourly evaporation, makeup-water heating, and sensible heat loss. Electricity and the two multipliers are editable sensitivity assumptions; measured facility data should replace them where available.
+              Area-based aquatic demand uses hourly evaporation, makeup-water heating, and sensible heat loss. Every heat-loss term scales with the pool water temperature, so enter the operator's actual setpoints where they are known &ndash; venues commonly run the outdoor pool cooler than the indoor one. Electricity and the two multipliers are editable sensitivity assumptions; measured facility data should replace them where available.
             </div>
           </div>
         </div>
@@ -546,24 +560,24 @@
         <div class="advanced-settings-body">
           <div class="advanced-grid">
             <div class="note full-row economics-intro">
-              The calculator uses the defaults below. Change them only when you have site-specific prices or costs.
+              These are editable screening assumptions, not quotations. Replace tariffs with site bills and installed cost with a supplier quote before making an investment decision. Demand-matched payback deducts annual operating cost.
             </div>
 
             <div class="economics-section-title full-row"><b>Energy prices</b><span>Used to estimate annual savings</span></div>
 
-            <label for="electricityPrice" class="setting-label"><b>Electricity bought from the grid (AUD/kWh):</b><span class="setting-tags"><span class="setting-chip annual">Annual PVT</span><span class="setting-chip industry">Industry</span></span></label>
+            <label for="electricityPrice" class="setting-label"><b>Electricity bought from the grid (AUD/kWh):</b><span class="setting-tags"><span class="setting-chip annual">Annual PVT</span><span class="setting-chip industry">Industry</span><span class="setting-chip disabled">Assumed</span></span></label>
             <input id="electricityPrice" type="number" min="0" step="0.01" value="0.27" />
 
-            <label for="feedInTariffInput" class="setting-label">Electricity exported to the grid (AUD/kWh):<span class="setting-tags"><span class="setting-chip industry">Industry</span></span></label>
+            <label for="feedInTariffInput" class="setting-label">Electricity exported to the grid (AUD/kWh):<span class="setting-tags"><span class="setting-chip industry">Industry</span><span class="setting-chip disabled">Assumed</span></span></label>
             <input id="feedInTariffInput" type="number" min="0" step="0.01" value="0.06" />
 
-            <label for="gasPriceInput" class="setting-label"><b>Natural gas price (AUD/MJ):</b><span class="setting-tags"><span class="setting-chip industry">Industry</span></span></label>
+            <label for="gasPriceInput" class="setting-label"><b>Natural gas price (AUD/MJ):</b><span class="setting-tags"><span class="setting-chip industry">Industry</span><span class="setting-chip disabled">Assumed</span></span></label>
             <input id="gasPriceInput" type="number" min="0" step="0.001" value="0.020" />
 
-            <label for="boilerEffInput" class="setting-label"><b>Existing boiler efficiency (0&ndash;1):</b><span class="setting-tags"><span class="setting-chip industry">Industry</span></span></label>
+            <label for="boilerEffInput" class="setting-label"><b>Existing boiler efficiency (0&ndash;1):</b><span class="setting-tags"><span class="setting-chip industry">Industry</span><span class="setting-chip disabled">Assumed</span></span></label>
             <input id="boilerEffInput" type="number" min="0.5" max="1" step="0.01" value="0.85" />
 
-            <label for="gridEmissionFactor" class="setting-label">Region for emissions estimate:<span class="setting-tags"><span class="setting-chip industry">Industry</span></span></label>
+            <label for="gridEmissionFactor" class="setting-label">Region for emissions estimate:<span class="setting-tags"><span class="setting-chip industry">Industry</span><span class="setting-chip annual">Published</span></span></label>
             <select id="gridEmissionFactor" aria-describedby="gridEmissionFactorSource">
               <option value="0.62" selected>National average - 0.62</option>
               <option value="0.64">NSW &amp; ACT - 0.64</option>
@@ -580,46 +594,21 @@
 
             <div class="economics-section-title full-row"><b>Installed cost</b><span>Used for payback and lifetime-cost estimates</span></div>
 
-            <label for="capexInput" class="setting-label"><b>Installed cost (AUD/m&sup2;):</b><span class="setting-tags"><span class="setting-chip annual">Annual PVT</span></span></label>
-            <input id="capexInput" type="number" min="0" step="10" value="800" />
-
-            <label for="autoCapexFromWatts" class="auto-cost-toggle cost-auto-toggle full-row">
-              <input id="autoCapexFromWatts" type="checkbox" checked />
-              Calculate this automatically from $/W values
-            </label>
-
-            <details class="cost-conversion-details full-row">
-              <summary>Edit the $/W cost calculation</summary>
-              <div class="cost-conversion-body">
-              <div class="installed-cost-grid">
-                <label for="pvInstalledCostPerW" class="setting-label">PV installed cost (AUD/W):<span class="setting-tags"><span class="setting-chip annual">Annual PVT</span></span></label>
-                <input id="pvInstalledCostPerW" type="number" min="0" step="0.01" value="1.20" />
-
-                <label for="thermalInstalledCostPerW" class="setting-label">Thermal / PVT installed cost (AUD/W):<span class="setting-tags"><span class="setting-chip annual">Annual PVT</span></span></label>
-                <input id="thermalInstalledCostPerW" type="number" min="0" step="0.01" value="1.50" />
-
-                <label for="calculatedCapexPerM2" class="setting-label">Calculated CAPEX (AUD/m&sup2;):<span class="setting-tags"><span class="setting-chip annual">Annual PVT</span></span></label>
-                <input id="calculatedCapexPerM2" type="text" value="" readonly />
-
-                <label for="installedCostPerFt2" class="setting-label">Reference installed cost conversion (AUD/ft&sup2;; non-SI):<span class="setting-tags"><span class="setting-chip annual">Annual PVT</span></span></label>
-                <input id="installedCostPerFt2" type="text" value="" readonly />
-
-              </div>
-              <div class="note">
-                Uses installed $/W to fill primary Australian AUD/m&sup2; and a secondary non-SI AUD/ft&sup2; reference conversion.
-              </div>
-              </div>
-            </details>
+            <label for="capexInput" class="setting-label"><b>Installed PVT cost (AUD/m&sup2;):</b><span class="setting-tags"><span class="setting-chip annual">Annual PVT</span><span class="setting-chip industry">Industry</span><span class="setting-chip disabled">Assumed</span></span></label>
+            <input id="capexInput" type="number" min="0" step="10" value="540" />
+            <div class="note full-row">
+              Status: assumed screening value. It is entered directly in AUD/m&sup2;; no thermal-watt conversion is applied. Replace it with a quoted installed cost including the collector, mounting, hydraulics, controls and installation.
+            </div>
 
             <div class="economics-section-title full-row"><b>Financial period</b><span>Used for payback and NPV</span></div>
 
-            <label for="opexRateInput" class="setting-label">Annual operating cost (% of installed cost):<span class="setting-tags"><span class="setting-chip annual">Annual PVT</span></span></label>
+            <label for="opexRateInput" class="setting-label">Annual operating cost (% of installed cost):<span class="setting-tags"><span class="setting-chip annual">Annual PVT</span><span class="setting-chip industry">Industry</span><span class="setting-chip disabled">Assumed</span></span></label>
             <input id="opexRateInput" type="number" min="0" max="20" step="0.1" value="1.5" />
 
-            <label for="systemLifeInput" class="setting-label">System lifetime (years):<span class="setting-tags"><span class="setting-chip annual">Annual PVT</span></span></label>
+            <label for="systemLifeInput" class="setting-label">System lifetime (years):<span class="setting-tags"><span class="setting-chip annual">Annual PVT</span><span class="setting-chip industry">Industry</span><span class="setting-chip disabled">Assumed</span></span></label>
             <input id="systemLifeInput" type="number" min="1" max="50" step="1" value="25" />
 
-            <label for="discountRateInput" class="setting-label">Discount rate (%):<span class="setting-tags"><span class="setting-chip annual">Annual PVT</span></span></label>
+            <label for="discountRateInput" class="setting-label">Discount rate (%):<span class="setting-tags"><span class="setting-chip annual">Annual PVT</span><span class="setting-chip industry">Industry</span><span class="setting-chip disabled">Assumed</span></span></label>
             <input id="discountRateInput" type="number" min="0" max="30" step="0.1" value="6" />
 
           </div>

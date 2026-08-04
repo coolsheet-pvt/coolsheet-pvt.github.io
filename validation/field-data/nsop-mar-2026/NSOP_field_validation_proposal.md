@@ -1,4 +1,4 @@
-# Proposal - "SOAC March 2026 Field Validation" (report / page)
+# Proposal - "NSOP March 2026 Field Validation" (report / page)
 
 A proposed case-study report for the CoolSheet website. It is written so it can
 ship as a Markdown page or be adapted into an HTML validation page under
@@ -10,7 +10,7 @@ not a claim that the calculator is "validated."
 
 ## 1. Framing (put this at the top of the page)
 
-> This case study compares one operating PVT array (Sydney Olympic Aquatic
+> This case study compares one operating PVT array (North Sydney Olympic Pool at Milsons Point
 > Centre, 19 days of autumn 2026 monitoring) against the collector physics used
 > by CoolSheet. It is a **single-site, short-period field check**, not a
 > validation of CoolSheet's annual estimates. Certified laboratory efficiency is
@@ -21,17 +21,17 @@ not a claim that the calculator is "validated."
 ## 2. Comparison table (defensible rows only)
 
 "Model estimate" = the ISO 9806 first-order curve
-η = η₀ − a₁·(Tₘ − Tₐ)/G evaluated with the **SOAC certified coefficients**
+η = η₀ − a₁·(Tₘ − Tₐ)/G evaluated with the **NSOP certified coefficients**
 (η₀ = 0.4112, a₁ = 10.358 / wind 12.106) at the field's **own measured**
 conditions. This is the physics CoolSheet's Model B implements - it is *not* the
 public calculator's default-coefficient or TMY output.
 
-| # | Quantity | Field measured | Model estimate (ISO, SOAC coeffs) | Difference | Defensible? |
+| # | Quantity | Field measured | Model estimate (ISO, NSOP coeffs) | Difference | Defensible? |
 |---|---|---|---|---|---|
 | 1 | Thermal efficiency, bright sun (G ≥ 700 W/m²), matched Tₘ−Tₐ | **0.202** (median) | 0.321 (cert) / 0.305 (wind) | field = **0.63×** model; model over-predicts **+59 %** rel. | ✅ Yes - matched conditions, steady-ish points |
 | 2 | Thermal efficiency, all generating medians | 0.196 | 0.302 (cert) / 0.284 (wind) | field = 0.65× model | ✅ Yes, with wider spread |
 | 3 | Real-world derating factor (field ÷ certified ISO) | - | - | **≈ 0.60–0.65** | ✅ Yes - the headline number |
-| 4 | 19-day total thermal energy | 5,888 kWh (processed) | *not run* | - | ⚠️ Only if model driven by field weather + SOAC coeffs + steady mask |
+| 4 | 19-day total thermal energy | 5,888 kWh (processed) | *not run* | - | ⚠️ Only if model driven by field weather + NSOP coeffs + steady mask |
 | 5 | Annual energy | n/a (19-day campaign) | website annual TMY estimate | - | ❌ **Not comparable** (period, weather, season, aggregation all differ) |
 
 Rows 1–3 are the defensible content. Row 4 becomes defensible only after the
@@ -72,7 +72,7 @@ field-vs-certified gap - start-up, part-load, and plumbing/optical losses
 dominate.
 
 ### 4.3 Add a validation / case-study page
-Publish this SOAC study as a **case-study page** (linked from the Validation &
+Publish this NSOP study as a **case-study page** (linked from the Validation &
 references menu) that states plainly: certified curves are an envelope, real
 arrays derate, and a fully fair comparison requires field-weather-driven runs.
 This strengthens the thesis by showing the model's limits honestly.

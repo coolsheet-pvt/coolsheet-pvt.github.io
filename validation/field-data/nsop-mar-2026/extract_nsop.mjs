@@ -1,7 +1,7 @@
 // ============================================================================
-//  SOAC March 2026 field-data extractor
+//  NSOP March 2026 field-data extractor
 // ----------------------------------------------------------------------------
-//  Reads the embedded `const DATA = {...}` object from the CoolSheet SOAC
+//  Reads the embedded `const DATA = {...}` object from the CoolSheet NSOP
 //  dashboard HTML and writes clean, machine-readable copies of the raw arrays.
 //
 //  It does NOT alter, round, or recompute any values - every number written is
@@ -9,14 +9,14 @@
 //  kept out of this file on purpose (see analysis_report.md).
 //
 //  Run from the repo root:
-//    node validation/field-data/soac-mar-2026/extract_soac.mjs
+//    node validation/field-data/nsop-mar-2026/extract_nsop.mjs
 // ============================================================================
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const SRC = path.join(HERE, "CoolSheet_Dashboard_SOAC_Mar2026_WindCorrected.htm");
+const SRC = path.join(HERE, "CoolSheet_Dashboard_NSOP_Mar2026_WindCorrected.htm");
 
 // --- Locate and parse the DATA object literal (string-aware brace matching) ---
 const html = fs.readFileSync(SRC, "utf8");
@@ -51,7 +51,7 @@ function writeCsv(file, header, rows) {
 }
 
 // 1) meta -> JSON (verbatim) --------------------------------------------------
-fs.writeFileSync(path.join(HERE, "soac_meta.json"), JSON.stringify(DATA.meta, null, 2) + "\n");
+fs.writeFileSync(path.join(HERE, "nsop_meta.json"), JSON.stringify(DATA.meta, null, 2) + "\n");
 
 // 2) timeseries -> CSV (5-min columns, one row per timestamp) -----------------
 const ts = DATA.ts;
@@ -60,12 +60,12 @@ const tsCols = ["t", "T_in", "T_out", "T_amb", "T1", "T2", "flow", "delta_T",
 const nTs = ts.t.length;
 const tsRows = [];
 for (let i = 0; i < nTs; i++) tsRows.push(tsCols.map((k) => ts[k][i]));
-const nTsWritten = writeCsv("soac_timeseries.csv", tsCols, tsRows);
+const nTsWritten = writeCsv("nsop_timeseries.csv", tsCols, tsRows);
 
 // 3) daily energy -> CSV ------------------------------------------------------
 const daily = DATA.daily;
 const dailyRows = daily.date.map((d, i) => [d, daily.E_kWh[i]]);
-const nDaily = writeCsv("soac_daily_energy.csv", ["date", "E_kWh"], dailyRows);
+const nDaily = writeCsv("nsop_daily_energy.csv", ["date", "E_kWh"], dailyRows);
 
 // 4) operating scatter cloud -> CSV -------------------------------------------
 const sc = DATA.scatter;
@@ -73,10 +73,10 @@ const scCols = ["G", "eta", "P_kW", "delta_T", "T_in"];
 const nSc = sc.G.length;
 const scRows = [];
 for (let i = 0; i < nSc; i++) scRows.push(scCols.map((k) => sc[k][i]));
-const nScWritten = writeCsv("soac_scatter.csv", scCols, scRows);
+const nScWritten = writeCsv("nsop_scatter.csv", scCols, scRows);
 
 console.log("Extracted from:", path.basename(SRC));
-console.log("  soac_meta.json        (site/model metadata, verbatim)");
-console.log(`  soac_timeseries.csv   ${nTsWritten} rows x ${tsCols.length} cols (5-min)`);
-console.log(`  soac_daily_energy.csv ${nDaily} rows`);
-console.log(`  soac_scatter.csv      ${nScWritten} rows x ${scCols.length} cols`);
+console.log("  nsop_meta.json        (site/model metadata, verbatim)");
+console.log(`  nsop_timeseries.csv   ${nTsWritten} rows x ${tsCols.length} cols (5-min)`);
+console.log(`  nsop_daily_energy.csv ${nDaily} rows`);
+console.log(`  nsop_scatter.csv      ${nScWritten} rows x ${scCols.length} cols`);

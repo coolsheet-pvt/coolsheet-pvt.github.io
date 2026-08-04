@@ -5,7 +5,7 @@ import { pathToFileURL } from "node:url";
 
 const pageUrl = pathToFileURL(path.resolve("index.html")).href;
 const modernPageUrl = `${pageUrl}?ui=modern`;
-const soacValidationUrl = pathToFileURL(path.resolve("pages/soac-field-validation.html")).href;
+const nsopValidationUrl = pathToFileURL(path.resolve("pages/nsop-field-validation.html")).href;
 const pvValidationUrl = pathToFileURL(path.resolve("pages/pv-external-validation.html")).href;
 const validationHubUrl = pathToFileURL(path.resolve("pages/validation-hub.html")).href;
 const mainsValidationUrl = pathToFileURL(path.resolve("pages/cer_comparison.html")).href;
@@ -144,11 +144,9 @@ test("calculator UI loads without console errors", async ({ page }) => {
   await expect(economicsSettings.locator(".advanced-grid").first()).toHaveCSS("row-gap", "7px");
   await expect(economicsSettings.locator(".economics-section-title").nth(1)).toHaveCSS("padding-top", "10px");
   await expect(economicsSettings.locator(".setting-chip").first()).toBeHidden();
-  await expect(page.locator("#autoCapexFromWatts")).toBeVisible();
-  await expect(page.locator("#autoCapexFromWatts")).toBeChecked();
-  await expect(page.locator("#pvInstalledCostPerW")).toBeHidden();
-  await economicsSettings.locator(".cost-conversion-details > summary").click();
-  await expect(page.locator("#pvInstalledCostPerW")).toBeVisible();
+  await expect(page.locator("#capexInput")).toHaveValue("540");
+  await expect(page.locator("#autoCapexFromWatts")).toHaveCount(0);
+  await expect(economicsSettings.getByText(/entered directly in AUD\/m²/i)).toBeVisible();
   await expect(page.getByText(/loading weather sends the address to OpenStreetMap/i)).toHaveCount(0);
   await page.locator("#area").fill("321");
   await page.locator("#area").dispatchEvent("change");
@@ -162,7 +160,7 @@ test("calculator UI loads without console errors", async ({ page }) => {
 });
 
 test("calculator and validation pages fit common phone, tablet and desktop widths", async ({ page }) => {
-  const pages = [pageUrl, validationHubUrl, soacValidationUrl, pvValidationUrl, mainsValidationUrl];
+  const pages = [pageUrl, validationHubUrl, nsopValidationUrl, pvValidationUrl, mainsValidationUrl];
   const viewports = [
     { width:320, height:568 },
     { width:390, height:844 },
@@ -212,7 +210,7 @@ test("validation pages lead with simple visuals and keep technical material opti
   await expect(page.locator("#resultChart")).toBeVisible();
   await expect(page.locator(".easy-steps")).not.toHaveAttribute("open", "");
 
-  await page.goto(soacValidationUrl);
+  await page.goto(nsopValidationUrl);
   await expect(page.locator("#matchedChart")).toBeVisible();
   await expect(page.getByText("Measured heat vs Model A")).toBeVisible();
   await expect(page.locator(".technical-evidence")).not.toHaveAttribute("open", "");
@@ -279,14 +277,14 @@ test("full Sydney fixture calculation uses net AC and fits a phone", async ({ pa
   expect(boundary.temperatureDatasetLabels).toContain("Water Temp Rise \u0394T (\u00B0C)");
   expect(boundary.temperatureTableText).toContain("Water rise \u0394T");
   expect(boundary.reportHtml).toContain("Detailed Annual Results");
-  expect(boundary.reportHtml).toContain("Economic Analysis");
-  expect(boundary.reportHtml).toContain("Levelised Cost");
+  expect(boundary.reportHtml).toContain("Gross-supply economic upper bound");
+  expect(boundary.reportHtml).toContain("Levelised cost of gross combined supply");
   expect(boundary.reportHtml).toContain("Monthly System Results");
   expect(boundary.reportHtml).toContain("Data Sources And Reproducibility");
   expect(boundary.reportHtml).toContain("Avg daytime outlet temp");
   expect(boundary.reportHtml).toContain("Avg water temperature rise");
   expect(boundary.reportHtml).toContain("Water Tin / Tout / rise");
-  expect(boundary.reportHtml).toContain("PVT supply value");
+  expect(boundary.reportHtml).toContain("Gross-supply upper-bound value");
 
   await page.evaluate(() => {
     document.getElementById("modelB").checked = true;
@@ -387,18 +385,18 @@ test("restored Step 2 content is stable on first load and animates on user chang
   expect(await page.locator(".workflow-step-demand .reveal").count()).toBeGreaterThan(0);
 });
 
-test("SOAC field-validation page is linked, interactive, and works offline", async ({ page }) => {
+test("NSOP field-validation page is linked, interactive, and works offline", async ({ page }) => {
   const errors = [];
   page.on("console", msg => {
     if (msg.type() === "error") errors.push(msg.text());
   });
 
   await page.goto(validationHubUrl);
-  const validationLink = page.locator('a[href="soac-field-validation.html"]').first();
+  const validationLink = page.locator('a[href="nsop-field-validation.html"]').first();
   await expect(validationLink).toBeVisible();
 
-  await page.goto(soacValidationUrl);
-  await expect(page.locator("h1")).toContainText("SOAC field result compared with CoolSheet");
+  await page.goto(nsopValidationUrl);
+  await expect(page.locator("h1")).toContainText("NSOP field result compared with CoolSheet");
   await expect(page.locator("#headlineMatchedError")).toHaveText("−6.2%");
   await expect(page.locator("#dataStatus")).toHaveAttribute("data-status", "fallback");
   await expect(page.locator("canvas")).toHaveCount(5);
