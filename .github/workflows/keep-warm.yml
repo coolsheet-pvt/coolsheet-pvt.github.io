@@ -20,24 +20,32 @@ permissions:
 
 concurrency:
   group: keep-warm
-  cancel-in-progress: true
+  # Never cancel a warm-up that is already in flight. Cancelling one reports the
+  # run as failed and emails the repository owner, which is noise: the ping it
+  # would have cancelled is the useful work, and the next tick is 10 min away.
+  cancel-in-progress: false
 
 jobs:
   ping:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 6
     steps:
       - name: Ping the weather service health endpoint
         run: |
           url="https://coolsheet-pvt-tmy-api.onrender.com/health"
+          # The retry budget must stay inside timeout-minutes above. If it does
+          # not, an unreachable service means the runner kills the job before the
+          # loop ends, and GitHub reports a cancelled run rather than the warning
+          # below - a service outage then looks like a broken workflow.
+          #   worst case = 3 x 75s request + 2 x 10s backoff = 245s of 360s.
           for attempt in 1 2 3; do
-            code=$(curl -sS -o /tmp/health.json -w '%{http_code}' --max-time 120 "$url" || echo 000)
+            code=$(curl -sS -o /tmp/health.json -w '%{http_code}' --max-time 75 "$url") || code="000"
             if [ "$code" = "200" ]; then
               echo "healthy on attempt $attempt"
               cat /tmp/health.json
               exit 0
             fi
-            echo "attempt $attempt returned HTTP $code; waiting before retry"
-            sleep 30
+            echo "attempt $attempt returned HTTP $code"
+            [ "$attempt" = "3" ] || sleep 10
           done
           echo "::warning::weather service did not return HTTP 200 after 3 attempts"
