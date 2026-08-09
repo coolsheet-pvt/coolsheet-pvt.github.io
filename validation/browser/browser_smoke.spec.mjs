@@ -370,19 +370,31 @@ test("industry percentage metrics render proportional bars", async ({ page }) =>
 });
 
 test("restored Step 2 content is stable on first load and animates on user change", async ({ page }) => {
+  // Restoring stored inputs must not animate Step 2; only a user change should.
   await page.goto(pageUrl);
-  await page.evaluate(() => {
-    localStorage.setItem("pvtCalcInputs.v1", JSON.stringify({ industrySelect:"dairy_farm" }));
-    localStorage.setItem("pvtCalcInputs.defaultsVersion", "2026-07-pvt-cooling-default-on");
-  });
+  await page.locator("#industrySelect").selectOption("dairy_farm");
   await page.reload();
-  await expect(page.locator("#industrySelect")).toHaveValue("dairy_farm");
-  await expect(page.locator("#dairyAssumptionsPanel")).toBeVisible();
   await expect(page.locator(".workflow-step-demand .reveal")).toHaveCount(0);
 
   await page.locator("#industrySelect").selectOption("brewery");
   await expect(page.locator("#breweryAssumptionsPanel")).toBeVisible();
   expect(await page.locator(".workflow-step-demand .reveal").count()).toBeGreaterThan(0);
+});
+
+test("a stored industry does not resume on reload", async ({ page }) => {
+  // The calculator opens on "no industry" so a reload starts from PVT supply
+  // only. The industry's own inputs are still restored underneath.
+  await page.goto(pageUrl);
+  await page.locator("#industrySelect").selectOption("dairy_farm");
+  await expect(page.locator("#dairyAssumptionsPanel")).toBeVisible();
+
+  await page.reload();
+  await expect(page.locator("#industrySelect")).toHaveValue("");
+  await expect(page.locator("#dairyAssumptionsPanel")).toBeHidden();
+
+  await page.locator("#industrySelect").selectOption("dairy_farm");
+  await expect(page.locator("#dairyAssumptionsPanel")).toBeVisible();
+  await expect(page.locator("#throughputInput")).toHaveValue("5000000");
 });
 
 test("NSOP field-validation page is linked, interactive, and works offline", async ({ page }) => {

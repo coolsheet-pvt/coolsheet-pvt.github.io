@@ -7499,6 +7499,14 @@ const INPUT_STORE_KEY = "pvtCalcInputs.v1";
 const INPUT_DEFAULTS_VERSION_KEY = "pvtCalcInputs.defaultsVersion";
 const INPUT_DEFAULTS_VERSION = "2026-08-direct-capex-and-net-payback";
 
+// Inputs that always start from their HTML default, even when a previous
+// session stored a value. The industry selector opens on "no industry" so the
+// calculator starts from PVT supply only instead of silently resuming whichever
+// scenario happened to be open last. The industry's own inputs are still
+// restored, so re-picking it brings the scenario straight back. Shared "#s="
+// links are applied after this and still carry their industry.
+const SESSION_ONLY_INPUT_IDS = ["industrySelect"];
+
 // Serialize every user-set input/select.
 function collectInputState(){
   const data = {};
@@ -7540,6 +7548,7 @@ function restoreInputsFromStorage(){
       localStorage.setItem(INPUT_DEFAULTS_VERSION_KEY, INPUT_DEFAULTS_VERSION);
       localStorage.setItem(INPUT_STORE_KEY, JSON.stringify(data));
     }
+    for (const id of SESSION_ONLY_INPUT_IDS) delete data[id];
     applyInputState(data);
   } catch(_e){}
 }
