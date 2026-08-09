@@ -5705,7 +5705,7 @@ function buildHowItWorksSvg(){
   // Right column: DEMAND
   box(520, 422, 300, 66, ["4b. Mains water temperature", "BC-Aus fit to legacy CER domestic decks", "closest corrected SWH reference of four"], "#f2fbf6", "#8fc9a6", "#16202b", 0, "mains-temp");
   arrow(670, 488, 670, 520);
-  box(520, 522, 300, 66, ["5b. Industry load profiles", "dairy / brewery / hotel / aquatic / laundry", "→ hourly heat + electricity demand"], "#f2fbf6", "#8fc9a6", "#16202b", 0, "load-profiles");
+  box(520, 522, 300, 66, ["5b. Industry load profiles", "dairy / brewery / hotel / aquatic", "→ hourly heat + electricity demand"], "#f2fbf6", "#8fc9a6", "#16202b", 0, "load-profiles");
 
   // Converge
   arrow(190, 588, 348, 642);
@@ -7849,4 +7849,28 @@ document.getElementById("howItWorksStepModal").addEventListener("click", ev => {
 document.getElementById("btnCloseHowItWorksStep").addEventListener("click", closeHowItWorksStep);
 document.addEventListener("keydown", ev => { if (ev.key === "Escape"){ closeHowItWorksStep(); closeMainsChart(); closeProcessDiagram(); closeProcessUsage(); } });
 updateSupplySectionVisibility();
+
+// ================================================================
+//  UNIMPLEMENTED INDUSTRIES
+// ================================================================
+// Industries whose demand model is not implemented. They stay visible in the
+// dropdown so the intended scope is legible, but are struck through, greyed
+// and unselectable. The strike uses strikeText() rather than CSS because
+// text-decoration on <option> is only honoured by Firefox.
+const UNIMPLEMENTED_INDUSTRIES = ["commercial_laundry"];
+{
+  const industrySelect = document.getElementById("industrySelect");
+  for (const key of UNIMPLEMENTED_INDUSTRIES){
+    const option = industrySelect?.querySelector(`option[value="${key}"]`);
+    if (!option) continue;
+    option.disabled = true;
+    option.textContent = `${strikeText(option.textContent.trim())} (not implemented)`;
+  }
+  // Assigning select.value selects a disabled option, so a stored scenario or a
+  // shared #s= link could still restore one. Fall back to "no industry".
+  if (industrySelect && UNIMPLEMENTED_INDUSTRIES.includes(industrySelect.value)){
+    industrySelect.value = "";
+  }
+}
+
 syncIndustrySelectionUI(document.getElementById("industrySelect").value, false, false);

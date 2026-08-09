@@ -90,54 +90,10 @@ const INDUSTRIES = [
       await setInputValue(page, "#hotelOccupancyInput", "90");
     },
     variantName: "higher occupancy"
-  },
-  {
-    key: "commercial_laundry",
-    name: "Commercial Laundry",
-    classification: "assumption-based hot-water washing model with hand-equation checks",
-    requiredInputs: ["#laundryInputsPanel", "#laundryKgPerDay", "#laundryWaterUseLPerKg"],
-    baseline: async page => {
-      await page.selectOption("#industrySelect", "commercial_laundry");
-      await setInputValue(page, "#laundryKgPerDay", "1500");
-      await setInputValue(page, "#laundryOperatingDaysPerWeek", "6");
-      await setInputValue(page, "#laundryWashTempC", "60");
-      await setInputValue(page, "#laundryWaterUseLPerKg", "10");
-      await setInputValue(page, "#laundryHotWaterFraction", "0.65");
-      await setInputValue(page, "#laundryWarmRinseFraction", "0.20");
-      await setInputValue(page, "#laundryWarmRinseTempC", "35");
-      await setInputValue(page, "#laundrySystemLossFraction", "0");
-    },
-    variant: async page => {
-      await setInputValue(page, "#laundryKgPerDay", "2200");
-    },
-    extraCheck: async page => page.evaluate(() => {
-      const inputs = getCommercialLaundryInputs();
-      const selectedKeys = getSelectedProcessKeys();
-      const baseDemand = calcCommercialLaundryHourlyDemand({
-        ...inputs,
-        selectedKeys,
-        met: CURRENT_MET,
-        mains: CURRENT_MAINS
-      }).thermalHourly.reduce((sum, value) => sum + value, 0);
-      const coldMains = {
-        annualAvgC: 10,
-        byDay: Object.fromEntries(Array.from({ length: 365 }, (_, idx) => [idx + 1, 10]))
-      };
-      const colderDemand = calcCommercialLaundryHourlyDemand({
-        ...inputs,
-        selectedKeys,
-        met: CURRENT_MET,
-        mains: coldMains
-      }).thermalHourly.reduce((sum, value) => sum + value, 0);
-      return {
-        name: "lower mains-water temperature increases laundry heat demand",
-        pass: colderDemand > baseDemand,
-        baseDemand,
-        colderDemand
-      };
-    }),
-    variantName: "higher laundry mass"
   }
+  // Commercial laundry is deliberately absent: the dropdown entry is a disabled
+  // placeholder, so there is no UI path to exercise it. The demand equations
+  // themselves stay covered numerically by validation/unit/test_industry.mjs.
 ];
 
 test.describe.configure({ mode: "serial", timeout: 900000 });
@@ -526,7 +482,6 @@ function validateScenario(row) {
   if (row.ui.canvasCount < 1) failures.push("charts did not render");
   if (!row.variant?.pass) failures.push(`${row.variant?.name || "variant"} did not increase heat demand`);
   if (row.extraCheck && !row.extraCheck.pass) failures.push(row.extraCheck.name);
-  if (row.industry.key === "commercial_laundry" && Math.abs(row.outputs.electricDemandKWh || 0) > 0.1) failures.push("commercial laundry appears to include nonzero site electricity");
   if (row.exportShareReport.hourlyCsv && !row.exportShareReport.hourlyCsv.ok) failures.push(`hourly CSV not verified: ${row.exportShareReport.hourlyCsv.error || "bad content"}`);
   if (row.exportShareReport.summaryCsv && !(row.exportShareReport.summaryCsv.ok && row.exportShareReport.summaryCsv.length > 100)) failures.push("summary CSV content not verified");
   if (row.exportShareReport.reportHtml && !row.exportShareReport.reportHtml.ok) failures.push(`PDF/report HTML content not verified: ${row.exportShareReport.reportHtml.error || "bad content"}`);

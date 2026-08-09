@@ -477,13 +477,29 @@ test("current CoolSheet PV scenario transfers into the external check", async ({
   await expect(page.locator("#scenarioPlainResult")).toContainText("both external results");
 });
 
-test("commercial laundry controls are exposed", async ({ page }) => {
+test("commercial laundry is an unselectable placeholder", async ({ page }) => {
   await page.goto(pageUrl);
-  await page.selectOption("#industrySelect", "commercial_laundry");
-  await expect(page.locator("#laundryInputsPanel")).toBeVisible();
-  await expect(page.locator("#throughputInput")).toBeHidden();
-  await expect(page.locator("#laundryKgPerDay")).toHaveValue("1500");
-  await expect(page.locator("#laundryWaterUseLPerKg")).toHaveValue("10");
+  const option = page.locator('#industrySelect option[value="commercial_laundry"]');
+  await expect(option).toBeDisabled();
+  await expect(option).toContainText("(not implemented)");
+  // strikeText() overlays U+0336 on each character of the label.
+  expect(await option.textContent()).toMatch(/̶/);
+  await expect(page.locator("#industrySelect")).toHaveValue("");
+  await expect(page.locator("#laundryInputsPanel")).toBeHidden();
+});
+
+test("a stored commercial-laundry scenario falls back to no industry", async ({ page }) => {
+  // Assigning select.value selects a disabled option, so restoring a stored or
+  // shared scenario has to be guarded explicitly.
+  await page.goto(pageUrl);
+  await page.evaluate(() => {
+    const data = JSON.parse(localStorage.getItem(INPUT_STORE_KEY) || "{}");
+    data.industrySelect = "commercial_laundry";
+    localStorage.setItem(INPUT_STORE_KEY, JSON.stringify(data));
+  });
+  await page.reload();
+  await expect(page.locator("#industrySelect")).toHaveValue("");
+  await expect(page.locator("#laundryInputsPanel")).toBeHidden();
 });
 
 test("alternative monthly balance graph coexists with every legacy industry graph", async ({ page }) => {
