@@ -28,7 +28,7 @@ if (CITIES.length === 0) {
 const INDUSTRIES = [
   {
     key: "dairy_farm",
-    name: "Dairy Farm",
+    name: "Dairy Processing – market milk",
     classification: "benchmarked plus hand-equation checked",
     requiredInputs: ["#throughputInput"],
     baseline: async page => {

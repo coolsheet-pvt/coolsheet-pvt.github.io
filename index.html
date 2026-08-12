@@ -316,14 +316,14 @@
         </div>
       </header>
       <div class="full-row" style="margin:0 0 6px;padding-top:0;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
-        <b style="font-size:14px;">Industry thermal demand</b>
+        <b style="font-size:14px;">Industry thermal and electrical demand</b>
         <button id="btnOpenProcessDiagram" type="button" style="visibility:hidden;padding:6px 10px;font-size:12px;line-height:1.2;">Process Diagram</button>
       </div>
 
       <label for="industrySelect"><b>Industry:</b></label>
       <select id="industrySelect">
         <option value="">- None (PVT supply only) -</option>
-        <option value="dairy_farm">Dairy Farm</option>
+        <option value="dairy_farm">Dairy Processing &ndash; market milk</option>
         <option value="brewery">Brewery</option>
         <option value="aquatic_centres">Aquatic Centres</option>
         <option value="hotel">Hotel</option>
@@ -350,7 +350,7 @@
         <div style="margin:8px 0;padding:10px;background:#f8fbf7;border-radius:6px;border:1px solid #cfe5c9;">
           <div class="grid">
             <label for="dairyElectricKWhPerKL"><b>Electricity intensity (kWh/kL milk):</b></label>
-            <input id="dairyElectricKWhPerKL" type="number" min="0" step="0.1" value="51.7" />
+            <input id="dairyElectricKWhPerKL" type="number" min="0" step="0.1" value="48" />
             <label for="dairyFattyWater"><b>Fatty-film rinse water (L/L milk):</b></label>
             <input id="dairyFattyWater" type="number" min="0" step="0.01" value="0.30" />
             <label for="dairyCipWater"><b>CIP preheat water (L/L milk):</b></label>

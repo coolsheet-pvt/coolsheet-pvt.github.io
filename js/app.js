@@ -1715,7 +1715,7 @@ const INDUSTRY_PROCESSES = {
 };
 
 const INDUSTRY_UI = {
-  dairy_farm:         { name:"Dairy Farm",         throughput:"Raw milk throughput (L per year):", defaultVal:5000000 },
+  dairy_farm:         { name:"Dairy Processing – market milk", throughput:"Raw milk throughput (L per year):", defaultVal:5000000 },
   brewery:            { name:"Brewery",            throughput:"Beer produced (L per year):",       defaultVal:500000  },
   aquatic_centres:    { name:"Aquatic Centres",    throughput:"Water volume (L):",                 defaultVal:5000000 },
   hotel:              { name:"Hotel",              throughput:"Occupied room-nights per year:",     defaultVal:60000   },
@@ -1736,7 +1736,7 @@ function industryEvidenceText(industryKey){
 }
 
 const INDUSTRY_DIAGRAMS = {
-  dairy_farm: { title:"Dairy Farm Process Diagram", src:"assets/dairy-process-diagram.png" },
+  dairy_farm: { title:"Dairy Processing – market milk: Process Diagram", src:"assets/dairy-process-diagram.png" },
   brewery:    { title:"Brewery Process Diagram",    src:"assets/brewery-process-diagram.png" }
 };
 
@@ -1761,7 +1761,11 @@ const DAIRY_PROCESS_PARAMS = {
 };
 
 const DAIRY_ELEC_PARAMS = {
-  kWhPerKL: 51.7,
+  // Australian national average electricity intensity, per Dairy Australia
+  // "Saving energy on dairy farms" (citing the RMCG national report, 2015).
+  // Previously 51.7, which was the mean of a ten-farm Northern Rivers audit
+  // rather than a national benchmark.
+  kWhPerKL: 48,
   weights24: [0.1,0.05,0.05,0.05,0.05,3,3,3,1,0.5,0.3,0.2,0.2,0.2,0.2,3,3,3,1,0.5,0.2,0.1,0.1,0.1]
 };
 
@@ -1859,7 +1863,7 @@ function _normW(arr){
 
 // Scale monthly seasonal factors so the day-weighted annual mean is exactly 1.0.
 // Keeps the seasonal shape but makes annual totals match the stated benchmarks
-// (e.g. dairy 51.7 kWh/kL, throughput x kWater litres of process water per year).
+// (e.g. dairy 48 kWh/kL, throughput x kWater litres of process water per year).
 // Without this, the raw dairy factors averaged ~0.94, understating annual demand ~6%.
 function normalizeSeasonalFactors(seasonal){
   let daySum = 0;
@@ -2992,7 +2996,7 @@ function buildDairyDailyShapeChart(processByHour, met, activeKeys, profileLabel)
 
   svg.push(`<text x="${(mg.left+width-mg.right)/2}" y="${height-8}" text-anchor="middle" font-size="12" fill="#333">Hour of Day</text>`);
   svg.push(`<text x="16" y="${height/2}" text-anchor="middle" font-size="12" fill="#333" transform="rotate(-90 16 ${height/2})">Demand (kWh/h)</text>`);
-  svg.push(`<text x="${(mg.left+width-mg.right)/2}" y="18" text-anchor="middle" font-size="14" font-weight="600" fill="#222">Hourly Thermal Demand - Dairy Farm</text>`);
+  svg.push(`<text x="${(mg.left+width-mg.right)/2}" y="18" text-anchor="middle" font-size="14" font-weight="600" fill="#222">Hourly Thermal Demand: Dairy Processing – market milk</text>`);
 
   return `<div class="note" style="margin:0 0 6px;">Profile: "${profileLabel}". Values are annual averages per hour-of-day.</div>
     <svg class="chart-svg" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet">${svg.join("")}</svg>`;
@@ -3245,7 +3249,7 @@ function buildDairyModelBasisHtml(){
       <tr><td>Boiler feedwater pre-heat</td><td>${DP.boiler_preheat.kWater.toFixed(2)} L/L milk, ${DP.boiler_preheat.T_target.toFixed(0)} C</td><td>Editable assumption; ${src("RACE context", raceHref)}</td></tr>
       <tr><td>Electrical intensity</td><td>${D.electricalKWhPerKL.toFixed(1)} kWh/kL</td><td>Editable scenario; ${src("Australian audit range", benchmarkHref)}</td></tr>
     </table>
-    <p class="note" style="margin:10px 0 0;">Cross-check: Australian dairy energy audits average &asymp;48 kWh/kL (range 27&ndash;75 kWh/kL), so the 51.7 kWh/kL benchmark sits close to the national average. ${src("Energy Smart Farming (Australia)", ausAuditHref)}</p>`;
+    <p class="note" style="margin:10px 0 0;">The 48 kWh/kL default is the Australian national average reported by Dairy Australia (source: RMCG national report, 2015); individual farm audits range 27&ndash;75 kWh/kL. This is an <b>electricity</b> intensity covering the whole dairy &mdash; milk cooling, milk harvesting and water heating &mdash; not a heat demand. Only the process-water rows above drive thermal demand. ${src("Energy Smart Farming (Australia)", ausAuditHref)}</p>`;
 }
 
 function buildBreweryModelBasisHtml(){
@@ -6594,7 +6598,7 @@ async function calcAnnualPVT(){
           <div class="dairy-result-head">
             <div class="dairy-intro-card">
               <div class="dairy-kicker">Dairy load profile</div>
-              <h3>Dairy Farm - ${profileLabels[dairyProfileType]}</h3>
+              <h3>Dairy Processing – market milk: ${profileLabels[dairyProfileType]}</h3>
               <div class="dairy-meta-row">
                 <span class="dairy-meta-pill"><b>Milk throughput</b><strong>${(throughput_L/1000).toLocaleString(undefined,{maximumFractionDigits:0})} kL/yr</strong></span>
                 <a class="dairy-shape-link" href="#" onclick="openDairyDailyShape(event)">Daily demand shape</a>

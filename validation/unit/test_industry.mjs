@@ -72,7 +72,7 @@ console.log("\n# DAIRY  (throughput 5,000,000 L milk; mains "+MAINS_C+"C)");
   const keys=["fatty_film_rinse","cip_preheating","boiler_preheat"];
   const r=mod.calcDairyHourlyDemand(T,"continuous",keys,met,mains);
   const elec=sum(r.electricHourly), th=sum(r.thermalHourly);
-  near("Electrical = 51.7 kWh/kL benchmark", elec, 51.7*(T/1000), 0.5);
+  near("Electrical = 48 kWh/kL benchmark", elec, 48*(T/1000), 0.5);
   const kW=keys.reduce((a,k)=>a+mod.DAIRY_PROCESS_PARAMS[k].kWater,0); // 1.37
   const expTh=T*kW*4.184*(35-MAINS_C)/3600;
   near("Thermal = V*cp*dT  (1.37 L/L milk -> 35C)", th, expTh, 1);
