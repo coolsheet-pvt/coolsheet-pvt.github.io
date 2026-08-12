@@ -1,3 +1,6 @@
+// CoolSheet PVT Calculator
+// Built by Michael Lo Russo, Thai An (Evan) Dang and Jason Fu - UNSW Sydney.
+//
 // Application logic for the Annual PVT Calculator (extracted from index.html).
 // Loaded at the end of <body>, after Chart.js and bc_aus_zone_constants.js.
 

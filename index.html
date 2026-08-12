@@ -359,7 +359,6 @@
             <input id="dairyBoilerWater" type="number" min="0" step="0.01" value="0.50" />
             <label for="dairyTargetTemp"><b>Preheat target (&deg;C):</b></label>
             <input id="dairyTargetTemp" type="number" min="15" max="95" step="1" value="35" />
-            <div class="note full-row">The Australian audit electricity range is approximately 27&ndash;75 kWh/kL. The water rates and schedules are traceable legacy project assumptions, not published Australian coefficients. The 35 &deg;C value is a PVT preheat cap, not the final sanitising temperature. Replace all of them with site meter and cleaning-cycle data where available.</div>
           </div>
         </div>
       </div>
@@ -373,15 +372,17 @@
             <input id="breweryWholeSiteWater" type="number" min="0" step="0.1" value="4.0" />
             <label for="breweryCipWater"><b>CIP/cleaning preheat water (L/L beer):</b></label>
             <input id="breweryCipWater" type="number" min="0" step="0.01" value="0.80" />
-            <label for="breweryRinseWater"><b>Packaging rinse preheat water (L/L beer):</b></label>
-            <input id="breweryRinseWater" type="number" min="0" step="0.01" value="0.45" />
+            <div class="full-row paired-field-row">
+              <label for="breweryRinseWater"><b>Packaging rinse preheat water (L/L beer):</b></label>
+              <input id="breweryRinseWater" type="number" min="0" step="0.01" value="0.45" />
+              <label for="breweryRinseTarget"><b>Packaging-rinse PVT delivery cap (&deg;C):</b></label>
+              <input id="breweryRinseTarget" type="number" min="15" max="95" step="1" value="40" />
+            </div>
             <label for="breweryBoilerWater"><b>Boiler makeup preheat water (L/L beer):</b></label>
             <input id="breweryBoilerWater" type="number" min="0" step="0.01" value="0.60" />
             <label for="breweryCipTarget"><b>Cleaning/boiler PVT delivery cap (&deg;C):</b></label>
             <input id="breweryCipTarget" type="number" min="15" max="95" step="1" value="45" />
-            <label for="breweryRinseTarget"><b>Packaging-rinse PVT delivery cap (&deg;C):</b></label>
-            <input id="breweryRinseTarget" type="number" min="15" max="95" step="1" value="40" />
-            <div class="note full-row">Australian evidence supports the whole-site 4 L/L cross-check and the process categories, not the three process allocations. The 40-45 &deg;C values are PVT delivery caps, not final CIP or brewing temperatures. Use facility batch schedules, CIP records, packaging data and meters where available.</div>
+            <div class="note full-row">The 40&ndash;45 &deg;C values are PVT delivery caps, not final CIP or brewing temperatures. Use site data where available.</div>
           </div>
         </div>
       </div>
@@ -713,6 +714,8 @@
     </details>
     <div class="footer-bottom">
       <span>&copy; 2026 UNSW Sydney</span>
+      <span aria-hidden="true">&middot;</span>
+      <span>Built by Michael Lo Russo, Thai An (Evan) Dang and Jason Fu</span>
       <span aria-hidden="true">&middot;</span>
       <a href="https://docs.google.com/forms/d/e/1FAIpQLSce0xTcsqk8rcy5BInIdqWTnlTXhwKNfoV75qbbov0AbQ0-zA/viewform?embedded=true" target="_blank" rel="noopener">Feedback</a>
     </div>

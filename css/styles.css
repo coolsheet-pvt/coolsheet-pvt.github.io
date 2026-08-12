@@ -79,6 +79,10 @@ button:active{background:#1a5f9a;transform:scale(0.96) translateY(0);box-shadow:
 .ok{color:#0b6b2d;}
 .loading{color:#0066cc;}
 .full-row{grid-column:1 / -1;}
+/* Two related label/input pairs sharing one row - a rate and the temperature
+   cap that belongs to it. Labels get the wider share; the values are short.
+   Collapses with the parent .grid on narrow screens. */
+.paired-field-row{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,1.5fr) minmax(0,1fr);gap:10px 16px;align-items:center;}
 #downloadLink,.secondary-action{display:none;margin-top:10px;padding:10px 14px;border:1px solid #a0bdd4;border-radius:6px;background:#d0e2f0;color:#2c5a82;text-decoration:none;font-size:13px;font-weight:600;line-height:1.2;opacity:0.8;transition:background 0.18s,transform 0.14s,box-shadow 0.18s,opacity 0.18s;}
 #downloadLink:hover,.secondary-action:hover{background:#bdd4e8;opacity:1;transform:translateY(-2px);box-shadow:0 4px 12px rgba(44,90,130,0.2);}
 #downloadLink:active,.secondary-action:active{transform:scale(0.96);box-shadow:none;}
@@ -93,7 +97,7 @@ button:active{background:#1a5f9a;transform:scale(0.96) translateY(0);box-shadow:
 #supplyChartsPanel .display-controls{margin-top:0;}
 .temperature-tmy-note{margin:10px 0;padding:9px 11px;border-left:3px solid #4f86ad;background:#f3f8fc;color:#38556b;font-size:12px;line-height:1.45;}
 .temperature-tmy-note:empty{display:none;}
-@media (max-width:780px){.grid{grid-template-columns:1fr;}.brand-hero{padding:14px 16px;}.brand-logos{justify-content:center;}.brand-logo-coolsheet{width:min(100%,420px);max-height:74px;}.brand-logo-unsw{width:120px;max-height:120px;margin-top:-40px;margin-bottom:-40px;}.brand-title{font-size:24px;text-align:center;}}
+@media (max-width:780px){.grid{grid-template-columns:1fr;}.paired-field-row{grid-template-columns:1fr;}.brand-hero{padding:14px 16px;}.brand-logos{justify-content:center;}.brand-logo-coolsheet{width:min(100%,420px);max-height:74px;}.brand-logo-unsw{width:120px;max-height:120px;margin-top:-40px;margin-bottom:-40px;}.brand-title{font-size:24px;text-align:center;}}
 #processChecks{display:grid;grid-template-columns:1fr;gap:8px;}
 .process-check{margin:0;font-size:13px;}
 .process-check label{display:grid;grid-template-columns:18px 1fr;align-items:start;column-gap:8px;cursor:pointer;}
@@ -674,7 +678,8 @@ button:disabled{opacity:0.55;cursor:wait;transform:none;box-shadow:none;}
 .footer-sources dt{font-weight:700;color:#425a70;}
 .footer-sources dd{margin:0;}
 .site-footer a{color:#1a5f9a;}
-.footer-bottom{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;color:#6a7885;}
+/* Wraps because the credit line pushes this past a phone's width otherwise. */
+.footer-bottom{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:4px 8px;margin-top:10px;color:#6a7885;text-align:center;}
 .footer-bottom a{color:#5a6a7a;text-underline-offset:2px;}
 @media (max-width:780px){
   body{margin:10px;background-size:100% 600px;}
@@ -762,6 +767,10 @@ button:disabled{opacity:0.55;cursor:wait;transform:none;box-shadow:none;}
   .flow-suggestion-action{width:100%;}
   .annual-actions,.industry-actions{align-items:stretch;gap:8px;}
   .annual-actions .note,.industry-actions .note{width:100%;font-size:12px;}
+  /* One footer item per line. The middot separators only read correctly when
+     the items sit on a single row, so drop them once the footer stacks. */
+  .footer-bottom{flex-direction:column;gap:6px;}
+  .footer-bottom [aria-hidden="true"]{display:none;}
   .display-controls{display:grid;grid-template-columns:1fr;gap:8px;margin-top:12px;}
   .display-controls label{min-height:32px;}
   .chart-container{height:300px !important;margin:12px 0;overflow-x:auto;}
