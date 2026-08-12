@@ -92,7 +92,7 @@ console.log("\n# BREWERY  (throughput 500,000 L beer; mains "+MAINS_C+"C)");
   near("Electrical = 11.50 kWh/hL benchmark", elec, 0.115*T, 0.5);
   const P=mod.BREWERY_PROCESS_PARAMS;
   let expTh=0; for(const k of keys) expTh += T*P[k].kWater*4.184*(P[k].T_target-MAINS_C)/3600;
-  near("Thermal = sum V*cp*dT  (per-process targets 40-45C)", th, expTh, 1);
+  near("Thermal = sum V*cp*dT  (per-process target 35C)", th, expTh, 1);
   const kW=keys.reduce((a,k)=>a+P[k].kWater,0);
   ok("Total warm water = 1.85 L/L beer", Math.abs(kW-1.85)<1e-9, `kW=${kW}`);
   const customParams=Object.fromEntries(keys.map(k=>[k,{...P[k],kWater:P[k].kWater*0.5}]));

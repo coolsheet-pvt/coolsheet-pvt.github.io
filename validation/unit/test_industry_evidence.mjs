@@ -38,7 +38,10 @@ assert.match(app, /calcBreweryHourlyDemand\([^)]*assumptions=null/);
 assert.match(app, /not a NABERS rating/);
 assert.match(app, /WELS does not yet regulate commercial clothes washers/);
 assert.match(app, /Tooheys reported about 4 L/);
-assert.match(app, /PVT delivery caps, not claimed final CIP/);
+// The brewery panel must keep saying the PVT cap is not the final process
+// temperature. The wording moved into the boiler-makeup paragraph; the guard
+// is that some such statement survives, not that one exact sentence does.
+assert.match(app, /PVT supplies only the low-temperature lift/);
 assert.match(app, /illustrative scenario, not a validated Australian brewery load model/);
 assert.match(app, /no retrievable public source for those coefficients was located/);
 assert.doesNotMatch(app, /process temperatures calibrated to Australian commercial conditions/);

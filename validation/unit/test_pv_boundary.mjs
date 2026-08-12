@@ -17,7 +17,7 @@ assert.ok(calc(20,95) < calc(10,95));
 
 assert.match(html,/id="pvtCoolingSensitivityEnable"\s+checked\s*\/>/,
   "PVT cooling effect must be included by default for the annual PVT result");
-assert.match(app,/INPUT_DEFAULTS_VERSION\s*=\s*"2026-08-dairy-national-average"/,
+assert.match(app,/INPUT_DEFAULTS_VERSION\s*=\s*"2026-08-brewery-35c-delivery-cap"/,
   "Saved browser inputs must be migrated when calculator defaults change");
 assert.match(app,/data\.pvtCoolingSensitivityEnable\s*=\s*true/,
   "Old saved inputs must not keep the PVT cooling effect disabled by accident");

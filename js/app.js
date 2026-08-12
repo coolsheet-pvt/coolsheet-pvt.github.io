@@ -1808,15 +1808,15 @@ const BREWERY_AUSTRALIAN_WATER_BENCHMARK = Object.freeze({
 
 const BREWERY_PROCESS_PARAMS = {
   cip_prerinse: {
-    kWater: 0.80, T_target: 45,
+    kWater: 0.80, T_target: 35,
     weights24: [0,0,0,0,0,0,0.2,0.4,0.4,0.4,0.4,0.4,0.6,0.8,1.0,1.0,1.0,0.8,0.6,0.4,0.2,0,0,0]
   },
   bottle_keg_rinse: {
-    kWater: 0.45, T_target: 40,
+    kWater: 0.45, T_target: 35,
     weights24: [0,0,0,0,0,0,0,0,0.1,0.5,1.0,1.0,0.9,0.9,1.0,1.0,0.8,0.4,0.1,0,0,0,0,0]
   },
   boiler_preheat: {
-    kWater: 0.60, T_target: 45,
+    kWater: 0.60, T_target: 35,
     weights24: [0,0,0,0,0,0,0,0.2,0.5,0.8,1.0,1.0,0.6,0.4,0.4,0.4,0.4,0.2,0,0,0,0,0,0]
   }
 };
@@ -3275,7 +3275,7 @@ function buildBreweryModelBasisHtml(){
       <p style="margin:0 0 8px 0;"><b>Quick summary</b></p>
       <p style="margin:0 0 6px 0;">Australian evidence supports the process categories and a whole-site water check, but not a universal process split. Tooheys reported about 4 L of potable water per L of beer, covering brewhouse, fermentation, filtration, packaging, boiler/cooling makeup and CIP. A South Australian guide reports that efficient breweries can reduce whole-site use below 4 L/L, while some use up to 10 L/L. ${src("Tooheys planning assessment", tooheysHref)} ${src("Green Industries SA guide", greenIndustriesHref)}</p>
       <p style="margin:0 0 6px 0;">Current selected warm-water scenario is ${warmWaterLPerL.toFixed(2)} L/L against an entered whole-site benchmark of ${B.wholeSiteWaterLPerL.toFixed(2)} L/L. ${waterStatus} The three process allocations remain editable scenario assumptions.</p>
-      <p style="margin:0 0 6px 0;">The 40-45 C values are PVT delivery caps, not claimed final CIP, sanitation or brewing temperatures. ARENA's Australian brewery case confirms hot-water opportunities for brewhouse heating, cleaning, bottling CIP and boiler displacement, while wort boiling remains above 100 C. ${src("ARENA process-heat study", arenaHref)}</p>
+      <p style="margin:0 0 6px 0;">ARENA's Australian brewery case confirms hot-water opportunities for brewhouse heating, cleaning, bottling CIP and boiler displacement, while wort boiling remains above 100 C. ${src("ARENA process-heat study", arenaHref)}</p>
       <p style="margin:0;">Electrical demand uses the editable ${B.electricalKWhPerHL.toFixed(2)} kWh/hL scenario with an assumed 24/7 refrigeration baseload and daytime brewing/packaging peaks. ${src("Metering context", elecHref1)} ${src("Brewhouse context", elecHref2)}</p>
     </div>
     <h4 style="margin:0 0 8px 0;">How it works</h4>
@@ -5391,9 +5391,6 @@ function updateProfileTypeRules(industryKey){
     monFriOption.disabled = true;
     monFriOption.textContent = `${strikeText("5 days/week (Mon-Fri)")} (dairies operate 365 days/year)`;
     monFriOption.style.color = "#666";
-  } else if (industryKey === "brewery"){
-    note.style.display = "block";
-    note.textContent = "Brewery schedules are site-specific. Choose 24/7 or Mon-Fri; either option preserves the entered annual beer throughput and redistributes it across the selected operating days.";
   } else if (industryKey === "commercial_laundry"){
     profileType.value = "continuous";
     monFriOption.disabled = true;
@@ -7504,7 +7501,7 @@ async function calcAnnualPVT(){
 // ================================================================
 const INPUT_STORE_KEY = "pvtCalcInputs.v1";
 const INPUT_DEFAULTS_VERSION_KEY = "pvtCalcInputs.defaultsVersion";
-const INPUT_DEFAULTS_VERSION = "2026-08-dairy-national-average";
+const INPUT_DEFAULTS_VERSION = "2026-08-brewery-35c-delivery-cap";
 
 // Inputs that always start from their HTML default, even when a previous
 // session stored a value. The industry selector opens on "no industry" so the
@@ -7556,6 +7553,10 @@ function restoreInputsFromStorage(){
       // 48 kWh/kL national average. Drop the stored value only where it still
       // matches the old default, so a deliberately entered figure survives.
       if (String(data.dairyElectricKWhPerKL) === "51.7") delete data.dairyElectricKWhPerKL;
+      // Brewery delivery caps unified to 35 C. Same rule: only drop the stored
+      // value where it still matches the old default.
+      if (String(data.breweryCipTarget) === "45") delete data.breweryCipTarget;
+      if (String(data.breweryRinseTarget) === "40") delete data.breweryRinseTarget;
       localStorage.setItem(INPUT_DEFAULTS_VERSION_KEY, INPUT_DEFAULTS_VERSION);
       localStorage.setItem(INPUT_STORE_KEY, JSON.stringify(data));
     }
