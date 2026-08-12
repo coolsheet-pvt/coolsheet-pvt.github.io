@@ -7504,7 +7504,7 @@ async function calcAnnualPVT(){
 // ================================================================
 const INPUT_STORE_KEY = "pvtCalcInputs.v1";
 const INPUT_DEFAULTS_VERSION_KEY = "pvtCalcInputs.defaultsVersion";
-const INPUT_DEFAULTS_VERSION = "2026-08-direct-capex-and-net-payback";
+const INPUT_DEFAULTS_VERSION = "2026-08-dairy-national-average";
 
 // Inputs that always start from their HTML default, even when a previous
 // session stored a value. The industry selector opens on "no industry" so the
@@ -7552,6 +7552,10 @@ function restoreInputsFromStorage(){
       if (String(data.hotelRoomsInput) === "120") delete data.hotelRoomsInput;
       if (String(data.hotelOccupancyInput) === "70") delete data.hotelOccupancyInput;
       if (String(data.hotelPoolKWh) === "0.8") delete data.hotelPoolKWh;
+      // 51.7 was a ten-farm Northern Rivers audit mean; the default is now the
+      // 48 kWh/kL national average. Drop the stored value only where it still
+      // matches the old default, so a deliberately entered figure survives.
+      if (String(data.dairyElectricKWhPerKL) === "51.7") delete data.dairyElectricKWhPerKL;
       localStorage.setItem(INPUT_DEFAULTS_VERSION_KEY, INPUT_DEFAULTS_VERSION);
       localStorage.setItem(INPUT_STORE_KEY, JSON.stringify(data));
     }
