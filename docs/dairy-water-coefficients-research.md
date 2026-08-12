@@ -1,193 +1,144 @@
-# Dairy process-water coefficients — literature search
+# Dairy process-water coefficients — Australian evidence
 
-Search for published support for the three dairy water coefficients in the
-calculator: fatty-film rinse 0.30, CIP pre-heat 0.57 and boiler feedwater
-0.50 L per L of milk (1.37 L/L total, heated to a 35 °C cap).
+Search for published Australian support for the three dairy water coefficients
+in the calculator: fatty-film rinse 0.30, CIP pre-heat 0.57 and boiler
+feedwater 0.50 L per L of milk (1.37 L/L total, heated to a 35 °C cap).
 
-Compiled 12 August 2026. Each source below is marked **[full text]** where the
-document itself was read, or **[secondary]** where the figure comes from a
-search result or abstract and the primary was not reachable.
+Compiled 12 August 2026. **Australian sources only** — the values below are
+derived entirely from Agriculture Victoria and Dairy Australia. Overseas
+material is listed in §7 for context and is not used in any calculation.
 
 ---
 
 ## 1. The short answer
 
-No source was found that publishes this three-way split. That is not a gap in
-searching — the split does not exist in the literature, because it is a
-*processing-plant* framing (pre-rinse / CIP / boiler make-up) applied to a
-*farm milking shed*. Farm studies report either litres per cow per day, or
-litres per litre of milk, for the shed as a whole.
+No source publishes this three-way split, and none will: pre-rinse / CIP /
+boiler make-up is a *processing-plant* framing applied to a *farm milking
+shed*. Australian sources describe the shed as **milking machine cleaning**
+and **bulk tank/vat cleaning**, and a farm dairy has no boiler.
 
-What can be supported is the **magnitude** and the **35 °C target**. Both have
-good sources. See §5 for the one result that should change how the numbers are
-described.
+Two independent Australian derivations both land near **0.15–0.26 L/L**
+against the current 1.37. See §5.
 
 ---
 
-## 2. Peer-reviewed
+## 2. Agriculture Victoria — *Dairy shed water: How much do you use?*
 
-**Shortall, J., O'Brien, B., Sleator, R. D., & Upton, J. (2018).** Daily and
-seasonal trends of electricity and water use on pasture-based automatic milking
-dairy farms. *Journal of Dairy Science*, 101(2), 1565–1578.
-doi:[10.3168/jds.2017-13407](https://doi.org/10.3168/jds.2017-13407) **[full
-abstract]**
+Already cited in the thesis (ref 60). Retrieved and read in full (49 pp).
+This is the authoritative Australian document for shed water, and it gives a
+method rather than a single coefficient.
 
-Metered seven seasonal-calving pasture-based farms in Ireland — the closest
-published system to an Australian pasture dairy.
+**Milking machine cleaning (p.20)**
 
-- Total water: **3.7 L of water per L of milk**
-- Milking shed accounted for **42%** of total farm water (≈1.55 L/L, but this
-  includes herd drinking water at the shed, so it is an upper bound on wash
-  water)
-- Electricity: **62.6 Wh/L = 62.6 kWh/kL** — sits inside the Australian
-  27–75 kWh/kL audit range
-- Auxiliary water heating: **8% of farm electricity**
+> "The volume of each rinse and detergent cycle within a wash regime can vary.
+> A general rule of thumb is **5–10 litres of water per cluster per cycle per
+> wash**. For example, a 32-unit swingover uses about 8 L × 32 units × 3
+> cycles per wash × 2 washes per day = 1,536 L/day."
 
-**Shine, P., Scully, T., Upton, J., Shalloo, L., & Murphy, M. D.** Electricity
-and direct water consumption on Irish pasture-based dairy farms: a statistical
-analysis. *Resources, Conservation and Recycling*. **[secondary]**
+The three cycles are named on p.21 as **rinse, detergent wash, sanitising
+rinse** — which is the process sequence the calculator models, from an
+Australian source.
 
-- Cleaning water: pasture systems **45.2 L/cow/day** (lowest of the three
-  system types); confined **84.4 L/cow/day**
-- Drinking water: 54.4 L/cow/day (semi-confined) to 87.5 (confined)
-- Pre-cooling milk with ground water saved 21% of milk-cooling electricity but
-  raised parlour water use 41%
+**Bulk tank/vat cleaning (p.20, p.22–23)**
 
-**Shine, P., Upton, J., Sefeedpari, P., & Murphy, M. D. (2020).** A Global
-Review of Monitoring, Modeling, and Analyses of Water Demand in Dairy Farming.
-*Sustainability*, 12(17), 7201.
-doi:[10.3390/su12177201](https://doi.org/10.3390/su12177201) **[not accessible
-— MDPI blocked automated access]**
+> "Older vats require around **1–3% of the vat capacity** for cleaning. Newer
+> vats require **1–2%**… Domestic hot water services used to heat water for
+> vat washing are generally **250 L, 315 L or 400 L**."
 
-The obvious review to start from: its scope is exactly on-farm water demand,
-including "hot washing of milking equipment". Worth retrieving through the UNSW
-library.
+Worked example: 150 L/cycle × 4 cycles × 330 washes/yr = **0.2 ML/yr**.
+Re-circulating systems use "about **1.5 times the volume of the hot water
+service** for each wash".
 
-**Boguniewicz-Zablocka, J., Klosok-Bazan, I., & Naddeo, V. (2017).** Water
-quality and resource management in the dairy industry. *Environmental Science
-and Pollution Research*, 26(2), 1208–1216.
-doi:[10.1007/s11356-017-0608-8](https://doi.org/10.1007/s11356-017-0608-8)
-**[full text]**
+## 3. Agriculture Victoria — *Measuring water use in the dairy*
 
-- Cleaning operations measured at **1.2 and 1.8 m³ per m³ of milk** at two
-  dairies (processing plants, not farms)
-- Total plant water 3.2–4.6 L/L
+> "**Vat and machine washing** — Requires **comparatively small volumes** of
+> the highest quality water, such as rainwater."
 
-**Minogue, D., et al.** Characterisation of dairy soiled water in a survey of 60
-Irish dairy farms. **[secondary]**
+The large users are named separately as yard washing, milk cooling and
+platform sprays. This matters: the calculator currently assigns the *majority*
+of shed water to washing, which is the opposite of what the state agency says.
 
-- **9,784 L/cow/year** of dairy soiled water including rainfall ≈ 26.8
-  L/cow/day
+## 4. Agriculture Victoria — Farm Water Calculator benchmarks
 
----
+Predicted 75th percentile total dairy shed water (ML/yr):
 
-## 3. Government and industry guidance with concrete volumes
+| Dairy type | 50–100 | 101–200 | 201–300 | 301–400 | 401–500 | 501–600 | 601–700 |
+|---|---|---|---|---|---|---|---|
+| Swingover | 1.18 | 2.74 | 4.68 | 7.28 | 7.74 | 4.71 | |
+| Double-up | 1.73 | 2.82 | 4.84 | 6.49 | 10.95 | | |
+| Rotary | | 9.03 | 8.03 | 12.98 | 14.74 | 13.06 | 17.34 |
 
-**DAERA Northern Ireland (January 2021).** *Cleaning Systems for Milking
-Plants.* **[full text]**
+For a 301–400 cow swingover this is 7.28 ML/yr of **total** shed water, or
+about **3.4 L per L of milk** — all uses, mostly cold.
 
-The only source found that gives stage-by-stage volumes and temperatures:
+## 5. Two Australian derivations
 
-| Stage | Volume | Temperature |
+**(a) Bottom-up, from Agriculture Victoria's own worked example.**
+32-unit swingover, 11 cows/unit, 6,000 L/cow/yr → 352 cows, 2.11 ML milk/yr.
+
+| | ML/yr | L per L milk |
 |---|---|---|
-| Pre-rinse (removes milk residues) | ~10 L per unit | **~40 °C** (cold also acceptable) |
-| Detergent circulation | 10–15 L per unit | **80 °C** |
-| Final rinse | 10 L per unit | cold |
-| Acidified boiling water (alternative) | ~70 L for a four-point plant | ≥96 °C |
+| Machine cleaning (8 L × 32 × 3 cycles × 680 washes) | 0.52 | 0.247 |
+| Vat cleaning (booklet's worked example) | 0.20 | 0.095 |
+| **Total cleaning, hot + cold** | **0.72** | **0.342** |
 
-Bucket systems: 30 L per cluster per day.
+Only some of that is heated — the sanitising rinse is cold, and the vat runs
+off a dedicated hot water service:
 
-**Dairy Australia.** *Saving energy on dairy farms.* **[full text, 64 pp]**
+- detergent cycle + vat heated → **0.18 L/L**
+- pre-rinse + detergent + vat heated → **0.26 L/L**
 
-- National average **48 kWh/kL of milk** (source given as RMCG National Report,
-  2015)
-- End-use split: milk cooling **42%**, milk harvesting **21%**, hot water
-  **17%**, cleaning and effluent 9%, stock water 4%, shed and lights 4%,
-  feed 3%
-- Plate coolers run at **2.5–3 L of water per L of milk** (older) or 1.5–2 L/L
-  (newer) — this is *cold* water
-- "Preheating water to 60–65 °C using solar or heat pump and then boosting it
-  to the required temperature with the dairy heater can save more than 40 per
-  cent of electricity costs of heating water"
-- "For many dairies, the solar system will not produce hot water at a high
-  enough temperature for plant wash when required, and the preheated water will
-  need to be boosted"
+This cleaning total is **10% of the agency's own 7.28 ML/yr shed benchmark**,
+which is consistent with "comparatively small volumes".
 
----
+**(b) Energy-anchored, from Dairy Australia.**
+*Saving energy on dairy farms* gives 48 kWh/kL with hot water at **17%**
+(source: RMCG National Report 2015), so **8.16 kWh per 1,000 L of milk**.
+Heating water from a 15 °C mains to 80 °C costs 0.0755 kWh/L, which
+corresponds to about **110 L per 1,000 L of milk = 0.11 L/L**, or ~0.15 L/L
+once part of the load is only warmed rather than fully heated.
 
-## 4. What this supports
+**The two agree: roughly 0.15 to 0.26 L/L.** The current 1.37 is 5–9× higher.
 
-**The 35 °C preheat cap — well supported.** DAERA puts the pre-rinse at ~40 °C,
-and Dairy Australia describes solar preheating to 60–65 °C followed by boosting
-because solar cannot reach plant-wash temperature. Modelling PVT as a preheat
-that never delivers the final wash temperature is exactly how the industry
-describes it. This is the strongest result of the search.
+## 6. Recommended values
 
-**Preheating is a recognised measure, with a number attached.** Dairy
-Australia's ">40 per cent of electricity costs of heating water" is an
-independent Australian figure for the saving the calculator exists to estimate.
+| Process | Current | Recommended | Heated to |
+|---|---|---|---|
+| Fatty-film rinse | 0.30 | **0.05** | 40 °C |
+| CIP pre-heat (detergent wash + vat) | 0.57 | **0.10** | 80 °C |
+| Boiler feedwater | 0.50 | **remove** | — |
+| **Total** | **1.37** | **0.15** | |
 
-**The three-way split — not supported, and unlikely to become so.** Report the
-total, not the split.
+0.05 + 0.10 returns 8.3 kWh/kL, within 2% of Dairy Australia's published
+hot-water share, so the thermal and electrical sides of the model stop
+contradicting each other.
 
----
+**Consequences before changing anything.** Dairy thermal demand falls from
+159 to about 17 MWh/yr on the shipped 5 ML default. More importantly, removing
+boiler feedwater removes the only around-the-clock process, so the dairy's
+daylight-coincident ceiling rises from 72% toward the brewery's ~94% — the
+case study's central finding inverts.
 
-## 5. The result that matters: 1.37 L/L looks about 4× too high
+## 7. Overseas material — context only, not used
 
-The published Australian numbers can be turned into an implied hot-water volume
-and compared with the model.
+Retrieved during the search and recorded so the trail is complete. **None of
+it is used for any value above.**
 
-Hot water is 17% of 48 kWh/kL, so **8.2 kWh per 1,000 L of milk**. Heating
-water from a 15 °C mains to 80 °C takes 4.184 × 65 / 3600 = 0.0755 kWh/L, so
-that energy corresponds to about **110 L of hot water per 1,000 L of milk —
-roughly 0.11 L/L**.
+- DAERA Northern Ireland (2021), *Cleaning Systems for Milking Plants* —
+  per-unit volumes and stage temperatures
+- Shortall, O'Brien, Sleator & Upton (2018), *J. Dairy Sci.* 101(2):1565–1578,
+  doi:10.3168/jds.2017-13407 — Irish pasture farms, 3.7 L water/L milk
+- Shine, Upton, Sefeedpari & Murphy (2020), *Sustainability* 12(17):7201,
+  doi:10.3390/su12177201 — global review of dairy water demand
+- Boguniewicz-Zablocka, Klosok-Bazan & Naddeo (2017), *Environ. Sci. Pollut.
+  Res.* 26(2):1208–1216 — European processing plants
 
-The model instead heats 1.37 L/L through a 20 K rise, which is
+## 8. A note on evidence type
 
-    1.37 × 4.184 × 20 / 3600 = 0.032 kWh per L of milk = 32 kWh/kL
-
-against a published hot-water figure of 8.2 kWh/kL. On the shipped 5 ML
-default that is **159 MWh/year of modelled thermal demand versus about 41
-MWh/year implied by the audit split** — a factor of about 3.9.
-
-Caveats, in fairness:
-
-- The 17% is the *electricity* share. Dairies heating water with LPG or gas
-  would have hot-water energy that this split does not capture, so the implied
-  volume is a floor rather than a point estimate.
-- Boiler feedwater pre-heating (0.50 L/L, 36% of the total) is a processing
-  concept. Farm milking sheds generally do not run a boiler, so this term may
-  not belong in a farm model at all.
-- Plate cooling is genuinely 2–3 L/L, which is larger than the whole 1.37 —
-  but it is cold water and is a heat *source*, not a heat demand. It is
-  plausible that a plate-cooling figure was at some point mistaken for a
-  heating one.
-
----
-
-## 6. Suggested values
-
-If the coefficients are to be replaced rather than defended:
-
-| Approach | Value | Basis |
-|---|---|---|
-| Energy-anchored (recommended) | back-calculate from 8.2 kWh/kL | Dairy Australia 17% of 48 kWh/kL; self-consistent with the electricity default |
-| Plant-cleaning bottom-up | ~10 L/unit pre-rinse + 10–15 L/unit wash | DAERA 2021; needs units, milkings/day and yield to convert |
-| Keep 1.37, restate | describe as *total shed water*, not heated water | Shortall 3.7 L/L total, 42% at shed |
-
-The first is the most defensible: it ties the thermal model to the same
-published source as the electricity default, so the two cannot contradict each
-other.
-
----
-
-## 7. Not reachable
-
-Blocked to automated access; worth retrieving manually or through the library:
-
-- Agriculture Victoria, *Dairy Shed Water: How Much Do You Use?* — the most
-  directly relevant Australian document, and already cited in the thesis
-- Agriculture Victoria, *Measuring water use in the dairy* and *Dairy shed
-  water use analysis* pages
-- Shine et al. (2020) review, MDPI *Sustainability*
-- Journal of Dairy Science full texts (ScienceDirect)
+There is no Australian peer-reviewed paper on milking-shed wash-water volumes.
+The authoritative Australian sources are the state agency and the industry
+body — Agriculture Victoria and Dairy Australia — not journals. For a thesis
+that is defensible, provided it is described accurately: government and
+industry guidance, not academic literature. The nearest Australian research
+body in this space is RACE for 2030, already cited in the calculator's
+model-basis panel.
