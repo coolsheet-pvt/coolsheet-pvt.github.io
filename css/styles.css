@@ -678,8 +678,7 @@ button:disabled{opacity:0.55;cursor:wait;transform:none;box-shadow:none;}
 .footer-sources dt{font-weight:700;color:#425a70;}
 .footer-sources dd{margin:0;}
 .site-footer a{color:#1a5f9a;}
-/* Wraps because the credit line pushes this past a phone's width otherwise. */
-.footer-bottom{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:4px 8px;margin-top:10px;color:#6a7885;text-align:center;}
+.footer-bottom{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;color:#6a7885;}
 .footer-bottom a{color:#5a6a7a;text-underline-offset:2px;}
 @media (max-width:780px){
   body{margin:10px;background-size:100% 600px;}
@@ -767,10 +766,6 @@ button:disabled{opacity:0.55;cursor:wait;transform:none;box-shadow:none;}
   .flow-suggestion-action{width:100%;}
   .annual-actions,.industry-actions{align-items:stretch;gap:8px;}
   .annual-actions .note,.industry-actions .note{width:100%;font-size:12px;}
-  /* One footer item per line. The middot separators only read correctly when
-     the items sit on a single row, so drop them once the footer stacks. */
-  .footer-bottom{flex-direction:column;gap:6px;}
-  .footer-bottom [aria-hidden="true"]{display:none;}
   .display-controls{display:grid;grid-template-columns:1fr;gap:8px;margin-top:12px;}
   .display-controls label{min-height:32px;}
   .chart-container{height:300px !important;margin:12px 0;overflow-x:auto;}
