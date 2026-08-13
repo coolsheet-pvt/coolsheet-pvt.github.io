@@ -1,6 +1,18 @@
 # CoolSheet PVT Calculator — Repository Technical Audit
 
 Audit date: 2026-07-20.
+
+> **This is a pinned snapshot. Do not update the numbers in it.** The values below
+> describe the code as it stood on 2026-07-20; rewriting them would break the audit
+> trail. Defaults that have changed since:
+>
+> | Item | In this document | Current |
+> |---|---|---|
+> | `dairyElectricKWhPerKL` | 51.7 kWh/kL | **48 kWh/kL** |
+> | `breweryCipTarget` / `breweryRinseTarget` | 45 °C / 40 °C | **35 °C / 35 °C** |
+> | Dairy industry name | "Dairy Farm" | **"Dairy Processing – market milk"** |
+>
+> For current values read `js/app.js` and `docs/industry-demand-assumptions.md`.
 Branch/commit inspected: `main` @ `6d4cf9ccce77e42aab8de5d0591132f69d9f9400` (clean working tree, 141 tracked files).
 Deliverable of a read-only repository audit: no existing repository file was modified; only this document was created.
 

@@ -1,6 +1,6 @@
 # Industry demand model evidence record
 
-Last reviewed: 4 August 2026
+Last reviewed: 13 August 2026
 
 This record separates published evidence from scenario assumptions used by the calculator. It is an audit trail, not a claim that the default demand models have been validated against metered facilities.
 
@@ -12,7 +12,7 @@ This record separates published evidence from scenario assumptions used by the c
 |---|---|---|
 | Whole-site water intensity | The Tooheys Brewery planning assessment reports about 4 L of potable water per L of beer and identifies brewhouse/fermentation, filtration, packaging, boiler and cooling-tower makeup, and CIP as water-using or wastewater-generating processes. | `breweryWholeSiteWater` defaults to 4.0 L/L as a plausibility check. |
 | Efficient and high water-use bounds | Green Industries South Australia reports that some breweries use up to 10 L/L and that targeted efficiency can reduce this to less than 4 L/L. It identifies cleaning practice, hot-liquor-tank control, water reuse and closed-loop CIP as major interventions. | The three selected warm-water allocations are compared with the editable whole-site figure. They must not be described as total brewery water use. |
-| Renewable heat integration | ARENA's West End Brewery case identifies hot water for brewhouse heating and cleaning, a dedicated bottling CIP load, and boiler displacement as renewable process-heat opportunities. It also states that wort heating above 100 C remains a high-temperature duty. | The 40-45 C values are labelled PVT delivery caps, not final CIP, sanitation, mash or wort temperatures. |
+| Renewable heat integration | ARENA's West End Brewery case identifies hot water for brewhouse heating and cleaning, a dedicated bottling CIP load, and boiler displacement as renewable process-heat opportunities. It also states that wort heating above 100 C remains a high-temperature duty. | The 35 C values are labelled PVT delivery caps, not final CIP, sanitation, mash or wort temperatures. |
 | Seasonal context | The Australian Bureau of Statistics Manufacturing Production Survey included beer production as a national production series. | The monthly factors are retained only as a historical Australian shaping scenario. They are not evidence of one facility's monthly plan. |
 
 ### Scenario assumptions that remain unvalidated
@@ -20,7 +20,7 @@ This record separates published evidence from scenario assumptions used by the c
 - CIP/cleaning preheat: 0.80 L/L beer.
 - Packaging rinse preheat: 0.45 L/L beer.
 - Boiler makeup preheat: 0.60 L/L beer.
-- PVT delivery caps: 45 C for cleaning/boiler makeup and 40 C for packaging rinse.
+- PVT delivery caps: 35 C for cleaning, boiler makeup and packaging rinse.
 - Hourly weights for cleaning, packaging, boiler makeup and electricity.
 - Electrical intensity: 11.5 kWh/hL.
 

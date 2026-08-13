@@ -1,6 +1,18 @@
 # Industry Demand Modelling — Dairy, Brewery and Others
 
 Audit date: 2026-07-21. Branch/commit: `main` @ `6d4cf9c`.
+
+> **This is a pinned snapshot. Do not update the numbers in it.** The values below
+> describe the code as it stood at `6d4cf9c`; rewriting them would break the audit
+> trail. Defaults that have changed since:
+>
+> | Item | In this document | Current |
+> |---|---|---|
+> | Dairy electricity intensity | 51.7 kWh/kL | **48 kWh/kL** |
+> | Brewery PVT delivery caps | 40 / 45 °C | **35 °C (all three)** |
+> | Dairy industry name | "Dairy Farm" | **"Dairy Processing – market milk"** |
+>
+> For current values read `js/app.js` and `docs/industry-demand-assumptions.md`.
 Companion to `docs/thesis/REPOSITORY_TECHNICAL_AUDIT.md` and `docs/thesis/MAINS_WATER_VALIDATION.md` (same evidence conventions: **[VERIFIED-CODE]** read from source, **[VERIFIED-RUN]** executed during this audit, **[DOC-ONLY]**, **[CONFLICT]**, **[MISSING]**).
 
 This document explains how CoolSheet turns an industry throughput into an hour-by-hour heat and electricity demand, and how that demand is matched against PVT supply. **Dairy and brewery are treated as the primary models** and are documented process-by-process with formulas, constants, worked numbers and the reasoning behind each choice. Hotel, aquatic centre and commercial laundry are covered more briefly. A dedicated section (§8) lists every inconsistency or weakness found, ranked, so they can be fixed.

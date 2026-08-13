@@ -9,5 +9,17 @@ validation/reports/live-results/
 
 __pycache__/
 *.pyc
-thesis-handover/
+
+# thesis-handover/ is deliberately TRACKED: it is the handover package for
+# CoolSheet (HANDOVER.md, CLAIMS-TO-VERIFY.md, main.tex/pdf and figures).
+# Only the LaTeX build artefacts inside it are ignored.
+thesis-handover/*.aux
+thesis-handover/*.log
+thesis-handover/*.out
+thesis-handover/*.toc
+thesis-handover/*.lof
+thesis-handover/*.lot
+thesis-handover/*.fls
+thesis-handover/*.fdb_latexmk
+thesis-handover/*.synctex.gz
 
